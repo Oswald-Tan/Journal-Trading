@@ -321,7 +321,6 @@ const LandingPage = () => {
         {/* Background decoration */}
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-white to-transparent"></div>
       </section>
-
       {/* Rest of the sections remain exactly the same */}
       <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
@@ -397,7 +396,6 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
-
       {/* Dashboard Preview */}
       <section
         id="dashboard"
@@ -524,8 +522,8 @@ const LandingPage = () => {
           </motion.div>
         </div>
       </section>
-
-      {/* Pricing Section */}
+      
+      {/* Pricing Section - MODIFIED */}
       <section id="pricing" className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <motion.div
@@ -542,84 +540,44 @@ const LandingPage = () => {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {[
-              {
-                name: "Free",
-                price: "0",
-                period: "forever",
-                features: [
-                  "30 Trade Entries",
-                  "Basic Analytics",
-                  "CSV Export",
-                  "Local Storage",
-                ],
-                highlighted: false,
-                cta: "Get Started",
-              },
-              {
-                name: "Pro",
-                price: "29",
-                period: "per month",
-                features: [
-                  "Unlimited Entries",
-                  "Advanced Analytics",
-                  "Cloud Sync",
-                  "Priority Support",
-                ],
-                highlighted: true,
-                cta: "Start Free Trial",
-              },
-              {
-                name: "Lifetime",
-                price: "399",
-                period: "one time",
-                features: [
-                  "All Elite Features",
-                  "Lifetime Updates",
-                  "Dedicated Support",
-                  "Early Access",
-                ],
-                highlighted: false,
-                cta: "Buy Now",
-              },
-            ].map((plan, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                whileHover={{ y: -10 }}
-                className={`rounded-3xl border-2 p-6 transition-all duration-300 ${
-                  plan.highlighted
-                    ? "border-orange-500 bg-linear-to-br from-orange-50 to-amber-50 shadow-2xl scale-105"
-                    : "border-orange-200 bg-white shadow-lg"
-                }`}
-              >
-                {plan.highlighted && (
-                  <div className="text-center mb-4">
-                    <span className="bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                      MOST POPULAR
-                    </span>
-                  </div>
-                )}
-
-                <h3 className="text-2xl font-bold text-orange-900 text-center mb-2">
-                  {plan.name}
-                </h3>
-
-                <div className="text-center mb-6">
-                  <span className="text-4xl font-bold text-orange-900">
-                    Rp{plan.price}
-                  </span>
-                  <span className="text-orange-700">/{plan.period}</span>
+          {/* Plans Comparison - SAME AS UPGRADE PAGE */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16"
+          >
+            {/* Free Plan */}
+            <motion.div
+              whileHover={{ y: -10, scale: 1.02 }}
+              className="relative bg-white rounded-3xl p-8 shadow-2xl border-2 border-gray-300 transition-all duration-300 h-full flex flex-col"
+            >
+              <div className="text-center mb-8 flex-1">
+                <div className="w-20 h-20 mx-auto mb-6 bg-gray-100 rounded-2xl flex items-center justify-center shadow-inner">
+                  <span className="text-3xl">🎯</span>
+                </div>
+                <h3 className="text-3xl font-bold text-gray-900 mb-3">Free</h3>
+                <div className="flex items-baseline justify-center mb-6">
+                  <span className="text-5xl font-bold text-gray-900">Free</span>
                 </div>
 
-                <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start">
+                <ul className="space-y-4 text-left">
+                  {[
+                    "Maksimal 30 Entri Trading",
+                    "Dashboard Dasar dengan Statistik Sederhana",
+                    "Grafik Equity Curve Dasar",
+                    "Export Data CSV",
+                    "Analytics Dasar",
+                  ].map((feature, index) => (
+                    <motion.li
+                      key={index}
+                      initial={{ opacity: 0, x: -20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1 + index * 0.05 }}
+                      className="flex items-start text-base font-medium"
+                    >
                       <svg
-                        className="w-5 h-5 text-emerald-500 mr-2 mt-0.5 shrink-0"
+                        className="w-6 h-6 text-emerald-500 mr-3 shrink-0 mt-0.5"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -629,28 +587,232 @@ const LandingPage = () => {
                           strokeLinejoin="round"
                           strokeWidth="2"
                           d="M5 13l4 4L19 7"
-                        ></path>
+                        />
                       </svg>
-                      <span className="text-orange-700">{feature}</span>
-                    </li>
+                      <span className="text-gray-700">{feature}</span>
+                    </motion.li>
                   ))}
                 </ul>
+              </div>
 
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleLogin}
-                  className={`w-full py-3 rounded-xl font-bold transition-all ${
-                    plan.highlighted
-                      ? "bg-linear-to-r from-orange-500 to-amber-500 text-white shadow-lg hover:shadow-xl"
-                      : "bg-orange-100 text-orange-700 border border-orange-300 hover:bg-orange-200"
-                  }`}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleRegister}
+                className="w-full py-4 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-2xl font-bold text-lg transition-all duration-200 shadow-lg"
+              >
+                Get Started Free
+              </motion.button>
+            </motion.div>
+
+            {/* Pro Plan - Highlighted */}
+            <motion.div
+              whileHover={{ y: -10, scale: 1.02 }}
+              className="relative bg-linear-to-br from-orange-50 to-amber-100 rounded-3xl p-8 shadow-2xl border-2 border-orange-500 transition-all duration-300 transform h-full flex flex-col"
+            >
+              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                <span className="bg-linear-to-r from-orange-500 to-amber-500 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg">
+                  ⭐ MOST POPULAR
+                </span>
+              </div>
+
+              <div className="text-center mb-8 flex-1">
+                <div className="w-20 h-20 mx-auto mb-6 bg-orange-100 rounded-2xl flex items-center justify-center shadow-inner">
+                  <span className="text-3xl">🚀</span>
+                </div>
+                <h3 className="text-3xl font-bold text-orange-900 mb-3">Pro</h3>
+                <div className="flex items-baseline justify-center mb-6">
+                  <span className="text-5xl font-bold text-orange-900">
+                    Rp 29k
+                  </span>
+                  <span className="text-gray-600 ml-2 text-xl font-semibold">
+                    /bulan
+                  </span>
+                </div>
+
+                <ul className="space-y-4 text-left">
+                  {[
+                    "Unlimited Trading Entries",
+                    "Advanced Analytics dengan Berbagai Chart",
+                    "Performance Metrics Detail",
+                    "Analisis Instrument & Strategy",
+                    "Win/Loss Distribution Charts",
+                    "Time of Day Analysis",
+                    "Trade Type Performance",
+                    "Priority Support",
+                    "Update Fitur Gratis Selamanya",
+                    "Data Export Lengkap",
+                    "Backup Otomatis",
+                  ].map((feature, index) => (
+                    <motion.li
+                      key={index}
+                      initial={{ opacity: 0, x: -20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 + index * 0.05 }}
+                      className="flex items-start text-base font-medium"
+                    >
+                      <svg
+                        className="w-6 h-6 text-emerald-500 mr-3 shrink-0 mt-0.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                      <span className="text-gray-700">{feature}</span>
+                    </motion.li>
+                  ))}
+                </ul>
+              </div>
+
+              <motion.button
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleRegister}
+                className="w-full py-4 bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-2xl font-bold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                Start Free Trial
+              </motion.button>
+            </motion.div>
+
+            {/* Lifetime Plan */}
+            <motion.div
+              whileHover={{ y: -10, scale: 1.02 }}
+              className="relative bg-linear-to-br from-purple-50 to-violet-100 rounded-3xl p-8 shadow-2xl border-2 border-purple-500 transition-all duration-300 h-full flex flex-col"
+            >
+              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                <span className="bg-linear-to-r from-purple-600 to-violet-700 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg">
+                  💎 BEST VALUE
+                </span>
+              </div>
+
+              <div className="text-center mb-8 flex-1">
+                <div className="w-20 h-20 mx-auto mb-6 bg-purple-100 rounded-2xl flex items-center justify-center shadow-inner">
+                  <span className="text-3xl">👑</span>
+                </div>
+                <h3 className="text-3xl font-bold text-purple-900 mb-3">
+                  Lifetime
+                </h3>
+                <div className="flex items-baseline justify-center mb-6">
+                  <span className="text-5xl font-bold text-purple-900">
+                    Rp 399k
+                  </span>
+                  <span className="text-gray-600 ml-2 text-xl font-semibold">
+                    /selamanya
+                  </span>
+                </div>
+
+                <ul className="space-y-4 text-left">
+                  {[
+                    "Semua Fitur Pro",
+                    "Akses Seumur Hidup",
+                    "Update Gratis Selamanya",
+                    "Priority Support Seumur Hidup",
+                  ].map((feature, index) => (
+                    <motion.li
+                      key={index}
+                      initial={{ opacity: 0, x: -20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 + index * 0.05 }}
+                      className="flex items-start text-base font-medium"
+                    >
+                      <svg
+                        className="w-6 h-6 text-emerald-500 mr-3 shrink-0 mt-0.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                      <span className="text-gray-700 font-semibold">
+                        {feature}
+                      </span>
+                    </motion.li>
+                  ))}
+                </ul>
+              </div>
+
+              <motion.button
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleRegister}
+                className="w-full py-4 bg-linear-to-r from-purple-600 to-violet-700 hover:from-purple-700 hover:to-violet-800 text-white rounded-2xl font-bold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                Get Lifetime
+              </motion.button>
+            </motion.div>
+          </motion.div>
+
+          {/* FAQ Section - SAME AS UPGRADE PAGE */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-white rounded-3xl p-8 shadow-2xl border border-orange-200 mb-12"
+          >
+            <h2 className="text-3xl font-bold text-orange-900 text-center mb-8 flex items-center justify-center gap-3">
+              <span className="text-4xl">❓</span>
+              Frequently Asked Questions
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[
+                {
+                  question: "Apakah bisa upgrade kapan saja?",
+                  answer:
+                    "Ya, Anda bisa upgrade dari plan Free ke Pro atau Lifetime kapan saja. Downgrade dari Pro ke Free akan berlaku pada akhir periode billing.",
+                },
+                {
+                  question: "Apakah data trading saya aman?",
+                  answer:
+                    "Sangat aman! Semua data trading Anda disimpan secara encrypted dan tidak akan pernah kami share ke pihak manapun.",
+                },
+                {
+                  question: "Bagaimana cara pembayaran?",
+                  answer:
+                    "Kami menerima berbagai metode pembayaran: transfer bank, e-wallet (Gopay, OVO, Dana), dan kartu kredit.",
+                },
+                {
+                  question: "Apakah ada garansi uang kembali?",
+                  answer:
+                    "Ya! Kami menawarkan garansi 30 hari uang kembali jika Anda tidak puas dengan layanan kami.",
+                },
+                {
+                  question: "Apakah bisa trial plan Pro?",
+                  answer:
+                    "Saat ini kami tidak menawarkan trial, tetapi Anda bisa upgrade kapan saja dan masih ada garansi 30 hari uang kembali.",
+                },
+                {
+                  question: "Fitur apa saja yang akan datang?",
+                  answer:
+                    "Kami terus mengembangkan fitur baru seperti copy trading, AI analysis, mobile app, dan integration dengan broker.",
+                },
+              ].map((faq, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 + index * 0.1 }}
+                  className="p-6 bg-orange-50 rounded-2xl border border-orange-200 hover:bg-orange-100 transition-colors"
                 >
-                  {plan.cta}
-                </motion.button>
-              </motion.div>
-            ))}
-          </div>
+                  <h3 className="font-bold text-orange-900 text-lg mb-2">
+                    {faq.question}
+                  </h3>
+                  <p className="text-orange-700">{faq.answer}</p>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -665,7 +827,7 @@ const LandingPage = () => {
           </motion.div>
         </div>
       </section>
-
+      
       {/* CTA Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-linear-to-r from-orange-500 via-amber-500 to-yellow-500">
         <div className="max-w-4xl mx-auto text-center">
@@ -707,7 +869,6 @@ const LandingPage = () => {
           </motion.div>
         </div>
       </section>
-
       {/* Footer */}
       <footer className="bg-orange-900 text-orange-100 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
