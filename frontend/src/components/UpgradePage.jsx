@@ -1,7 +1,7 @@
 import React from "react";
-import { motion } from "framer-motion";
+import { motion as Motion } from 'framer-motion';
 import { useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 
 // Subscription plans configuration
 const subscriptionPlans = {
@@ -50,7 +50,6 @@ const subscriptionPlans = {
 
 const UpgradePage = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const { subscription } = useSelector((state) => state.auth);
   
   const currentPlan = subscriptionPlans[subscription?.plan || "free"];
@@ -71,7 +70,7 @@ const UpgradePage = () => {
     <div className="min-h-screen py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <motion.div
+        <Motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
@@ -86,7 +85,7 @@ const UpgradePage = () => {
             Kembali
           </button>
           
-          <motion.h1 
+          <Motion.h1 
             initial={{ scale: 0.9 }}
             animate={{ scale: 1 }}
             className="text-5xl md:text-6xl font-bold text-orange-900 mb-4 flex items-center justify-center gap-4"
@@ -94,7 +93,7 @@ const UpgradePage = () => {
             <span className="text-6xl">🚀</span>
             Upgrade Your Trading Journey
             <span className="text-6xl">💎</span>
-          </motion.h1>
+          </Motion.h1>
           
           <p className="text-xl text-orange-700 max-w-3xl mx-auto">
             Take your trading analysis to the next level with advanced features and unlimited access
@@ -105,17 +104,17 @@ const UpgradePage = () => {
             <span className="text-orange-700 font-semibold mr-2">Current Plan:</span>
             <span className="font-bold text-orange-900 text-lg">{currentPlan.name}</span>
           </div>
-        </motion.div>
+        </Motion.div>
 
         {/* Plans Comparison */}
-        <motion.div
+        <Motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16"
         >
           {/* Free Plan */}
-          <motion.div
+          <Motion.div
             whileHover={{ y: -10, scale: 1.02 }}
             className="relative bg-white rounded-3xl p-8 shadow-2xl border-2 border-gray-300 transition-all duration-300 h-full flex flex-col"
           >
@@ -130,7 +129,7 @@ const UpgradePage = () => {
               
               <ul className="space-y-4 text-left">
                 {subscriptionPlans.free.features.map((feature, index) => (
-                  <motion.li 
+                  <Motion.li 
                     key={index}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -141,12 +140,12 @@ const UpgradePage = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                     </svg>
                     <span className="text-gray-700">{feature}</span>
-                  </motion.li>
+                  </Motion.li>
                 ))}
               </ul>
             </div>
 
-            <motion.button
+            <Motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => handleUpgrade("free")}
@@ -158,11 +157,11 @@ const UpgradePage = () => {
               disabled={currentPlan.name === "Free"}
             >
               {currentPlan.name === "Free" ? "Current Plan" : "Downgrade"}
-            </motion.button>
-          </motion.div>
+            </Motion.button>
+          </Motion.div>
 
           {/* Pro Plan - Highlighted */}
-          <motion.div
+          <Motion.div
             whileHover={{ y: -10, scale: 1.02 }}
             className="relative bg-linear-to-br from-orange-50 to-amber-100 rounded-3xl p-8 shadow-2xl border-2 border-orange-500 transition-all duration-300 transform h-full flex flex-col"
           >
@@ -184,7 +183,7 @@ const UpgradePage = () => {
               
               <ul className="space-y-4 text-left">
                 {subscriptionPlans.pro.features.map((feature, index) => (
-                  <motion.li 
+                  <Motion.li 
                     key={index}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -195,12 +194,12 @@ const UpgradePage = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                     </svg>
                     <span className="text-gray-700">{feature}</span>
-                  </motion.li>
+                  </Motion.li>
                 ))}
               </ul>
             </div>
 
-            <motion.button
+            <Motion.button
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => handleUpgrade("pro")}
@@ -210,11 +209,11 @@ const UpgradePage = () => {
               disabled={currentPlan.name === "Pro"}
             >
               {currentPlan.name === "Pro" ? "Current Plan" : "Upgrade to Pro"}
-            </motion.button>
-          </motion.div>
+            </Motion.button>
+          </Motion.div>
 
           {/* Lifetime Plan */}
-          <motion.div
+          <Motion.div
             whileHover={{ y: -10, scale: 1.02 }}
             className="relative bg-linear-to-br from-purple-50 to-violet-100 rounded-3xl p-8 shadow-2xl border-2 border-purple-500 transition-all duration-300 h-full flex flex-col"
           >
@@ -236,7 +235,7 @@ const UpgradePage = () => {
               
               <ul className="space-y-4 text-left">
                 {subscriptionPlans.lifetime.features.map((feature, index) => (
-                  <motion.li 
+                  <Motion.li 
                     key={index}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -247,12 +246,12 @@ const UpgradePage = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                     </svg>
                     <span className="text-gray-700 font-semibold">{feature}</span>
-                  </motion.li>
+                  </Motion.li>
                 ))}
               </ul>
             </div>
 
-            <motion.button
+            <Motion.button
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => handleUpgrade("lifetime")}
@@ -262,12 +261,12 @@ const UpgradePage = () => {
               disabled={currentPlan.name === "Lifetime"}
             >
               {currentPlan.name === "Lifetime" ? "Current Plan" : "Get Lifetime"}
-            </motion.button>
-          </motion.div>
-        </motion.div>
+            </Motion.button>
+          </Motion.div>
+        </Motion.div>
 
         {/* FAQ Section */}
-        <motion.div
+        <Motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
@@ -305,7 +304,7 @@ const UpgradePage = () => {
                 answer: "Kami terus mengembangkan fitur baru seperti copy trading, AI analysis, mobile app, dan integration dengan broker."
               }
             ].map((faq, index) => (
-              <motion.div
+              <Motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -314,13 +313,13 @@ const UpgradePage = () => {
               >
                 <h3 className="font-bold text-orange-900 text-lg mb-2">{faq.question}</h3>
                 <p className="text-orange-700">{faq.answer}</p>
-              </motion.div>
+              </Motion.div>
             ))}
           </div>
-        </motion.div>
+        </Motion.div>
 
         {/* Final CTA */}
-        <motion.div
+        <Motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.6 }}
@@ -333,26 +332,26 @@ const UpgradePage = () => {
             <p className="text-orange-100 text-lg mb-6 max-w-2xl mx-auto">
               Join thousands of traders who have upgraded their analysis and achieved better results with our advanced tools.
             </p>
-            <motion.button
+            <Motion.button
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => handleUpgrade("pro")}
               className="bg-white text-orange-600 px-8 py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-all"
             >
               🚀 Upgrade Sekarang
-            </motion.button>
+            </Motion.button>
           </div>
-        </motion.div>
+        </Motion.div>
 
         {/* Footer Note */}
-        <motion.div
+        <Motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7 }}
           className="text-center mt-8 text-orange-600"
         >
           <p>Need help deciding? <span className="font-semibold">Contact our support team</span></p>
-        </motion.div>
+        </Motion.div>
       </div>
     </div>
   );

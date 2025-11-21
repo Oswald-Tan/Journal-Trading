@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from "react-redux";
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { RegisterUser, reset } from "../../features/authSlice";
 
@@ -144,7 +144,7 @@ const RegisterPage = ({ onShowTradingJournal }) => {
     <div className="min-h-screen bg-linear-to-br from-orange-50 via-amber-50 to-yellow-50 overflow-hidden relative">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <motion.div
+        <Motion.div
           animate={{
             scale: [1, 1.1, 1],
             opacity: [0.3, 0.5, 0.3],
@@ -156,7 +156,7 @@ const RegisterPage = ({ onShowTradingJournal }) => {
           }}
           className="absolute -top-40 -right-40 w-80 h-80 bg-orange-400/20 rounded-full blur-3xl"
         />
-        <motion.div
+        <Motion.div
           animate={{
             scale: [1.1, 1, 1.1],
             opacity: [0.4, 0.6, 0.4],
@@ -174,7 +174,7 @@ const RegisterPage = ({ onShowTradingJournal }) => {
       {/* Main Content */}
       <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-md w-full">
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
@@ -182,14 +182,14 @@ const RegisterPage = ({ onShowTradingJournal }) => {
           >
             {/* Header */}
             <div className="text-center mb-8">
-              <motion.div
+              <Motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
                 className="inline-flex items-center justify-center w-16 h-16 bg-linear-to-r from-orange-500 to-amber-500 rounded-2xl shadow-lg mb-4"
               >
                 <span className="text-2xl text-white">🚀</span>
-              </motion.div>
+              </Motion.div>
               
               <h2 className="text-3xl font-bold bg-linear-to-r from-orange-600 to-amber-700 bg-clip-text text-transparent mb-2">
                 Start Your Journey
@@ -201,24 +201,24 @@ const RegisterPage = ({ onShowTradingJournal }) => {
 
             {/* Error Message */}
             {isError && (
-              <motion.div
+              <Motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl mb-6 text-sm"
               >
                 {message}
-              </motion.div>
+              </Motion.div>
             )}
 
             {/* Success Message */}
             {isSuccess && (
-              <motion.div
+              <Motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-2xl mb-6 text-sm"
               >
                 Registration successful! Redirecting...
-              </motion.div>
+              </Motion.div>
             )}
 
             {/* Registration Form */}
@@ -245,10 +245,10 @@ const RegisterPage = ({ onShowTradingJournal }) => {
                     onChange={handleChange}
                     onFocus={() => handleFocus("name")}
                     onBlur={() => handleBlur("name")}
-                    className={`w-full px-4 py-3 bg-orange-50 border rounded-2xl focus:outline-none focus:ring-2 transition-all duration-300 text-orange-900 placeholder-orange-400 ${
+                    className={`w-full px-4 py-3 bg-orange-50 border rounded-2xl focus:outline-none transition-all duration-300 text-orange-900 placeholder-orange-400 ${
                       formErrors.name 
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                        : 'border-orange-200 focus:ring-orange-500 focus:border-orange-500'
+                        ? 'border-red-300 focus:border-red-500' 
+                        : 'border-orange-200 focus:border-orange-500'
                     }`}
                     placeholder="John Trader"
                   />
@@ -283,10 +283,10 @@ const RegisterPage = ({ onShowTradingJournal }) => {
                     onChange={handleChange}
                     onFocus={() => handleFocus("email")}
                     onBlur={() => handleBlur("email")}
-                    className={`w-full px-4 py-3 bg-orange-50 border rounded-2xl focus:outline-none focus:ring-2 transition-all duration-300 text-orange-900 placeholder-orange-400 ${
+                    className={`w-full px-4 py-3 bg-orange-50 border rounded-2xl focus:outline-none transition-all duration-300 text-orange-900 placeholder-orange-400 ${
                       formErrors.email 
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                        : 'border-orange-200 focus:ring-orange-500 focus:border-orange-500'
+                        ? 'border-red-300 focus:border-red-500' 
+                        : 'border-orange-200 focus:border-orange-500'
                     }`}
                     placeholder="trader@example.com"
                   />
@@ -321,10 +321,10 @@ const RegisterPage = ({ onShowTradingJournal }) => {
                     onChange={handleChange}
                     onFocus={() => handleFocus("password")}
                     onBlur={() => handleBlur("password")}
-                    className={`w-full px-4 py-3 bg-orange-50 border rounded-2xl focus:outline-none focus:ring-2 transition-all duration-300 text-orange-900 placeholder-orange-400 pr-12 ${
+                    className={`w-full px-4 py-3 bg-orange-50 border rounded-2xl focus:outline-none transition-all duration-300 text-orange-900 placeholder-orange-400 pr-12 ${
                       formErrors.password 
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                        : 'border-orange-200 focus:ring-orange-500 focus:border-orange-500'
+                        ? 'border-red-300 focus:border-red-500' 
+                        : 'border-orange-200 focus:border-orange-500'
                     }`}
                     placeholder="Create a strong password"
                   />
@@ -394,10 +394,10 @@ const RegisterPage = ({ onShowTradingJournal }) => {
                     onChange={handleChange}
                     onFocus={() => handleFocus("confirmPassword")}
                     onBlur={() => handleBlur("confirmPassword")}
-                    className={`w-full px-4 py-3 bg-orange-50 border rounded-2xl focus:outline-none focus:ring-2 transition-all duration-300 text-orange-900 placeholder-orange-400 pr-12 ${
+                    className={`w-full px-4 py-3 bg-orange-50 border rounded-2xl focus:outline-none transition-all duration-300 text-orange-900 placeholder-orange-400 pr-12 ${
                       formErrors.confirmPassword 
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                        : 'border-orange-200 focus:ring-orange-500 focus:border-orange-500'
+                        ? 'border-red-300 focus:border-red-500' 
+                        : 'border-orange-200 focus:border-orange-500'
                     }`}
                     placeholder="Confirm your password"
                   />
@@ -425,10 +425,10 @@ const RegisterPage = ({ onShowTradingJournal }) => {
                   required
                   checked={formData.agreeToTerms}
                   onChange={handleChange}
-                  className={`w-4 h-4 mt-1 rounded focus:ring-2 ${
+                  className={`w-4 h-4 mt-1 rounded ${
                     formErrors.agreeToTerms
-                      ? 'text-red-500 bg-red-100 border-red-300 focus:ring-red-500'
-                      : 'text-orange-500 bg-orange-100 border-orange-300 focus:ring-orange-500'
+                      ? 'text-red-500 bg-red-100 border-red-300'
+                      : 'text-orange-500 bg-orange-100 border-orange-300'
                   }`}
                 />
                 <label htmlFor="agreeToTerms" className="ml-2 block text-sm text-orange-700">
@@ -447,7 +447,7 @@ const RegisterPage = ({ onShowTradingJournal }) => {
               )}
 
               {/* Submit Button */}
-              <motion.button
+              <Motion.button
                 type="submit"
                 disabled={isLoading}
                 whileHover={{ scale: isLoading ? 1 : 1.02, y: isLoading ? 0 : -2 }}
@@ -488,7 +488,7 @@ const RegisterPage = ({ onShowTradingJournal }) => {
                     </svg>
                   </>
                 )}
-              </motion.button>
+              </Motion.button>
             </form>
 
             {/* Divider */}
@@ -515,7 +515,7 @@ const RegisterPage = ({ onShowTradingJournal }) => {
                 </svg>
               </Link>
             </div>
-          </motion.div>
+          </Motion.div>
         </div>
       </div>
     </div>

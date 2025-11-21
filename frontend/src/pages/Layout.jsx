@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion as Motion, AnimatePresence  } from 'framer-motion';
 import { getBalance } from "../features/balanceSlice";
 import { getTarget, getTargetProgress } from "../features/targetSlice";
 import { useDispatch, useSelector } from "react-redux";
@@ -33,8 +33,8 @@ const Layout = ({ children, onShowLanding }) => {
       riskReward: 1.5,
       strategy: "Breakout + momentum",
       market: "Ranging -> breakout",
-      emotionBefore: "Calm",
-      emotionAfter: "Confident",
+      eMotionBefore: "Calm",
+      eMotionAfter: "Confident",
       screenshot: "",
       notes: "Good continuation after news",
     },
@@ -113,10 +113,11 @@ const Layout = ({ children, onShowLanding }) => {
   const activeTab = useMemo(() => {
     const path = location.pathname;
     if (path.includes("/trades")) return "trades";
+    if (path.includes("/calculator")) return "calculator";
     if (path.includes("/analytics")) return "analytics";
     if (path.includes("/performance")) return "performance";
     if (path.includes("/targets")) return "targets";
-    if (path.includes("/upgrade")) return "upgrade"; // TAMBAH upgrade tab
+    if (path.includes("/upgrade")) return "upgrade";
     return "dashboard";
   }, [location.pathname]);
 
@@ -124,7 +125,6 @@ const Layout = ({ children, onShowLanding }) => {
   useEffect(() => {
     const loadData = async () => {
       if (user && !dataLoaded) {
-        console.log("Loading data for user:", user.id);
         try {
           // PERBAIKAN: Load data secara sequential untuk menghindari race condition
           await dispatch(getBalance()).unwrap();
@@ -145,7 +145,6 @@ const Layout = ({ children, onShowLanding }) => {
   // PERBAIKAN: Load target progress hanya jika target enabled
   useEffect(() => {
     if (target?.enabled && dataLoaded) {
-      console.log("Loading target progress");
       dispatch(getTargetProgress());
     }
   }, [dispatch, target?.enabled, dataLoaded]);
@@ -325,7 +324,7 @@ const Layout = ({ children, onShowLanding }) => {
       {/* Main Content Area */}
       <main className="max-w-11/12 mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <AnimatePresence mode="wait">
-          <motion.div
+          <Motion.div
             key={location.pathname}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -338,7 +337,7 @@ const Layout = ({ children, onShowLanding }) => {
               }
               return child;
             })}
-          </motion.div>
+          </Motion.div>
         </AnimatePresence>
       </main>
 

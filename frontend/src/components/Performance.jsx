@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
   ResponsiveContainer, 
@@ -313,7 +313,7 @@ const Performance = () => {
   }, [trades, safeStats.netProfit, initialBalance]);
 
   // Custom Tooltip Formatter untuk chart
-  const renderTooltipContent = (value, name, props) => {
+  const renderTooltipContent = (value, name) => {
     if (name === 'profit' || name === 'avgProfit' || name === 'Total Profit' || name === 'Avg Profit') {
       return [formatCurrency(value, currency), name];
     } else if (name === 'winRate' || name === 'Win Rate %' || name === 'Win Rate') {
@@ -323,7 +323,7 @@ const Performance = () => {
   };
 
   const StatCard = ({ label, value, color, bg, border, icon }) => (
-    <motion.div
+    <Motion.div
       whileHover={{ scale: 1.03, y: -2 }}
       className={`p-5 rounded-2xl border-2 ${border} ${bg} shadow-lg hover:shadow-xl transition-all duration-300`}
     >
@@ -332,11 +332,11 @@ const Performance = () => {
         <span className="text-2xl">{icon}</span>
       </div>
       <div className={`text-2xl font-bold ${color}`}>{value}</div>
-    </motion.div>
+    </Motion.div>
   );
 
-  const PerformanceTable = ({ title, data, positive = true, icon = "📊" }) => (
-    <motion.div
+  const PerformanceTable = ({ title, data = true, icon = "📊" }) => (
+    <Motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="bg-white/80 backdrop-blur-md rounded-3xl border border-orange-100 overflow-hidden shadow-xl"
@@ -360,7 +360,7 @@ const Performance = () => {
           </thead>
           <tbody>
             {data.map((item, index) => (
-              <motion.tr
+              <Motion.tr
                 key={item.instrument}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -380,7 +380,7 @@ const Performance = () => {
                 }`}>
                   {formatCompactCurrency(item.avgProfit, currency)}
                 </td>
-              </motion.tr>
+              </Motion.tr>
             ))}
           </tbody>
         </table>
@@ -393,13 +393,13 @@ const Performance = () => {
           </div>
         )}
       </div>
-    </motion.div>
+    </Motion.div>
   );
 
   return (
     <div className="space-y-6 min-h-screen">
       {/* Header */}
-      <motion.div
+      <Motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4"
@@ -411,7 +411,7 @@ const Performance = () => {
           <p className="text-orange-700 mt-1">Detailed analysis of your trading performance</p>
         </div>
         
-        <motion.div
+        <Motion.div
           whileHover={{ scale: 1.05 }}
           className="flex gap-3"
         >
@@ -423,52 +423,52 @@ const Performance = () => {
             <div className="text-sm font-semibold">Net P/L</div>
             <div className="font-bold text-xl">{formatCompactCurrency(safeStats.netProfit, currency)}</div>
           </div>
-        </motion.div>
-      </motion.div>
+        </Motion.div>
+      </Motion.div>
 
       {/* Show message if no data */}
       {trades.length === 0 && (
-        <motion.div
+        <Motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-white/80 backdrop-blur-md rounded-3xl border border-orange-100 shadow-xl p-12 text-center"
         >
           <div className="max-w-md mx-auto">
-            <motion.div
+            <Motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
               className="text-6xl mb-4"
             >
               📊
-            </motion.div>
+            </Motion.div>
             <h3 className="text-xl font-bold text-orange-900 mb-2">No Trading Data Yet</h3>
             <p className="text-orange-700 mb-6">
               Start adding trades to see detailed performance metrics and insights.
             </p>
-            <motion.button
+            <Motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => window.location.href = '/trades'}
               className="bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white px-6 py-3 rounded-xl transition-all shadow-lg font-semibold"
             >
               ➕ Add Your First Trade
-            </motion.button>
+            </Motion.button>
           </div>
-        </motion.div>
+        </Motion.div>
       )}
 
       {/* Charts - Only show if there's data */}
       {trades.length > 0 && (
         <>
           {/* Key Metrics */}
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
           >
-            {performanceMetrics.map((metric, index) => (
+            {performanceMetrics.map((metric) => (
               <StatCard
                 key={metric.label}
                 label={metric.label}
@@ -479,11 +479,11 @@ const Performance = () => {
                 icon={metric.icon}
               />
             ))}
-          </motion.div>
+          </Motion.div>
 
           {/* Weekly Performance Trend */}
           {weeklyTrendData.length > 0 && (
-            <motion.div
+            <Motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
@@ -528,11 +528,11 @@ const Performance = () => {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
-            </motion.div>
+            </Motion.div>
           )}
 
           {/* Monthly Performance */}
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
@@ -559,7 +559,7 @@ const Performance = () => {
                 </thead>
                 <tbody>
                   {monthlyData.map((month, index) => (
-                    <motion.tr
+                    <Motion.tr
                       key={month.month}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -581,7 +581,7 @@ const Performance = () => {
                       }`}>
                         {formatCompactCurrency(month.avgProfit, currency)}
                       </td>
-                    </motion.tr>
+                    </Motion.tr>
                   ))}
                 </tbody>
               </table>
@@ -594,10 +594,10 @@ const Performance = () => {
                 </div>
               )}
             </div>
-          </motion.div>
+          </Motion.div>
 
           {/* Instrument Performance Comparison */}
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
@@ -616,10 +616,10 @@ const Performance = () => {
               positive={false}
               icon="⚠️"
             />
-          </motion.div>
+          </Motion.div>
 
           {/* Additional Insights */}
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
@@ -632,34 +632,34 @@ const Performance = () => {
                 Trading Consistency
               </h3>
               <div className="space-y-4">
-                <motion.div
+                <Motion.div
                   whileHover={{ x: 5 }}
                   className="flex justify-between items-center p-3 bg-linear-to-r from-emerald-50 to-green-50 rounded-xl border border-emerald-200"
                 >
                   <span className="text-gray-700 font-medium">Max Consecutive Wins</span>
                   <span className="font-bold text-emerald-600 text-lg">🔥 {consistencyMetrics.maxConsecutiveWins}</span>
-                </motion.div>
-                <motion.div
+                </Motion.div>
+                <Motion.div
                   whileHover={{ x: 5 }}
                   className="flex justify-between items-center p-3 bg-linear-to-r from-rose-50 to-red-50 rounded-xl border border-rose-200"
                 >
                   <span className="text-gray-700 font-medium">Max Consecutive Losses</span>
                   <span className="font-bold text-rose-600 text-lg">💔 {consistencyMetrics.maxConsecutiveLosses}</span>
-                </motion.div>
-                <motion.div
+                </Motion.div>
+                <Motion.div
                   whileHover={{ x: 5 }}
                   className="flex justify-between items-center p-3 bg-linear-to-r from-amber-50 to-yellow-50 rounded-xl border border-amber-200"
                 >
                   <span className="text-gray-700 font-medium">Max Drawdown</span>
                   <span className="font-bold text-amber-600 text-lg">📉 {formatCompactCurrency(consistencyMetrics.maxDrawdown, currency)}</span>
-                </motion.div>
-                <motion.div
+                </Motion.div>
+                <Motion.div
                   whileHover={{ x: 5 }}
                   className="flex justify-between items-center p-3 bg-linear-to-r from-orange-50 to-amber-50 rounded-xl border border-orange-200"
                 >
                   <span className="text-gray-700 font-medium">Recovery Factor</span>
                   <span className="font-bold text-orange-600 text-lg">⚡ {consistencyMetrics.recoveryFactor}</span>
-                </motion.div>
+                </Motion.div>
               </div>
             </div>
 
@@ -670,40 +670,40 @@ const Performance = () => {
                 Risk Management
               </h3>
               <div className="space-y-4">
-                <motion.div
+                <Motion.div
                   whileHover={{ x: 5 }}
                   className="flex justify-between items-center p-3 bg-linear-to-r from-purple-50 to-violet-50 rounded-xl border border-purple-200"
                 >
                   <span className="text-gray-700 font-medium">Largest Win</span>
                   <span className="font-bold text-purple-600 text-lg">💎 {formatCompactCurrency(safeStats.largestWin, currency)}</span>
-                </motion.div>
-                <motion.div
+                </Motion.div>
+                <Motion.div
                   whileHover={{ x: 5 }}
                   className="flex justify-between items-center p-3 bg-linear-to-r from-orange-50 to-amber-50 rounded-xl border border-orange-200"
                 >
                   <span className="text-gray-700 font-medium">Largest Loss</span>
                   <span className="font-bold text-orange-600 text-lg">📊 {formatCompactCurrency(safeStats.largestLoss, currency)}</span>
-                </motion.div>
-                <motion.div
+                </Motion.div>
+                <Motion.div
                   whileHover={{ x: 5 }}
                   className="flex justify-between items-center p-3 bg-linear-to-r from-amber-50 to-yellow-50 rounded-xl border border-amber-200"
                 >
                   <span className="text-gray-700 font-medium">Win/Loss Ratio</span>
                   <span className="font-bold text-amber-600 text-lg">⚖️ {(safeStats.wins / Math.max(safeStats.losses, 1)).toFixed(2)}</span>
-                </motion.div>
-                <motion.div
+                </Motion.div>
+                <Motion.div
                   whileHover={{ x: 5 }}
                   className="flex justify-between items-center p-3 bg-linear-to-r from-emerald-50 to-green-50 rounded-xl border border-emerald-200"
                 >
                   <span className="text-gray-700 font-medium">Risk/Reward Ratio</span>
                   <span className="font-bold text-emerald-600 text-lg">🎯 1:{(safeStats.avgProfit / Math.max(Math.abs(safeStats.largestLoss), 1)).toFixed(1)}</span>
-                </motion.div>
+                </Motion.div>
               </div>
             </div>
-          </motion.div>
+          </Motion.div>
 
           {/* Performance Summary Banner */}
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
@@ -719,15 +719,15 @@ const Performance = () => {
                   Consistency is the key to long-term trading success. Keep analyzing and improving!
                 </p>
               </div>
-              <motion.button
+              <Motion.button
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
                 className="bg-white text-orange-600 px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all"
               >
                 📄 Export Report
-              </motion.button>
+              </Motion.button>
             </div>
-          </motion.div>
+          </Motion.div>
         </>
       )}
     </div>

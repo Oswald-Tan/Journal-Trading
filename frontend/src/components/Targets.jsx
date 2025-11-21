@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion as Motion } from 'framer-motion';
 import {
   ResponsiveContainer,
   LineChart,
@@ -155,7 +155,7 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
   };
 
   const MilestoneCard = ({ milestone }) => (
-    <motion.div
+    <Motion.div
       whileHover={{ scale: 1.02, y: -2 }}
       className={`p-4 rounded-2xl border-2 shadow-lg ${
         milestone.achieved
@@ -172,20 +172,20 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
           {milestone.label}
         </span>
         {milestone.achieved && (
-          <motion.span
+          <Motion.span
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             className="bg-emerald-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-md"
           >
             ✓ DONE
-          </motion.span>
+          </Motion.span>
         )}
       </div>
       <div className="text-sm text-orange-700 font-semibold mb-2">
         Target: {formatCompactCurrency(milestone.target, currency)}
       </div>
       <div className="mt-2 w-full bg-orange-200 rounded-full h-3 border border-orange-300">
-        <motion.div
+        <Motion.div
           initial={{ width: 0 }}
           animate={{
             width: `${Math.min(
@@ -199,7 +199,7 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
               ? "bg-emerald-500 shadow-lg"
               : "bg-orange-500 shadow-md"
           }`}
-        ></motion.div>
+        ></Motion.div>
       </div>
       <div
         className={`text-xs font-bold mt-2 ${
@@ -208,7 +208,7 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
       >
         {Math.round((currentBalance / milestone.target) * 100)}% Complete
       </div>
-    </motion.div>
+    </Motion.div>
   );
 
   // PERBAIKAN: Improved loading state dengan timeout fallback
@@ -227,7 +227,7 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
     return (
       <div className="space-y-6 min-h-screen">
         {/* Header */}
-        <motion.div
+        <Motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4"
@@ -240,24 +240,24 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
               Set and track your trading goals
             </p>
           </div>
-        </motion.div>
+        </Motion.div>
 
         {/* Empty State */}
-        <motion.div
+        <Motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className="bg-white/80 backdrop-blur-md rounded-3xl border border-orange-100 shadow-xl p-12 text-center"
         >
           <div className="max-w-md mx-auto">
-            <motion.div
+            <Motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
               className="text-6xl mb-4"
             >
               🎯
-            </motion.div>
+            </Motion.div>
             <h3 className="text-xl font-bold text-orange-900 mb-2">
               No Target Set
             </h3>
@@ -266,25 +266,25 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
               towards your financial goals.
             </p>
             {/* PERBAIKAN: Ganti onShowTargetModal dengan handleSetTarget */}
-            <motion.button
+            <Motion.button
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleSetTarget} // DIUBAH DARI onShowTargetModal
               className="bg-linear-to-r from-orange-500 to-amber-500 text-white px-8 py-4 rounded-xl transition-all duration-200 font-bold shadow-lg hover:shadow-xl"
             >
               Set Your First Target
-            </motion.button>
+            </Motion.button>
           </div>
-        </motion.div>
+        </Motion.div>
 
         {/* Quick Stats */}
-        <motion.div
+        <Motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           className="grid grid-cols-2 md:grid-cols-4 gap-4"
         >
-          <motion.div
+          <Motion.div
             whileHover={{ scale: 1.05 }}
             className="bg-linear-to-br from-orange-100 to-amber-100 border-2 border-orange-200 rounded-2xl px-6 py-4 shadow-lg text-center"
           >
@@ -294,8 +294,8 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
             <div className="font-bold text-2xl text-orange-900">
               {formatCompactCurrency(currentBalance, currency)}
             </div>
-          </motion.div>
-          <motion.div
+          </Motion.div>
+          <Motion.div
             whileHover={{ scale: 1.05 }}
             className={`bg-linear-to-br ${
               stats.netProfit >= 0
@@ -317,8 +317,8 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
             >
               {formatCompactCurrency(stats.netProfit || 0, currency)}
             </div>
-          </motion.div>
-          <motion.div
+          </Motion.div>
+          <Motion.div
             whileHover={{ scale: 1.05 }}
             className="bg-linear-to-br from-purple-100 to-violet-100 border-2 border-purple-200 rounded-2xl px-6 py-4 shadow-lg text-center"
           >
@@ -328,8 +328,8 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
             <div className="font-bold text-2xl text-purple-900">
               {stats.winRate || 0}%
             </div>
-          </motion.div>
-          <motion.div
+          </Motion.div>
+          <Motion.div
             whileHover={{ scale: 1.05 }}
             className="bg-linear-to-br from-amber-100 to-yellow-100 border-2 border-amber-200 rounded-2xl px-6 py-4 shadow-lg text-center"
           >
@@ -339,8 +339,8 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
             <div className="font-bold text-2xl text-amber-900">
               {stats.totalTrades || 0}
             </div>
-          </motion.div>
-        </motion.div>
+          </Motion.div>
+        </Motion.div>
       </div>
     );
   }
@@ -348,7 +348,7 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
   return (
     <div className="space-y-6 min-h-screen">
       {/* Header */}
-      <motion.div
+      <Motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4"
@@ -364,15 +364,15 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
         </div>
 
         {/* PERBAIKAN: Ganti onShowTargetModal dengan handleSetTarget */}
-        <motion.button
+        <Motion.button
           whileHover={{ scale: 1.05, y: -2 }}
           whileTap={{ scale: 0.95 }}
           onClick={handleSetTarget} // DIUBAH DARI onShowTargetModal
           className="bg-linear-to-r from-orange-500 to-amber-500 text-white px-6 py-3 rounded-xl transition-all duration-200 font-bold shadow-lg hover:shadow-xl"
         >
           Edit Target
-        </motion.button>
-      </motion.div>
+        </Motion.button>
+      </Motion.div>
 
       {/* Main Target Progress - MENGGUNAKAN KOMPONEN BARU */}
       <TargetProgressBanner
@@ -384,7 +384,7 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
       />
 
       {/* Progress Chart and Stats */}
-      <motion.div
+      <Motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
@@ -459,7 +459,7 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
               Performance
             </h3>
             <div className="space-y-3">
-              <motion.div
+              <Motion.div
                 whileHover={{ x: 5 }}
                 className="flex justify-between items-center p-3 bg-orange-50 rounded-xl"
               >
@@ -475,8 +475,8 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
                 >
                   {targetProgress?.onTrack ? "✓ On Track" : "⚠ Behind"}
                 </span>
-              </motion.div>
-              <motion.div
+              </Motion.div>
+              <Motion.div
                 whileHover={{ x: 5 }}
                 className="flex justify-between items-center p-3 bg-orange-50 rounded-xl"
               >
@@ -489,8 +489,8 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
                     currency
                   )}
                 </span>
-              </motion.div>
-              <motion.div
+              </Motion.div>
+              <Motion.div
                 whileHover={{ x: 5 }}
                 className="flex justify-between items-center p-3 bg-orange-50 rounded-xl"
               >
@@ -506,8 +506,8 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
                     currency
                   )}
                 </span>
-              </motion.div>
-              <motion.div
+              </Motion.div>
+              <Motion.div
                 whileHover={{ x: 5 }}
                 className="flex justify-between items-center p-3 bg-orange-50 rounded-xl"
               >
@@ -517,14 +517,14 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
                 <span className="font-bold text-orange-900">
                   {target.targetDate}
                 </span>
-              </motion.div>
+              </Motion.div>
             </div>
           </div>
         </div>
-      </motion.div>
+      </Motion.div>
 
       {/* Milestones */}
-      <motion.div
+      <Motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
@@ -543,16 +543,16 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
             ))}
           </div>
         </div>
-      </motion.div>
+      </Motion.div>
 
       {/* Additional Stats */}
-      <motion.div
+      <Motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
         className="grid grid-cols-2 md:grid-cols-4 gap-4"
       >
-        <motion.div
+        <Motion.div
           whileHover={{ scale: 1.05 }}
           className="bg-linear-to-br from-orange-100 to-amber-100 border-2 border-orange-200 rounded-2xl px-6 py-4 shadow-lg"
         >
@@ -563,8 +563,8 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
             {formatCompactCurrency(initialBalance, currency)}
           </div>
           <div className="text-xs text-orange-600 mt-1">Starting capital</div>
-        </motion.div>
-        <motion.div
+        </Motion.div>
+        <Motion.div
           whileHover={{ scale: 1.05 }}
           className="bg-linear-to-br from-purple-100 to-violet-100 border-2 border-purple-200 rounded-2xl px-6 py-4 shadow-lg"
         >
@@ -575,8 +575,8 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
             {formatCompactCurrency(currentBalance, currency)}
           </div>
           <div className="text-xs text-purple-600 mt-1">Present value</div>
-        </motion.div>
-        <motion.div
+        </Motion.div>
+        <Motion.div
           whileHover={{ scale: 1.05 }}
           className={`bg-linear-to-br ${
             stats.netProfit >= 0
@@ -605,8 +605,8 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
           >
             Net gain/loss
           </div>
-        </motion.div>
-        <motion.div
+        </Motion.div>
+        <Motion.div
           whileHover={{ scale: 1.05 }}
           className={`bg-linear-to-br ${
             Number(stats.roi) >= 0
@@ -635,8 +635,8 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
           >
             Return on investment
           </div>
-        </motion.div>
-      </motion.div>
+        </Motion.div>
+      </Motion.div>
     </div>
   );
 };

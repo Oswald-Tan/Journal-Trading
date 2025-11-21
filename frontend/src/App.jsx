@@ -12,6 +12,7 @@ import Targets from "./pages/Targets";
 import ProfileSettings from "./pages/ProfileSettings";
 import VerifyEmailPage from "./pages/auth/VerifyEmailPage";
 import UpgradePage from "./components/UpgradePage";
+import ForexCalculator from "./components/ForexCalculator";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route element={<TradingJournal />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/trades" element={<Trades />} />
+            <Route path="/calculator" element={<ForexCalculator />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/performance" element={<Performance />} />
             <Route path="/targets" element={<Targets />} />

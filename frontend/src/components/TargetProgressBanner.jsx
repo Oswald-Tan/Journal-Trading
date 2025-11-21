@@ -1,5 +1,5 @@
 import React from "react";
-import { motion } from "framer-motion";
+import { motion as Motion } from "framer-motion";
 import { formatCompactCurrency } from '../utils/currencyFormatter';
 
 const TargetProgressBanner = ({
@@ -20,7 +20,7 @@ const TargetProgressBanner = ({
   const daysRemainingSize = size === 'large' ? 'text-4xl' : 'text-3xl';
 
   return (
-    <motion.div
+    <Motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 }}
@@ -63,7 +63,7 @@ const TargetProgressBanner = ({
           </p>
         </div>
         {!targetProgress.useDailyTarget && (
-          <motion.div
+          <Motion.div
             whileHover={{ scale: 1.05 }}
             className="mt-4 md:mt-0 text-right bg-white/20 backdrop-blur-sm rounded-2xl px-6 py-4 border border-white/30"
           >
@@ -73,7 +73,7 @@ const TargetProgressBanner = ({
             <div className={`${daysRemainingSize} font-bold`}>
               {targetProgress.daysLeft}
             </div>
-          </motion.div>
+          </Motion.div>
         )}
       </div>
 
@@ -85,7 +85,7 @@ const TargetProgressBanner = ({
             <span>{formatCompactCurrency(target.targetBalance, currency)}</span>
           </div>
           <div className="w-full bg-white/30 rounded-full h-5 border-2 border-white/40">
-            <motion.div
+            <Motion.div
               initial={{ width: 0 }}
               animate={{ width: `${targetProgress.progress}%` }}
               transition={{ duration: 1, ease: "easeOut" }}
@@ -96,7 +96,7 @@ const TargetProgressBanner = ({
                   ? "bg-yellow-300 shadow-lg"
                   : "bg-white shadow-lg"
               }`}
-            ></motion.div>
+            ></Motion.div>
           </div>
         </div>
       )}
@@ -112,7 +112,7 @@ const TargetProgressBanner = ({
         {targetProgress.useDailyTarget ? (
           // STATS UNTUK TARGET HARIAN
           <>
-            <motion.div
+            <Motion.div
               whileHover={{ scale: 1.05 }}
               className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30"
             >
@@ -125,8 +125,8 @@ const TargetProgressBanner = ({
               <div className="text-sm opacity-90">
                 ({formatCompactCurrency(target.dailyTargetAmount, currency)})
               </div>
-            </motion.div>
-            <motion.div
+            </Motion.div>
+            <Motion.div
               whileHover={{ scale: 1.05 }}
               className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30"
             >
@@ -139,8 +139,8 @@ const TargetProgressBanner = ({
               <div className="text-sm opacity-90">
                 {targetProgress.daysPassed} hari
               </div>
-            </motion.div>
-            <motion.div
+            </Motion.div>
+            <Motion.div
               whileHover={{ scale: 1.05 }}
               className={`backdrop-blur-sm rounded-2xl p-4 border ${
                 targetProgress.onTrack
@@ -158,12 +158,12 @@ const TargetProgressBanner = ({
                   : targetProgress.progress.toFixed(1)}
                 %
               </div>
-            </motion.div>
+            </Motion.div>
           </>
         ) : (
           // STATS UNTUK TARGET DENGAN TANGGAL
           <>
-            <motion.div
+            <Motion.div
               whileHover={{ scale: 1.05 }}
               className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30"
             >
@@ -173,8 +173,8 @@ const TargetProgressBanner = ({
               <div className={`${valueSize} font-bold`}>
                 {targetProgress.progress.toFixed(1)}%
               </div>
-            </motion.div>
-            <motion.div
+            </Motion.div>
+            <Motion.div
               whileHover={{ scale: 1.05 }}
               className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30"
             >
@@ -184,8 +184,8 @@ const TargetProgressBanner = ({
               <div className={`${valueSize} font-bold`}>
                 {formatCompactCurrency(targetProgress.achieved, currency)}
               </div>
-            </motion.div>
-            <motion.div
+            </Motion.div>
+            <Motion.div
               whileHover={{ scale: 1.05 }}
               className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30"
             >
@@ -193,8 +193,8 @@ const TargetProgressBanner = ({
               <div className={`${valueSize} font-bold`}>
                 {formatCompactCurrency(targetProgress.totalNeeded, currency)}
               </div>
-            </motion.div>
-            <motion.div
+            </Motion.div>
+            <Motion.div
               whileHover={{ scale: 1.05 }}
               className={`backdrop-blur-sm rounded-2xl p-4 border ${
                 targetProgress.onTrack
@@ -208,11 +208,11 @@ const TargetProgressBanner = ({
               <div className={`${valueSize} font-bold`}>
                 {formatCompactCurrency(Math.round(targetProgress.neededDaily), currency)}
               </div>
-            </motion.div>
+            </Motion.div>
           </>
         )}
       </div>
-    </motion.div>
+    </Motion.div>
   );
 };
 

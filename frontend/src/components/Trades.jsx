@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion as Motion, AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
+import { getSubscription } from "../features/subscriptionSlice";
 import {
   getTrades,
   createTrade,
@@ -68,16 +69,38 @@ const Trades = ({
     (state) => state.balance
   );
 
+  // Ambil data subscription dari Redux store
+  const { subscription: reduxSubscription, isLoading: subscriptionLoading } = useSelector(
+    (state) => state.subscription
+  );
+
   const actualCurrentBalance = currentBalance || reduxBalance || 0;
 
-  // PERBAIKAN: Safe currentPlan dengan default values
+  // PERBAIKAN: Gabungkan subscription dari props dan Redux store
+  const actualSubscription = useMemo(() => {
+    return reduxSubscription || subscription || { plan: 'free' };
+  }, [reduxSubscription, subscription]);
+
+  // PERBAIKAN: Safe currentPlan dengan default values berdasarkan subscription
   const safeCurrentPlan = useMemo(
-    () => ({
-      name: currentPlan?.name || "Free",
-      maxEntries: currentPlan?.maxEntries || 30,
-      ...currentPlan,
-    }),
-    [currentPlan]
+    () => {
+      // Jika ada subscription data, gunakan untuk menentukan plan
+      if (actualSubscription.plan === 'pro' || actualSubscription.plan === 'elite' || actualSubscription.plan === 'lifetime') {
+        return {
+          name: actualSubscription.plan.charAt(0).toUpperCase() + actualSubscription.plan.slice(1),
+          maxEntries: 1000, // Unlimited essentially
+          ...currentPlan,
+        };
+      }
+      
+      // Default ke Free plan
+      return {
+        name: currentPlan?.name || "Free",
+        maxEntries: currentPlan?.maxEntries || 30,
+        ...currentPlan,
+      };
+    },
+    [currentPlan, actualSubscription]
   );
 
   // PERBAIKAN: Safe stats dengan default values
@@ -98,9 +121,10 @@ const Trades = ({
   const [originalData, setOriginalData] = useState(null);
   const [lastAction, setLastAction] = useState(null);
 
-  // Load trades on component mount
+  // Load trades dan subscription on component mount
   useEffect(() => {
     dispatch(getTrades());
+    dispatch(getSubscription());
   }, [dispatch]);
 
   // Handle messages
@@ -165,6 +189,7 @@ const Trades = ({
   // PERBAIKAN: Fungsi openAdd dengan redirect ke halaman upgrade
   const openAdd = () => {
     console.log("openAdd called - current plan:", safeCurrentPlan.name);
+    console.log("subscription plan:", actualSubscription.plan);
     console.log(
       "trades length:",
       trades.length,
@@ -196,10 +221,10 @@ const Trades = ({
       return;
     }
 
-    // PERBAIKAN: Redirect ke halaman upgrade jika melebihi batas
+    // PERBAIKAN: Redirect ke halaman upgrade jika melebihi batas dan plan free
     if (
       trades.length >= safeCurrentPlan.maxEntries &&
-      safeCurrentPlan.name === "Free"
+      actualSubscription.plan === 'free'
     ) {
       console.log("Redirecting to upgrade page from openAdd");
       navigate("/upgrade");
@@ -248,11 +273,11 @@ const Trades = ({
   const saveForm = async (e) => {
     e.preventDefault();
 
-    // PERBAIKAN: Redirect ke halaman upgrade jika melebihi batas
+    // PERBAIKAN: Redirect ke halaman upgrade jika melebihi batas dan plan free
     if (
       !editing &&
       trades.length >= safeCurrentPlan.maxEntries &&
-      safeCurrentPlan.name === "Free"
+      actualSubscription.plan === 'free'
     ) {
       console.log("Redirecting to upgrade page from saveForm");
       navigate("/upgrade");
@@ -476,10 +501,22 @@ const Trades = ({
     navigate("/upgrade");
   };
 
+  // PERBAIKAN: Tampilkan loading jika subscription masih loading
+  if (subscriptionLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-orange-700 font-semibold">Loading subscription data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 min-h-screen">
       {/* Header Section */}
-      <motion.div
+      <Motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4"
@@ -487,9 +524,20 @@ const Trades = ({
         <div>
           <h1 className="text-3xl font-bold text-orange-900 flex items-center gap-2">
             Trading Entries
+            {/* Tampilkan badge plan */}
+            {actualSubscription.plan !== 'free' && (
+              <span className="bg-linear-to-r from-green-500 to-emerald-600 text-white text-sm px-3 py-1 rounded-full font-semibold">
+                {actualSubscription.plan.toUpperCase()} PLAN
+              </span>
+            )}
           </h1>
           <p className="text-orange-700 mt-1">
             Manage your trading journal entries
+            {actualSubscription.plan !== 'free' && (
+              <span className="text-green-600 font-semibold ml-2">
+                • Unlimited entries
+              </span>
+            )}
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
@@ -502,7 +550,7 @@ const Trades = ({
               className="w-full pl-4 pr-4 py-3 border-2 border-orange-200 rounded-2xl focus:outline-none transition-all bg-white/80 backdrop-blur-sm shadow-md"
             />
           </div>
-          <motion.button
+          <Motion.button
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
             onClick={openAdd}
@@ -520,13 +568,13 @@ const Trades = ({
                 <span>New Entry</span>
               </>
             )}
-          </motion.button>
+          </Motion.button>
         </div>
-      </motion.div>
+      </Motion.div>
 
       {/* Message Display */}
       {localMessage && (
-        <motion.div
+        <Motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className={`p-4 rounded-2xl text-sm font-semibold ${
@@ -538,12 +586,12 @@ const Trades = ({
           }`}
         >
           {localMessage}
-        </motion.div>
+        </Motion.div>
       )}
 
-      {/* Plan Info Banner - DIPERBAIKI dengan handleUpgradeClick */}
-      {safeCurrentPlan.name === "Free" && (
-        <motion.div
+      {/* PERBAIKAN: Plan Info Banner - HANYA TAMPIL JIKA PLAN FREE */}
+      {actualSubscription.plan === 'free' && (
+        <Motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-linear-to-r from-amber-100 to-orange-100 border-2 border-amber-300 rounded-3xl p-5 shadow-lg"
@@ -558,20 +606,20 @@ const Trades = ({
                 {entriesLeft} entries remaining of {safeCurrentPlan.maxEntries}
               </p>
             </div>
-            <motion.button
+            <Motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleUpgradeClick}
               className="bg-linear-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white px-6 py-3 rounded-xl transition-all duration-200 text-sm font-bold shadow-lg"
             >
               🚀 Upgrade Now
-            </motion.button>
+            </Motion.button>
           </div>
-        </motion.div>
+        </Motion.div>
       )}
 
       {/* Stats Cards */}
-      <motion.div
+      <Motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
@@ -586,6 +634,11 @@ const Trades = ({
           </div>
           <div className="text-2xl font-bold text-orange-900">
             {trades.length}
+            {actualSubscription.plan === 'free' && (
+              <span className="text-sm text-orange-600 ml-1">
+                / {safeCurrentPlan.maxEntries}
+              </span>
+            )}
           </div>
         </div>
         <div className="bg-linear-to-br from-orange-100 to-amber-100 backdrop-blur-sm p-5 rounded-3xl border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300">
@@ -627,10 +680,10 @@ const Trades = ({
             {formatCompactCurrency(actualCurrentBalance, currency)}
           </div>
         </div>
-      </motion.div>
+      </Motion.div>
 
       {/* Entries Table */}
-      <motion.div
+      <Motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
@@ -663,7 +716,7 @@ const Trades = ({
             </thead>
             <tbody>
               {filtered.map((entry, index) => (
-                <motion.tr
+                <Motion.tr
                   key={entry.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -713,15 +766,15 @@ const Trades = ({
                   </td>
                   <td className="p-4 whitespace-nowrap">
                     <div className="flex space-x-2">
-                      <motion.button
+                      <Motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => openEdit(entry)}
                         className="text-orange-600 hover:text-orange-800 text-sm font-semibold hover:bg-orange-100 px-3 py-1.5 rounded-lg transition-all shadow-sm"
                       >
                         ✏️ Edit
-                      </motion.button>
-                      <motion.button
+                      </Motion.button>
+                      <Motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => removeItem(entry.id)}
@@ -729,10 +782,10 @@ const Trades = ({
                         className="text-rose-600 hover:text-rose-800 text-sm font-semibold hover:bg-rose-100 px-3 py-1.5 rounded-lg transition-all shadow-sm disabled:opacity-50"
                       >
                         🗑️ Hapus
-                      </motion.button>
+                      </Motion.button>
                     </div>
                   </td>
-                </motion.tr>
+                </Motion.tr>
               ))}
             </tbody>
           </table>
@@ -742,27 +795,27 @@ const Trades = ({
               <div className="text-gray-600 text-lg mb-4 font-medium">
                 No entries found
               </div>
-              <motion.button
+              <Motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={openAdd}
                 className="bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white px-6 py-3 rounded-xl transition-all shadow-lg font-semibold"
               >
                 ✨ Create Your First Entry
-              </motion.button>
+              </Motion.button>
             </div>
           )}
         </div>
-      </motion.div>
+      </Motion.div>
 
       {/* Action Buttons */}
-      <motion.div
+      <Motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
         className="flex flex-col sm:flex-row gap-3 justify-end"
       >
-        <motion.button
+        <Motion.button
           whileHover={{ scale: 1.02, y: -2 }}
           whileTap={{ scale: 0.98 }}
           onClick={exportCSV}
@@ -783,8 +836,8 @@ const Trades = ({
             ></path>
           </svg>
           <span>📥 Export CSV</span>
-        </motion.button>
-      </motion.div>
+        </Motion.button>
+      </Motion.div>
 
       {/* Form Modal */}
       <AnimatePresence>

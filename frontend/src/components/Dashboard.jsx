@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { motion as Motion } from 'framer-motion';
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
@@ -146,7 +146,7 @@ const Dashboard = ({
   return (
     <div className="space-y-6 min-h-screen">
       {/* Header */}
-      <motion.div
+      <Motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4"
@@ -157,7 +157,7 @@ const Dashboard = ({
           </h1>
           <p className="text-orange-700 mt-1">Your complete trading overview</p>
         </div>
-      </motion.div>
+      </Motion.div>
 
       {/* PERBAIKAN: Target Progress Banner yang konsisten dengan halaman Targets */}
       <TargetProgressBanner
@@ -169,7 +169,7 @@ const Dashboard = ({
       />
 
       {/* Quick Stats Grid */}
-      <motion.div
+      <Motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
@@ -209,10 +209,10 @@ const Dashboard = ({
           bg="bg-linear-to-br from-amber-100 to-yellow-100 border-amber-200"
           icon="💵"
         />
-      </motion.div>
+      </Motion.div>
 
       {/* Charts Row */}
-      <motion.div
+      <Motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
@@ -390,10 +390,10 @@ const Dashboard = ({
             </ResponsiveContainer>
           </div>
         </div>
-      </motion.div>
+      </Motion.div>
 
       {/* Bottom Section */}
-      <motion.div
+      <Motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
@@ -407,7 +407,7 @@ const Dashboard = ({
           </h3>
           <div className="space-y-3">
             {recentTrades.map((trade, index) => (
-              <motion.div
+              <Motion.div
                 key={trade.id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -416,14 +416,14 @@ const Dashboard = ({
                 className="flex items-center justify-between p-3 bg-orange-50 rounded-xl hover:bg-orange-100 transition-all duration-200 border border-orange-200"
               >
                 <div className="flex items-center space-x-3">
-                  <motion.div
+                  <Motion.div
                     whileHover={{ scale: 1.2 }}
                     className={`w-3 h-3 rounded-full ${
                       trade.result?.toLowerCase().includes("win")
                         ? "bg-emerald-500"
                         : "bg-rose-500"
                     }`}
-                  ></motion.div>
+                  ></Motion.div>
                   <div>
                     <div className="font-bold text-sm text-orange-900">
                       {trade.instrument}
@@ -438,18 +438,18 @@ const Dashboard = ({
                 >
                   {formatCompactCurrency(trade.profit, currency)}
                 </div>
-              </motion.div>
+              </Motion.div>
             ))}
             {recentTrades.length === 0 && (
               <div className="text-center py-8 text-orange-600">
-                <motion.div
+                <Motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: "spring", stiffness: 200 }}
                   className="text-4xl mb-2"
                 >
                   📊
-                </motion.div>
+                </Motion.div>
                 <p className="font-semibold">No recent trades</p>
                 <p className="text-sm mt-1">
                   Start adding trades to see them here
@@ -466,7 +466,7 @@ const Dashboard = ({
             Account Summary
           </h3>
           <div className="space-y-3">
-            <motion.div
+            <Motion.div
               whileHover={{ x: 5 }}
               className="flex justify-between items-center py-3 px-3 bg-orange-50 rounded-xl border-b border-orange-200"
             >
@@ -476,8 +476,8 @@ const Dashboard = ({
               <span className="font-bold text-orange-900">
                 {formatCompactCurrency(actualInitialBalance, currency)}
               </span>
-            </motion.div>
-            <motion.div
+            </Motion.div>
+            <Motion.div
               whileHover={{ x: 5 }}
               className="flex justify-between items-center py-3 px-3 bg-orange-50 rounded-xl border-b border-orange-200"
             >
@@ -487,8 +487,8 @@ const Dashboard = ({
               <span className="font-bold text-orange-900">
                 {formatCompactCurrency(safeStats.currentBalance, currency)}
               </span>
-            </motion.div>
-            <motion.div
+            </Motion.div>
+            <Motion.div
               whileHover={{ x: 5 }}
               className="flex justify-between items-center py-3 px-3 bg-orange-50 rounded-xl border-b border-orange-200"
             >
@@ -504,8 +504,8 @@ const Dashboard = ({
               >
                 {formatCompactCurrency(safeStats.netProfit, currency)}
               </span>
-            </motion.div>
-            <motion.div
+            </Motion.div>
+            <Motion.div
               whileHover={{ x: 5 }}
               className="flex justify-between items-center py-3 px-3 bg-orange-50 rounded-xl"
             >
@@ -519,15 +519,15 @@ const Dashboard = ({
               >
                 {safeStats.roi}%
               </span>
-            </motion.div>
-            <motion.button
+            </Motion.div>
+            <Motion.button
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleShowBalanceModal}
               className="w-full mt-4 bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white py-3 rounded-xl transition-all duration-200 font-bold shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
             >
               💳 Update Deposit
-            </motion.button>
+            </Motion.button>
           </div>
         </div>
 
@@ -538,7 +538,7 @@ const Dashboard = ({
             Quick Actions
           </h3>
           <div className="space-y-3">
-            <motion.button
+            <Motion.button
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => navigate("/targets")}
@@ -555,9 +555,9 @@ const Dashboard = ({
                     : "Set your financial targets"}
                 </div>
               </div>
-            </motion.button>
+            </Motion.button>
 
-            <motion.button
+            <Motion.button
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => navigate("/trades")}
@@ -572,9 +572,9 @@ const Dashboard = ({
                   Record your latest trade
                 </div>
               </div>
-            </motion.button>
+            </Motion.button>
 
-            <motion.button
+            <Motion.button
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => navigate("/analytics")}
@@ -589,13 +589,13 @@ const Dashboard = ({
                   Deep dive into your performance
                 </div>
               </div>
-            </motion.button>
+            </Motion.button>
           </div>
         </div>
-      </motion.div>
+      </Motion.div>
 
       {/* Motivational Banner */}
-      <motion.div
+      <Motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
@@ -611,16 +611,16 @@ const Dashboard = ({
               Consistency and discipline are keys to long-term success.
             </p>
           </div>
-          <motion.button
+          <Motion.button
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => navigate("/analytics")}
             className="cursor-pointer bg-white text-orange-600 px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all"
           >
             📈 View Analytics
-          </motion.button>
+          </Motion.button>
         </div>
-      </motion.div>
+      </Motion.div>
 
       {showBalanceModal && (
         <BalanceModal setShowBalanceModal={handleCloseBalanceModal} />

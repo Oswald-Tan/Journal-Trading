@@ -1,8 +1,8 @@
 import React from "react";
-import { motion } from "framer-motion";
+import { motion as Motion } from 'framer-motion';
 import { useDispatch, useSelector } from "react-redux";
-import { updateTarget, getTargetProgress, resetLoading  } from "../../features/targetSlice";
-import { formatCurrency, formatCompactCurrency } from '../../utils/currencyFormatter';
+import { updateTarget, resetLoading  } from "../../features/targetSlice";
+import { formatCompactCurrency } from '../../utils/currencyFormatter';
 
 const TargetModal = ({ setShowTargetModal }) => {
   const dispatch = useDispatch();
@@ -88,14 +88,14 @@ const TargetModal = ({ setShowTargetModal }) => {
   };
 
   return (
-    <motion.div
+    <Motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
       onClick={handleClose}
     >
-      <motion.div
+      <Motion.div
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -108,7 +108,7 @@ const TargetModal = ({ setShowTargetModal }) => {
               <span className="text-3xl">🎯</span>
               Set Trading Target
             </h2>
-            <motion.button
+            <Motion.button
               whileHover={{ scale: 1.1, rotate: 90 }}
               whileTap={{ scale: 0.9 }}
               onClick={handleClose}
@@ -127,7 +127,7 @@ const TargetModal = ({ setShowTargetModal }) => {
                   d="M6 18L18 6M6 6l12 12"
                 ></path>
               </svg>
-            </motion.button>
+            </Motion.button>
           </div>
 
           <div className="space-y-4">
@@ -166,7 +166,7 @@ const TargetModal = ({ setShowTargetModal }) => {
                         name="targetType"
                         checked={!tempTarget.useDailyTarget}
                         onChange={() => handleTargetTypeChange(false)}
-                        className="text-orange-500 focus:ring-orange-500"
+                        className="text-orange-500"
                       />
                       <span className="text-sm font-semibold text-orange-900">
                         Target dengan Tanggal
@@ -178,7 +178,7 @@ const TargetModal = ({ setShowTargetModal }) => {
                         name="targetType"
                         checked={tempTarget.useDailyTarget}
                         onChange={() => handleTargetTypeChange(true)}
-                        className="text-orange-500 focus:ring-orange-500"
+                        className="text-orange-500"
                       />
                       <span className="text-sm font-semibold text-orange-900">
                         Target Harian (Tanpa Tanggal)
@@ -204,7 +204,7 @@ const TargetModal = ({ setShowTargetModal }) => {
                             targetBalance: Number(e.target.value) || 0,
                           })
                         }
-                        className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-1 focus:outline-none focus:ring-orange-500 focus:border-orange-500 transition-all font-semibold text-orange-900"
+                        className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:outline-none focus:border-orange-500 transition-all font-semibold text-orange-900"
                         placeholder="Contoh: 10000000 untuk 10 juta"
                         min="0"
                         step="1000"
@@ -225,7 +225,7 @@ const TargetModal = ({ setShowTargetModal }) => {
                             targetDate: e.target.value,
                           })
                         }
-                        className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-1 focus:outline-none focus:ring-orange-500 focus:border-orange-500 transition-all font-semibold text-orange-900"
+                        className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:outline-none focus:border-orange-500 transition-all font-semibold text-orange-900"
                         min={new Date().toISOString().split("T")[0]}
                       />
                     </div>
@@ -242,7 +242,7 @@ const TargetModal = ({ setShowTargetModal }) => {
                       onChange={(e) =>
                         handleDailyPercentageChange(e.target.value)
                       }
-                      className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-1 focus:outline-none focus:ring-orange-500 focus:border-orange-500 transition-all font-semibold text-orange-900"
+                      className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:outline-none focus:border-orange-500 transition-all font-semibold text-orange-900"
                       placeholder="Contoh: 20 untuk 20% per hari"
                       min="0"
                       max="1000"
@@ -271,7 +271,7 @@ const TargetModal = ({ setShowTargetModal }) => {
                         description: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-1 focus:outline-none focus:ring-orange-500 focus:border-orange-500 transition-all font-semibold text-orange-900"
+                    className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:outline-none focus:border-orange-500 transition-all font-semibold text-orange-900"
                     placeholder={
                       tempTarget.useDailyTarget
                         ? "Contoh: Target profit 20% per hari"
@@ -349,7 +349,7 @@ const TargetModal = ({ setShowTargetModal }) => {
             )}
 
             <div className="flex justify-end space-x-3 pt-4">
-              <motion.button
+              <Motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleClose}
@@ -357,8 +357,8 @@ const TargetModal = ({ setShowTargetModal }) => {
                 disabled={isLoading}
               >
                 Batal
-              </motion.button>
-              <motion.button
+              </Motion.button>
+              <Motion.button
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleUpdateTarget}
@@ -375,12 +375,12 @@ const TargetModal = ({ setShowTargetModal }) => {
                 ) : (
                   "Nonaktifkan"
                 )}
-              </motion.button>
+              </Motion.button>
             </div>
           </div>
         </div>
-      </motion.div>
-    </motion.div>
+      </Motion.div>
+    </Motion.div>
   );
 };
 

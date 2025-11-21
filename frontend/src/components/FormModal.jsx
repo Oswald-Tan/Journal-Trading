@@ -1,5 +1,5 @@
 import React from "react";
-import { motion } from "framer-motion";
+import { motion as Motion } from 'framer-motion';
 import { formatCurrency } from "../utils/currencyFormatter";
 
 const FormModal = ({
@@ -122,14 +122,14 @@ const FormModal = ({
   };
 
   return (
-    <motion.div
+    <Motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
       onClick={() => closeForm("cancel")}
     >
-      <motion.div
+      <Motion.div
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -143,7 +143,7 @@ const FormModal = ({
               <span className="text-3xl">{editing ? "✏️" : "✨"}</span>
               {editing ? "Edit Entri" : "Entri Baru"}
             </h2>
-            <motion.button
+            <Motion.button
               whileHover={{ scale: 1.1, rotate: 90 }}
               whileTap={{ scale: 0.9 }}
               onClick={() => closeForm("cancel")}
@@ -163,7 +163,7 @@ const FormModal = ({
                   d="M6 18L18 6M6 6l12 12"
                 ></path>
               </svg>
-            </motion.button>
+            </Motion.button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -224,10 +224,10 @@ const FormModal = ({
               },
               { label: "🎲 Strategy", type: "text", key: "strategy" },
               { label: "🌍 Kondisi Market", type: "text", key: "market" },
-              { label: "😊 Emosi Sebelum", type: "text", key: "emotionBefore" },
-              { label: "😌 Emosi Sesudah", type: "text", key: "emotionAfter" },
+              { label: "😊 Emosi Sebelum", type: "text", key: "eMotionBefore" },
+              { label: "😌 Emosi Sesudah", type: "text", key: "eMotionAfter" },
             ].map((field) => (
-              <motion.div
+              <Motion.div
                 key={field.key}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -244,7 +244,7 @@ const FormModal = ({
                         ? field.customHandler(e.target.value)
                         : handleInputChange(field.key, e.target.value)
                     }
-                    className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-1 focus:outline-none focus:ring-orange-500 focus:border-orange-500 transition-all bg-white shadow-sm font-medium text-gray-700"
+                    className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:outline-none focus:border-orange-500 transition-all bg-white shadow-sm font-medium text-gray-700"
                   >
                     {field.options.map((opt) => (
                       <option key={opt} value={opt}>
@@ -263,10 +263,10 @@ const FormModal = ({
                     }
                     step={field.step}
                     min={field.min}
-                    className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-1 focus:outline-none focus:ring-orange-500 focus:border-orange-500 transition-all bg-white shadow-sm font-medium text-gray-700"
+                    className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:outline-none focus:border-orange-500 transition-all bg-white shadow-sm font-medium text-gray-700"
                   />
                 )}
-              </motion.div>
+              </Motion.div>
             ))}
             <div className="lg:col-span-3">
               <label className="block text-sm font-bold text-orange-900 mb-2">
@@ -276,7 +276,7 @@ const FormModal = ({
                 value={form.notes || ""}
                 onChange={(e) => handleInputChange("notes", e.target.value)}
                 rows={4}
-                className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-1 focus:outline-none focus:ring-orange-500 focus:border-orange-500 transition-all bg-white shadow-sm font-medium text-gray-700"
+                className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:outline-none focus:border-orange-500 transition-all bg-white shadow-sm font-medium text-gray-700"
                 placeholder="Tulis catatan trading Anda di sini..."
               />
             </div>
@@ -319,7 +319,7 @@ const FormModal = ({
           </div>
 
           <div className="flex justify-end gap-3 mt-8 pt-6 border-t-2 border-orange-200">
-            <motion.button
+            <Motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               type="button"
@@ -328,8 +328,8 @@ const FormModal = ({
               className="px-6 py-3 border-2 border-orange-300 bg-white rounded-xl text-orange-700 hover:bg-orange-50 transition-all font-semibold shadow-md disabled:opacity-50"
             >
               ❌ Batal
-            </motion.button>
-            <motion.button
+            </Motion.button>
+            <Motion.button
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
               type="submit"
@@ -344,11 +344,11 @@ const FormModal = ({
               ) : (
                 "💾 Simpan Entri"
               )}
-            </motion.button>
+            </Motion.button>
           </div>
         </form>
-      </motion.div>
-    </motion.div>
+      </Motion.div>
+    </Motion.div>
   );
 };
 

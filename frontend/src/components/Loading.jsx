@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 
 const Loading = ({ 
   message = "Loading Data...", 
@@ -60,7 +60,7 @@ const Loading = ({
 
   // Spinner type loading
   const renderSpinner = () => (
-    <motion.div
+    <Motion.div
       initial={{ scale: 0.8, rotate: -180 }}
       animate={{ scale: 1, rotate: 0 }}
       transition={{ 
@@ -69,14 +69,14 @@ const Loading = ({
         damping: 20
       }}
       className={`animate-spin rounded-full border-b-2 ${border} ${spinner}`}
-    ></motion.div>
+    ></Motion.div>
   );
 
   // Dots type loading
   const renderDots = () => (
     <div className="flex space-x-2">
       {[0, 1, 2].map((index) => (
-        <motion.div
+        <Motion.div
           key={index}
           className={`rounded-full ${bg} ${dots}`}
           animate={{
@@ -94,7 +94,7 @@ const Loading = ({
   );
 
   return (
-    <motion.div 
+    <Motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -103,27 +103,27 @@ const Loading = ({
       {type === 'spinner' ? renderSpinner() : renderDots()}
       
       <div className="text-center space-y-2">
-        <motion.p 
+        <Motion.p 
           initial={{ y: 10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2 }}
           className={`font-semibold ${primary} ${text}`}
         >
           {message}
-        </motion.p>
+        </Motion.p>
         
         {subMessage && (
-          <motion.p 
+          <Motion.p 
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3 }}
             className={`${secondary} ${subText}`}
           >
             {subMessage}
-          </motion.p>
+          </Motion.p>
         )}
       </div>
-    </motion.div>
+    </Motion.div>
   );
 };
 

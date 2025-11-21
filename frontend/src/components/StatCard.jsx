@@ -1,8 +1,8 @@
 import React from "react";
-import { motion } from "framer-motion";
+import { motion as Motion } from "framer-motion";
 
 const StatCard = ({ label, value, color, trend, bg, icon }) => (
-  <motion.div 
+  <Motion.div 
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     whileHover={{ scale: 1.05, y: -2 }}
@@ -16,7 +16,7 @@ const StatCard = ({ label, value, color, trend, bg, icon }) => (
     {trend && (
       <div className="text-xs font-medium opacity-70">{trend}</div>
     )}
-  </motion.div>
+  </Motion.div>
 );
 
 export default StatCard;

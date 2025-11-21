@@ -1,5 +1,4 @@
-import React from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion as Motion, AnimatePresence  } from 'framer-motion';
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { formatCompactCurrency } from '../utils/currencyFormatter';
@@ -17,8 +16,6 @@ const Header = ({
   target,
   targetProgress,
   user,
-  currentPlan,
-  subscription,
   onShowLanding,
   onShowBalanceModal,
   onShowTargetModal,
@@ -29,10 +26,24 @@ const Header = ({
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  // Ambil data subscription dari Redux store
+  const { subscription: reduxSubscription } = useSelector((state) => state.subscription);
+
+  // Gabungkan subscription dari props dan Redux store, dengan fallback ke free
+  const actualSubscription = reduxSubscription || { plan: 'free' };
+
+  // Tentukan currentPlan berdasarkan subscription
+  const currentPlan = {
+    name: actualSubscription.plan ? 
+      actualSubscription.plan.charAt(0).toUpperCase() + actualSubscription.plan.slice(1) : 
+      'Free'
+  };
+
   // Navigation tabs dengan Link
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', path: '/dashboard' },
     { id: 'trades', label: 'Trades', path: '/trades' },
+    { id: 'calculator', label: 'Calculator', path: '/calculator' },
     { id: 'analytics', label: 'Analytics', path: '/analytics' },
     { id: 'performance', label: 'Performance', path: '/performance' },
     { id: 'targets', label: 'Targets', path: '/targets' },
@@ -63,7 +74,7 @@ const Header = ({
         <div className="flex justify-between items-center h-16">
           {/* Logo dan Brand */}
           <div className="flex items-center space-x-4">
-            <motion.button 
+            <Motion.button 
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onShowLanding}
@@ -71,12 +82,12 @@ const Header = ({
             >
               <img src={GradientLogo} alt="Logo" className="w-12" />
               PipsDiary
-            </motion.button>
+            </Motion.button>
             
             {/* Desktop Navigation dengan Link */}
             <nav className="hidden md:flex space-x-2">
               {tabs.map(tab => (
-                <motion.div
+                <Motion.div
                   key={tab.id}
                   whileHover={{ y: -2 }}
                   whileTap={{ scale: 0.95 }}
@@ -91,7 +102,7 @@ const Header = ({
                   >
                     <span>{tab.label}</span>
                   </Link>
-                </motion.div>
+                </Motion.div>
               ))}
             </nav>
           </div>
@@ -101,7 +112,7 @@ const Header = ({
             {/* Quick Stats */}
             <div className="flex items-center space-x-4">
               {/* Balance Display */}
-              <motion.div 
+              <Motion.div 
                 whileHover={{ scale: 1.05, y: -2 }}
                 onClick={onShowBalanceModal}
                 className="cursor-pointer"
@@ -110,10 +121,10 @@ const Header = ({
                 <div className="font-bold text-orange-900 text-lg">
                   {formatCompactCurrency(stats.currentBalance, currency)}
                 </div>
-              </motion.div>
+              </Motion.div>
 
               {target.enabled && targetProgress && (
-                <motion.div 
+                <Motion.div 
                   whileHover={{ scale: 1.05, y: -2 }}
                   onClick={onShowTargetModal}
                   className="cursor-pointer"
@@ -122,25 +133,27 @@ const Header = ({
                   <div className="font-bold text-emerald-900 text-lg">
                     {targetProgress.progress.toFixed(1)}%
                   </div>
-                </motion.div>
+                </Motion.div>
               )}
             </div>
 
-            {/* Subscription Status */}
-            <div>
-              <motion.button 
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => navigate("/upgrade")}
-                className="cursor-pointer bg-linear-to-r from-orange-500 to-amber-500 text-white px-5 py-2 rounded-xl hover:shadow-lg transition-all duration-200 font-bold border-2 border-orange-400/50"
-              >
-                🚀 Upgrade
-              </motion.button>
-            </div>
+            {/* Subscription Status - Hanya tampilkan upgrade button untuk plan free */}
+            {actualSubscription.plan === "free" && (
+              <div>
+                <Motion.button 
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate("/upgrade")}
+                  className="cursor-pointer bg-linear-to-r from-orange-500 to-amber-500 text-white px-5 py-2 rounded-xl hover:shadow-lg transition-all duration-200 font-bold border-2 border-orange-400/50"
+                >
+                  🚀 Upgrade
+                </Motion.button>
+              </div>
+            )}
 
             {/* User Profile Dropdown */}
             <div className="relative user-menu-container">
-              <motion.button
+              <Motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowUserMenu(!showUserMenu)}
@@ -149,12 +162,12 @@ const Header = ({
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
-              </motion.button>
+              </Motion.button>
 
               {/* User Menu Popup */}
               <AnimatePresence>
                 {showUserMenu && (
-                  <motion.div
+                  <Motion.div
                     initial={{ opacity: 0, scale: 0.95, y: -10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: -10 }}
@@ -182,7 +195,7 @@ const Header = ({
                     {/* Menu Items */}
                     <div className="p-2 space-y-1">
                       {/* Profile Menu */}
-                      <motion.button
+                      <Motion.button
                         whileHover={{ x: 5, backgroundColor: "rgba(249, 115, 22, 0.1)" }}
                         className="w-full text-left px-4 py-3 rounded-xl text-sm text-orange-900 hover:text-orange-700 transition-all duration-200 flex items-center space-x-3"
                         onClick={onProfileSettings}
@@ -191,7 +204,7 @@ const Header = ({
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
                         <span>Profile Settings</span>
-                      </motion.button>
+                      </Motion.button>
 
                       {/* Balance Info in Menu */}
                       <div className="px-4 py-3 rounded-xl bg-linear-to-r from-orange-50 to-amber-100 border border-orange-200">
@@ -206,12 +219,12 @@ const Header = ({
                         </div>
                       </div>
 
-                      {/* Plan Info */}
+                      {/* Plan Info - Data dari subscription slice */}
                       <div className="px-4 py-3 rounded-xl bg-linear-to-r from-gray-50 to-gray-100 border border-gray-200">
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs font-bold text-gray-700">Current Plan</span>
                           <span className={`text-xs font-bold px-2 py-1 rounded-full ${
-                            subscription.plan === "free" 
+                            actualSubscription.plan === "free" 
                               ? "bg-gray-200 text-gray-700" 
                               : "bg-emerald-200 text-emerald-700"
                           }`}>
@@ -219,15 +232,15 @@ const Header = ({
                           </span>
                         </div>
                         <div className="text-xs text-gray-600">
-                          {subscription.plan === "free" 
+                          {actualSubscription.plan === "free" 
                             ? "Upgrade for advanced features" 
                             : "Premium features active"}
                         </div>
                       </div>
 
-                      {/* Upgrade Button in Menu */}
-                      {subscription.plan === "free" && (
-                        <motion.button
+                      {/* Upgrade Button in Menu - Hanya untuk plan free */}
+                      {actualSubscription.plan === "free" && (
+                        <Motion.button
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           className="w-full px-4 py-3 rounded-xl bg-linear-to-r from-orange-500 to-amber-500 text-white text-sm font-bold hover:shadow-lg transition-all duration-200 flex items-center justify-center space-x-2"
@@ -237,11 +250,11 @@ const Header = ({
                           }}
                         >
                           <span>🚀 Upgrade Plan</span>
-                        </motion.button>
+                        </Motion.button>
                       )}
 
                       {/* Update Balance Button */}
-                      <motion.button
+                      <Motion.button
                         whileHover={{ x: 5, backgroundColor: "rgba(34, 197, 94, 0.1)" }}
                         className="w-full text-left px-4 py-3 rounded-xl text-sm text-emerald-600 hover:text-emerald-700 transition-all duration-200 flex items-center space-x-3"
                         onClick={() => {
@@ -253,13 +266,13 @@ const Header = ({
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <span>Update Balance</span>
-                      </motion.button>
+                      </Motion.button>
 
                       {/* Divider */}
                       <div className="border-t border-orange-200 my-2"></div>
 
                       {/* Logout Button - MENGGUNAKAN handleLogout LOKAL */}
-                      <motion.button
+                      <Motion.button
                         whileHover={{ x: 5, backgroundColor: "rgba(239, 68, 68, 0.1)" }}
                         className="w-full text-left px-4 py-3 rounded-xl text-sm text-red-600 hover:text-red-700 transition-all duration-200 flex items-center space-x-3"
                         onClick={() => {
@@ -271,9 +284,9 @@ const Header = ({
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>
                         <span>Logout</span>
-                      </motion.button>
+                      </Motion.button>
                     </div>
-                  </motion.div>
+                  </Motion.div>
                 )}
               </AnimatePresence>
             </div>
@@ -294,7 +307,7 @@ const Header = ({
       {/* Mobile Navigation dengan Link */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          <motion.nav 
+          <Motion.nav 
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
@@ -302,7 +315,7 @@ const Header = ({
           >
             <div className="px-4 py-3 space-y-2">
               {tabs.map(tab => (
-                <motion.div
+                <Motion.div
                   key={tab.id}
                   whileHover={{ x: 5 }}
                   whileTap={{ scale: 0.98 }}
@@ -318,7 +331,7 @@ const Header = ({
                   >
                     <span>{tab.label}</span>
                   </Link>
-                </motion.div>
+                </Motion.div>
               ))}
               
               {/* Mobile User Info */}
@@ -332,6 +345,7 @@ const Header = ({
                   <div className="flex-1">
                     <p className="font-bold text-orange-900">{user?.name || 'User'}</p>
                     <p className="text-sm text-orange-700">{user?.email || 'user@example.com'}</p>
+                    {/* Plan info dari subscription slice */}
                     <p className="text-xs text-orange-600 mt-1">{currentPlan.name} Plan</p>
                   </div>
                 </div>
@@ -350,8 +364,23 @@ const Header = ({
                   </div>
                 </div>
 
+                {/* Mobile Upgrade Button - Hanya untuk plan free */}
+                {actualSubscription.plan === "free" && (
+                  <Motion.button
+                    whileHover={{ x: 5 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onShowUpgradeModal();
+                    }}
+                    className="w-full mb-3 px-4 py-3 rounded-xl bg-linear-to-r from-orange-500 to-amber-500 text-white font-bold flex items-center justify-center space-x-2 border-2 border-orange-400"
+                  >
+                    <span>🚀 Upgrade Plan</span>
+                  </Motion.button>
+                )}
+
                 {/* Mobile Update Balance Button */}
-                <motion.button
+                <Motion.button
                   whileHover={{ x: 5 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
@@ -364,10 +393,10 @@ const Header = ({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <span>Update Balance</span>
-                </motion.button>
+                </Motion.button>
 
                 {/* Mobile Logout Button - MENGGUNAKAN handleLogout LOKAL */}
-                <motion.button
+                <Motion.button
                   whileHover={{ x: 5 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
@@ -380,10 +409,10 @@ const Header = ({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                   </svg>
                   <span>Logout</span>
-                </motion.button>
+                </Motion.button>
               </div>
             </div>
-          </motion.nav>
+          </Motion.nav>
         )}
       </AnimatePresence>
     </header>

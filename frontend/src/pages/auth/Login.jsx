@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from "react-router-dom";
 import {
   LoginUser,
@@ -97,7 +97,7 @@ const LoginPage = () => {
     <div className="min-h-screen bg-linear-to-br from-orange-50 via-amber-50 to-yellow-50 overflow-hidden relative">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <motion.div
+        <Motion.div
           animate={{
             scale: [1, 1.1, 1],
             opacity: [0.3, 0.5, 0.3],
@@ -109,7 +109,7 @@ const LoginPage = () => {
           }}
           className="absolute -top-40 -right-40 w-80 h-80 bg-orange-400/20 rounded-full blur-3xl"
         />
-        <motion.div
+        <Motion.div
           animate={{
             scale: [1.1, 1, 1.1],
             opacity: [0.4, 0.6, 0.4],
@@ -127,14 +127,14 @@ const LoginPage = () => {
       {/* Verification Modal */}
       <AnimatePresence>
         {showVerificationModal && (
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-50"
             onClick={handleCloseModal}
           >
-            <motion.div
+            <Motion.div
               initial={{ scale: 0.8, opacity: 0, y: 50 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.8, opacity: 0, y: 50 }}
@@ -144,14 +144,14 @@ const LoginPage = () => {
             >
               {/* Modal Header */}
               <div className="text-center mb-6">
-                <motion.div
+                <Motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
                   className="inline-flex items-center justify-center w-20 h-20 bg-yellow-100 rounded-2xl mb-4"
                 >
                   <span className="text-3xl">📧</span>
-                </motion.div>
+                </Motion.div>
 
                 <h2 className="text-2xl font-bold bg-linear-to-r from-orange-600 to-amber-700 bg-clip-text text-transparent mb-2">
                   Email Verification Required
@@ -200,30 +200,30 @@ const LoginPage = () => {
 
                 {/* Success Message dari resend verification */}
                 {message && (
-                  <motion.div
+                  <Motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-2xl text-sm"
                   >
                     ✅ {message}
-                  </motion.div>
+                  </Motion.div>
                 )}
 
                 {/* Error Message dari resend verification */}
                 {error && error.includes("verification") && (
-                  <motion.div
+                  <Motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl text-sm"
                   >
                     ❌ {error}
-                  </motion.div>
+                  </Motion.div>
                 )}
               </div>
 
               {/* Modal Actions */}
               <div className="flex flex-col space-y-3 mt-6">
-                <motion.button
+                <Motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleResendVerification}
@@ -272,16 +272,16 @@ const LoginPage = () => {
                       </svg>
                     </>
                   )}
-                </motion.button>
+                </Motion.button>
 
-                <motion.button
+                <Motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleCloseModal}
                   className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-4 rounded-2xl transition-all duration-300"
                 >
                   Close
-                </motion.button>
+                </Motion.button>
               </div>
 
               {/* Help Text */}
@@ -297,15 +297,15 @@ const LoginPage = () => {
                   </Link>
                 </p>
               </div>
-            </motion.div>
-          </motion.div>
+            </Motion.div>
+          </Motion.div>
         )}
       </AnimatePresence>
 
       {/* Main Content */}
       <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-md w-full">
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
@@ -313,14 +313,14 @@ const LoginPage = () => {
           >
             {/* Header */}
             <div className="text-center mb-8">
-              <motion.div
+              <Motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
                 className="inline-flex items-center justify-center w-16 h-16 bg-linear-to-r from-orange-500 to-amber-500 rounded-2xl shadow-lg mb-4"
               >
                 <span className="text-2xl text-white">🔐</span>
-              </motion.div>
+              </Motion.div>
 
               <h2 className="text-3xl font-bold bg-linear-to-r from-orange-600 to-amber-700 bg-clip-text text-transparent mb-2">
                 Welcome Back
@@ -334,13 +334,13 @@ const LoginPage = () => {
               !error.includes("Please verify your email") &&
               !error.includes("verification") &&
               !error.includes("pending") && (
-                <motion.div
+                <Motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl mb-6 text-sm"
                 >
                   {error}
-                </motion.div>
+                </Motion.div>
               )}
 
             {/* Login Form */}
@@ -367,7 +367,7 @@ const LoginPage = () => {
                     onChange={handleChange}
                     onFocus={() => handleFocus("email")}
                     onBlur={() => handleBlur("email")}
-                    className="w-full px-4 py-3 bg-orange-50 border border-orange-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-300 text-orange-900 placeholder-orange-400"
+                    className="w-full px-4 py-3 bg-orange-50 border border-orange-200 rounded-2xl focus:outline-none focus:border-orange-500 transition-all duration-300 text-orange-900 placeholder-orange-400"
                     placeholder="trader@example.com"
                   />
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -398,7 +398,7 @@ const LoginPage = () => {
                     onChange={handleChange}
                     onFocus={() => handleFocus("password")}
                     onBlur={() => handleBlur("password")}
-                    className="w-full px-4 py-3 bg-orange-50 border border-orange-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-300 text-orange-900 placeholder-orange-400 pr-12"
+                    className="w-full px-4 py-3 bg-orange-50 border border-orange-200 rounded-2xl focus:outline-none focus:border-orange-500 transition-all duration-300 text-orange-900 placeholder-orange-400 pr-12"
                     placeholder="Enter your password"
                   />
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
@@ -441,7 +441,7 @@ const LoginPage = () => {
               </div>
 
               {/* Submit Button */}
-              <motion.button
+              <Motion.button
                 type="submit"
                 disabled={isLoading}
                 whileHover={{
@@ -495,7 +495,7 @@ const LoginPage = () => {
                     </svg>
                   </>
                 )}
-              </motion.button>
+              </Motion.button>
             </form>
 
             {/* Divider */}
@@ -534,7 +534,7 @@ const LoginPage = () => {
                 </svg>
               </Link>
             </div>
-          </motion.div>
+          </Motion.div>
         </div>
       </div>
     </div>

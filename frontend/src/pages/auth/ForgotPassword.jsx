@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
-const ForgotPasswordPage = ({ onShowTradingJournal }) => {
+const ForgotPasswordPage = () => {
   const [formData, setFormData] = useState({
     email: ''
   });
@@ -27,7 +27,7 @@ const ForgotPasswordPage = ({ onShowTradingJournal }) => {
     <div className="min-h-screen bg-linear-to-br from-orange-50 via-amber-50 to-yellow-50 overflow-hidden relative">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <motion.div
+        <Motion.div
           animate={{
             scale: [1, 1.1, 1],
             opacity: [0.3, 0.5, 0.3],
@@ -39,7 +39,7 @@ const ForgotPasswordPage = ({ onShowTradingJournal }) => {
           }}
           className="absolute -top-40 -right-40 w-80 h-80 bg-orange-400/20 rounded-full blur-3xl"
         />
-        <motion.div
+        <Motion.div
           animate={{
             scale: [1.1, 1, 1.1],
             opacity: [0.4, 0.6, 0.4],
@@ -59,7 +59,7 @@ const ForgotPasswordPage = ({ onShowTradingJournal }) => {
       {/* Main Content */}
       <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-md w-full">
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
@@ -67,14 +67,14 @@ const ForgotPasswordPage = ({ onShowTradingJournal }) => {
           >
             {/* Header */}
             <div className="text-center mb-8">
-              <motion.div
+              <Motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
                 className="inline-flex items-center justify-center w-16 h-16 bg-linear-to-r from-orange-500 to-amber-500 rounded-2xl shadow-lg mb-4"
               >
                 <span className="text-2xl text-white">🔑</span>
-              </motion.div>
+              </Motion.div>
               
               <h2 className="text-3xl font-bold bg-linear-to-r from-orange-600 to-amber-700 bg-clip-text text-transparent mb-2">
                 {isSubmitted ? 'Check Your Email' : 'Reset Password'}
@@ -103,7 +103,7 @@ const ForgotPasswordPage = ({ onShowTradingJournal }) => {
                       required
                       value={formData.email}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 bg-orange-50 border border-orange-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-300 text-orange-900 placeholder-orange-400"
+                      className="w-full px-4 py-3 bg-orange-50 border border-orange-200 rounded-2xl focus:outline-none focus:border-orange-500 transition-all duration-300 text-orange-900 placeholder-orange-400"
                       placeholder="trader@example.com"
                     />
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -116,7 +116,7 @@ const ForgotPasswordPage = ({ onShowTradingJournal }) => {
                 </div>
 
                 {/* Submit Button */}
-                <motion.button
+                <Motion.button
                   type="submit"
                   whileHover={{ scale: 1.02, y: -2 }}
                   whileTap={{ scale: 0.98 }}
@@ -126,25 +126,25 @@ const ForgotPasswordPage = ({ onShowTradingJournal }) => {
                   <svg className="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
                   </svg>
-                </motion.button>
+                </Motion.button>
               </form>
             ) : (
               /* Success Message */
-              <motion.div
+              <Motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.6 }}
                 className="text-center space-y-6"
               >
                 {/* Success Icon */}
-                <motion.div
+                <Motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
                   className="inline-flex items-center justify-center w-20 h-20 bg-emerald-100 rounded-full border border-emerald-200"
                 >
                   <span className="text-3xl text-emerald-500">✅</span>
-                </motion.div>
+                </Motion.div>
 
                 {/* Success Text */}
                 <div>
@@ -161,22 +161,22 @@ const ForgotPasswordPage = ({ onShowTradingJournal }) => {
                 </div>
 
                 {/* Back to Login */}
-                <motion.button
+                <Motion.button
                   whileHover={{ scale: 1.02, y: -2 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setIsSubmitted(false)}
                   className="w-full bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   Resend Email
-                </motion.button>
-              </motion.div>
+                </Motion.button>
+              </Motion.div>
             )}
 
             {/* Navigation Links */}
             <div className="mt-8 pt-6 border-t border-orange-200">
               <div className="flex flex-col space-y-3 text-center">
                 <Link 
-                  to="/login" 
+                  to="/" 
                   className="text-sm font-medium text-orange-700 hover:text-orange-500 transition-colors duration-300"
                 >
                   ← Back to Sign In
@@ -204,7 +204,7 @@ const ForgotPasswordPage = ({ onShowTradingJournal }) => {
                 </div>
               </div>
             )}
-          </motion.div>
+          </Motion.div>
         </div>
       </div>
     </div>

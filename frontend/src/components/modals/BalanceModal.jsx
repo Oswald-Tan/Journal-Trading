@@ -1,6 +1,5 @@
-// components/modals/BalanceModal.jsx
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion as Motion } from 'framer-motion';
 import { useDispatch, useSelector } from "react-redux";
 import {
   updateInitialBalance,
@@ -91,14 +90,14 @@ const BalanceModal = ({ setShowBalanceModal }) => {
   };
 
   return (
-    <motion.div
+    <Motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
       onClick={handleClose}
     >
-      <motion.div
+      <Motion.div
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -111,7 +110,7 @@ const BalanceModal = ({ setShowBalanceModal }) => {
               <span className="text-3xl">💰</span>
               Update Initial Deposit
             </h2>
-            <motion.button
+            <Motion.button
               whileHover={{ scale: 1.1, rotate: 90 }}
               whileTap={{ scale: 0.9 }}
               onClick={handleClose}
@@ -131,7 +130,7 @@ const BalanceModal = ({ setShowBalanceModal }) => {
                   d="M6 18L18 6M6 6l12 12"
                 ></path>
               </svg>
-            </motion.button>
+            </Motion.button>
           </div>
 
           <div className="space-y-4">
@@ -156,7 +155,7 @@ const BalanceModal = ({ setShowBalanceModal }) => {
               <select
                 value={tempCurrency}
                 onChange={(e) => setTempCurrency(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-1 focus:outline-none focus:ring-orange-500 focus:border-orange-500 transition-all font-semibold text-orange-900"
+                className="w-full px-4 py-3 border-2 border-orange-200 rounded-xl focus:outline-none focus:border-orange-500 transition-all font-semibold text-orange-900"
               >
                 <option value="IDR">Indonesian Rupiah (Rp)</option>
                 <option value="USD">US Dollar ($)</option>
@@ -177,7 +176,7 @@ const BalanceModal = ({ setShowBalanceModal }) => {
                   type="number"
                   value={tempBalance}
                   onChange={(e) => setTempBalance(Number(e.target.value))}
-                  className="w-full pl-10 pr-4 py-3 border-2 border-orange-200 rounded-xl focus:ring-1 focus:outline-none focus:ring-orange-500 focus:border-orange-500 transition-all font-semibold text-orange-900"
+                  className="w-full pl-10 pr-4 py-3 border-2 border-orange-200 rounded-xl focus:outline-none focus:border-orange-500 transition-all font-semibold text-orange-900"
                   placeholder="Enter initial deposit amount"
                   min="0"
                   step="0.01"
@@ -201,7 +200,7 @@ const BalanceModal = ({ setShowBalanceModal }) => {
 
             {/* Message Display */}
             {localMessage && (
-              <motion.div
+              <Motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className={`p-3 rounded-xl text-sm font-semibold ${
@@ -213,11 +212,11 @@ const BalanceModal = ({ setShowBalanceModal }) => {
                 }`}
               >
                 {localMessage}
-              </motion.div>
+              </Motion.div>
             )}
 
             <div className="flex justify-end space-x-3 pt-4">
-              <motion.button
+              <Motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleClose}
@@ -225,8 +224,8 @@ const BalanceModal = ({ setShowBalanceModal }) => {
                 className="px-6 py-3 border-2 border-orange-300 rounded-xl text-orange-700 hover:bg-orange-50 transition-colors font-bold disabled:opacity-50"
               >
                 Cancel
-              </motion.button>
-              <motion.button
+              </Motion.button>
+              <Motion.button
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleUpdateBalance}
@@ -241,12 +240,12 @@ const BalanceModal = ({ setShowBalanceModal }) => {
                 ) : (
                   "Update Deposit"
                 )}
-              </motion.button>
+              </Motion.button>
             </div>
           </div>
         </div>
-      </motion.div>
-    </motion.div>
+      </Motion.div>
+    </Motion.div>
   );
 };
 
