@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { motion as Motion, AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
-import { getSubscription } from "../features/subscriptionSlice";
 import {
   getTrades,
   createTrade,
@@ -69,23 +68,18 @@ const Trades = ({
     (state) => state.balance
   );
 
-  // Ambil data subscription dari Redux store
-  const { subscription: reduxSubscription, isLoading: subscriptionLoading } = useSelector(
-    (state) => state.subscription
-  );
-
   const actualCurrentBalance = currentBalance || reduxBalance || 0;
 
   // PERBAIKAN: Gabungkan subscription dari props dan Redux store
   const actualSubscription = useMemo(() => {
-    return reduxSubscription || subscription || { plan: 'free' };
-  }, [reduxSubscription, subscription]);
+    return subscription || { plan: 'free' };
+  }, [subscription]);
 
   // PERBAIKAN: Safe currentPlan dengan default values berdasarkan subscription
   const safeCurrentPlan = useMemo(
     () => {
       // Jika ada subscription data, gunakan untuk menentukan plan
-      if (actualSubscription.plan === 'pro' || actualSubscription.plan === 'elite' || actualSubscription.plan === 'lifetime') {
+      if (actualSubscription.plan === 'pro' || actualSubscription.plan === 'lifetime') {
         return {
           name: actualSubscription.plan.charAt(0).toUpperCase() + actualSubscription.plan.slice(1),
           maxEntries: 1000, // Unlimited essentially
@@ -124,7 +118,6 @@ const Trades = ({
   // Load trades dan subscription on component mount
   useEffect(() => {
     dispatch(getTrades());
-    dispatch(getSubscription());
   }, [dispatch]);
 
   // Handle messages
@@ -500,18 +493,6 @@ const Trades = ({
     console.log("Navigating to upgrade page");
     navigate("/upgrade");
   };
-
-  // PERBAIKAN: Tampilkan loading jika subscription masih loading
-  if (subscriptionLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-orange-700 font-semibold">Loading subscription data...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 min-h-screen">

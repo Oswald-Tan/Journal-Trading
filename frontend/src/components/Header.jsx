@@ -1,10 +1,11 @@
-import { motion as Motion, AnimatePresence  } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { formatCompactCurrency } from '../utils/currencyFormatter';
 import GradientLogo from "../assets/gradient_logo.png";
 import { LogOut, reset } from "../features/authSlice";
 import Swal from "sweetalert2";
+import { useSubscription } from '../hooks/useSubscription';
 
 const Header = ({
   activeTab,
@@ -20,20 +21,22 @@ const Header = ({
   onShowBalanceModal,
   onShowTargetModal,
   onShowUpgradeModal,
-  onProfileSettings
+  onProfileSettings,
+  subscription: propsSubscription, // TERIMA dari props
+  currentPlan: propsCurrentPlan // TERIMA dari props
 }) => {
   const { currency } = useSelector((state) => state.balance);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // Ambil data subscription dari Redux store
-  const { subscription: reduxSubscription } = useSelector((state) => state.subscription);
+  // PERBAIKAN: Gunakan useSubscription hook di Header
+  const { subscription: reduxSubscription, isLoading: subscriptionLoading } = useSubscription(true);
 
   // Gabungkan subscription dari props dan Redux store, dengan fallback ke free
   const actualSubscription = reduxSubscription || { plan: 'free' };
 
   // Tentukan currentPlan berdasarkan subscription
-  const currentPlan = {
+  const currentPlan = propsCurrentPlan || {
     name: actualSubscription.plan ? 
       actualSubscription.plan.charAt(0).toUpperCase() + actualSubscription.plan.slice(1) : 
       'Free'
@@ -67,6 +70,25 @@ const Header = ({
       }
     });
   };
+
+  // PERBAIKAN: Tampilkan loading jika subscription masih loading
+  if (subscriptionLoading && !propsSubscription) {
+    return (
+      <header className="bg-white/80 backdrop-blur-md border-b-2 border-gray-100 sticky top-0 z-40">
+        <div className="max-w-11/12 mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-4">
+              <div className="text-2xl font-bold bg-linear-to-r from-orange-600 to-amber-700 bg-clip-text text-transparent flex items-center gap-2">
+                <img src={GradientLogo} alt="Logo" className="w-12" />
+                PipsDiary
+              </div>
+            </div>
+            <div className="animate-pulse bg-orange-200 h-8 w-24 rounded-xl"></div>
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="bg-white/80 backdrop-blur-md border-b-2 border-gray-100 sticky top-0 z-40">
@@ -271,7 +293,7 @@ const Header = ({
                       {/* Divider */}
                       <div className="border-t border-orange-200 my-2"></div>
 
-                      {/* Logout Button - MENGGUNAKAN handleLogout LOKAL */}
+                      {/* Logout Button */}
                       <Motion.button
                         whileHover={{ x: 5, backgroundColor: "rgba(239, 68, 68, 0.1)" }}
                         className="w-full text-left px-4 py-3 rounded-xl text-sm text-red-600 hover:text-red-700 transition-all duration-200 flex items-center space-x-3"
@@ -395,7 +417,7 @@ const Header = ({
                   <span>Update Balance</span>
                 </Motion.button>
 
-                {/* Mobile Logout Button - MENGGUNAKAN handleLogout LOKAL */}
+                {/* Mobile Logout Button */}
                 <Motion.button
                   whileHover={{ x: 5 }}
                   whileTap={{ scale: 0.98 }}

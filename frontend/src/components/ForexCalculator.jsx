@@ -179,7 +179,7 @@ const ForexCalculator = () => {
                   value={calculatorForm.openPrice}
                   onChange={(e) => handleInputChange('openPrice', e.target.value)}
                   onBlur={(e) => handleBlur('openPrice', e.target.value)}
-                  placeholder="contoh: 1873.15 atau 1873,15"
+                  placeholder="1873.15"
                   className="w-full p-3 border-2 border-orange-200 rounded-xl focus:outline-none focus:border-orange-500 transition-all"
                 />
               </div>

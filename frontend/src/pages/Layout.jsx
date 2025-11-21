@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { motion as Motion, AnimatePresence  } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from "framer-motion";
 import { getBalance } from "../features/balanceSlice";
 import { getTarget, getTargetProgress } from "../features/targetSlice";
 import { useDispatch, useSelector } from "react-redux";
@@ -9,6 +9,29 @@ import { useNavigate, useLocation } from "react-router-dom";
 import Header from "../components/Header";
 import BalanceModal from "../components/modals/BalanceModal";
 import TargetModal from "../components/modals/TargetModal";
+import { useSubscription } from '../hooks/useSubscription';
+
+// PERBAIKAN: Pindahkan subscriptionPlans ke luar komponen agar referensinya stabil
+const subscriptionPlans = {
+  free: {
+    name: "Free",
+    maxEntries: 30,
+    features: ["Export CSV", "Grafik dasar", "Penyimpanan lokal"],
+    price: 0,
+  },
+  pro: {
+    name: "Pro",
+    maxEntries: Infinity,
+    features: ["Unlimited entries", "Cloud sync", "Advanced analytics"],
+    price: 29000,
+  },
+  lifetime: {
+    name: "Lifetime",
+    maxEntries: Infinity,
+    features: ["Semua fitur", "Akses selamanya"],
+    price: 399000,
+  },
+};
 
 const Layout = ({ children, onShowLanding }) => {
   const STORAGE_KEY = "trading_journal_v3";
@@ -40,28 +63,6 @@ const Layout = ({ children, onShowLanding }) => {
     },
   ];
 
-  // Subscription plans configuration
-  const subscriptionPlans = {
-    free: {
-      name: "Free",
-      maxEntries: 30,
-      features: ["Export CSV", "Grafik dasar", "Penyimpanan lokal"],
-      price: 0,
-    },
-    pro: {
-      name: "Pro",
-      maxEntries: Infinity,
-      features: ["Unlimited entries", "Cloud sync", "Advanced analytics"],
-      price: 29000,
-    },
-    lifetime: {
-      name: "Lifetime",
-      maxEntries: Infinity,
-      features: ["Semua fitur", "Akses selamanya"],
-      price: 399000,
-    },
-  };
-
   const [entries, setEntries] = useState(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -82,7 +83,6 @@ const Layout = ({ children, onShowLanding }) => {
   });
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  // HAPUS: showUpgradeModal state
   const [showBalanceModal, setShowBalanceModal] = useState(false);
   const [showTargetModal, setShowTargetModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -102,11 +102,14 @@ const Layout = ({ children, onShowLanding }) => {
     (state) => state.trades
   );
 
+  // PERBAIKAN: Gunakan useSubscription hook
+  const { subscription: reduxSubscription, isLoading: subscriptionLoading } = useSubscription(true);
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // PERBAIKAN: Tambahkan state untuk tracking data loading
+  // PERBAIKAN: State untuk tracking data loading
   const [dataLoaded, setDataLoaded] = useState(false);
 
   // Get active tab from route
@@ -121,19 +124,19 @@ const Layout = ({ children, onShowLanding }) => {
     return "dashboard";
   }, [location.pathname]);
 
-  // PERBAIKAN: Load data dari backend dengan kondisi yang lebih baik
+  // PERBAIKAN: Load data dari backend
   useEffect(() => {
     const loadData = async () => {
       if (user && !dataLoaded) {
         try {
-          // PERBAIKAN: Load data secara sequential untuk menghindari race condition
-          await dispatch(getBalance()).unwrap();
-          await dispatch(getTarget()).unwrap();
-          // Jangan panggil getTrades() di sini karena sudah dipanggil di masing-masing komponen
+          // Load data essential
+          await Promise.all([
+            dispatch(getBalance()).unwrap(),
+            dispatch(getTarget()).unwrap(),
+          ]);
           setDataLoaded(true);
         } catch (error) {
           console.error("Error loading data:", error);
-          // PERBAIKAN: Tetap set dataLoaded true meskipun error
           setDataLoaded(true);
         }
       }
@@ -168,6 +171,16 @@ const Layout = ({ children, onShowLanding }) => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showUserMenu]);
+
+  // PERBAIKAN: Gabungkan subscription dari Redux dan local state
+  const actualSubscription = useMemo(() => {
+    return reduxSubscription || subscription || { plan: 'free' };
+  }, [reduxSubscription, subscription]);
+
+  // PERBAIKAN: Current plan berdasarkan actual subscription - FIX DEPENDENCY
+  const currentPlan = useMemo(() => {
+    return subscriptionPlans[actualSubscription.plan] || subscriptionPlans.free;
+  }, [actualSubscription.plan]); // PERBAIKAN: subscriptionPlans sudah di luar komponen, jadi referensinya stabil
 
   // Calculate comprehensive stats - DIPERBAIKI
   const stats = useMemo(() => {
@@ -239,8 +252,6 @@ const Layout = ({ children, onShowLanding }) => {
     };
   }, [trades, tradeStats, initialBalance, currentBalance, targetProgress]);
 
-  const currentPlan = subscriptionPlans[subscription.plan];
-
   const upgradePlan = (newPlan) => {
     const newSubscription = {
       plan: newPlan,
@@ -248,16 +259,13 @@ const Layout = ({ children, onShowLanding }) => {
         newPlan === "lifetime" ? null : Date.now() + 30 * 24 * 60 * 60 * 1000,
     };
     setSubscription(newSubscription);
-    // HAPUS: setShowUpgradeModal(false) karena tidak ada modal lagi
-    // Setelah upgrade, bisa redirect ke dashboard atau tetap di halaman upgrade
     navigate("/dashboard");
   };
-
 
   // PERBAIKAN: Function handlers yang benar
   const handleShowUpgradeModal = () => {
     console.log("Layout: Navigating to upgrade page");
-    navigate("/upgrade"); // UBAH: dari modal ke navigate
+    navigate("/upgrade");
   };
 
   const handleShowBalanceModal = () => {
@@ -277,7 +285,7 @@ const Layout = ({ children, onShowLanding }) => {
     currentBalance: currentBalance || 0,
     target: target || { enabled: false },
     targetProgress,
-    subscription,
+    subscription: actualSubscription, // PERBAIKAN: Gunakan actualSubscription
     currentPlan,
     onShowBalanceModal: handleShowBalanceModal,
     onShowTargetModal: handleShowTargetModal,
@@ -285,8 +293,8 @@ const Layout = ({ children, onShowLanding }) => {
     upgradePlan,
   };
 
-  // PERBAIKAN: Improved loading state dengan timeout fallback
-  if ((balanceLoading || targetLoading) && !dataLoaded) {
+  // PERBAIKAN: Improved loading state dengan subscription loading
+  if ((balanceLoading || targetLoading || subscriptionLoading) && !dataLoaded) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
@@ -313,12 +321,12 @@ const Layout = ({ children, onShowLanding }) => {
         targetProgress={targetProgress}
         user={user}
         currentPlan={currentPlan}
-        subscription={subscription}
+        subscription={actualSubscription} // PERBAIKAN: Gunakan actualSubscription
         onShowLanding={onShowLanding}
         onShowBalanceModal={handleShowBalanceModal}
         onShowTargetModal={handleShowTargetModal}
         onShowUpgradeModal={handleShowUpgradeModal}
-        onProfileSettings={() => navigate('/profile-settings')}
+        onProfileSettings={() => navigate("/profile-settings")}
       />
 
       {/* Main Content Area */}
@@ -341,7 +349,7 @@ const Layout = ({ children, onShowLanding }) => {
         </AnimatePresence>
       </main>
 
-      {/* Modal Components - HAPUS UpgradeModal */}
+      {/* Modal Components */}
       <AnimatePresence>
         {showBalanceModal && (
           <BalanceModal setShowBalanceModal={setShowBalanceModal} />
