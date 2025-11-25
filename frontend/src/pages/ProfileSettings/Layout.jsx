@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
+import { motion as Motion } from "framer-motion";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { updateProfile, getMe, changePassword } from "../../features/authSlice";
@@ -246,7 +246,7 @@ const ProfileSettings = () => {
   };
 
   const TabButton = ({ active, onClick, children, icon }) => (
-    <motion.button
+    <Motion.button
       whileHover={{ scale: 1.02, y: -2 }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
@@ -258,7 +258,7 @@ const ProfileSettings = () => {
     >
       <span className="text-xl">{icon}</span>
       {children}
-    </motion.button>
+    </Motion.button>
   );
 
   if (!user) {
@@ -273,13 +273,13 @@ const ProfileSettings = () => {
     <div className="min-h-screen py-8">
       <div className="max-w-4xl mx-auto px-4">
         {/* Header dengan Back Button */}
-        <motion.div
+        <Motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
           {/* Back Button */}
-          <motion.button
+          <Motion.button
             whileHover={{ scale: 1.05, x: -5 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleBackClick}
@@ -289,7 +289,7 @@ const ProfileSettings = () => {
               ←
             </span>
             <span className="text-lg">Kembali</span>
-          </motion.button>
+          </Motion.button>
 
           {/* Title Section */}
           <div className="flex items-center gap-4 mb-4">
@@ -305,11 +305,11 @@ const ProfileSettings = () => {
               </p>
             </div>
           </div>
-        </motion.div>
+        </Motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar Navigation */}
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
@@ -336,10 +336,10 @@ const ProfileSettings = () => {
             >
               Keamanan
             </TabButton>
-          </motion.div>
+          </Motion.div>
 
           {/* Main Content */}
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
@@ -348,7 +348,7 @@ const ProfileSettings = () => {
             <div className="bg-white/80 backdrop-blur-md rounded-3xl border border-orange-100 shadow-xl p-6">
               {/* Profile Tab */}
               {activeTab === "profile" && (
-                <motion.div
+                <Motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.3 }}
@@ -406,7 +406,7 @@ const ProfileSettings = () => {
                       />
                     </div>
 
-                    <motion.button
+                    <Motion.button
                       whileHover={{ scale: 1.02, y: -2 }}
                       whileTap={{ scale: 0.98 }}
                       type="submit"
@@ -421,14 +421,14 @@ const ProfileSettings = () => {
                       ) : (
                         "💾 Simpan Perubahan"
                       )}
-                    </motion.button>
+                    </Motion.button>
                   </form>
-                </motion.div>
+                </Motion.div>
               )}
 
               {/* Password Tab */}
               {activeTab === "password" && (
-                <motion.div
+                <Motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.3 }}
@@ -474,7 +474,7 @@ const ProfileSettings = () => {
                       />
                     </div>
 
-                    <motion.button
+                    <Motion.button
                       whileHover={{ scale: 1.02, y: -2 }}
                       whileTap={{ scale: 0.98 }}
                       type="submit"
@@ -489,14 +489,14 @@ const ProfileSettings = () => {
                       ) : (
                         "🔒 Ubah Password"
                       )}
-                    </motion.button>
+                    </Motion.button>
                   </form>
-                </motion.div>
+                </Motion.div>
               )}
 
               {/* Security Tab */}
               {activeTab === "security" && (
-                <motion.div
+                <Motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.3 }}
@@ -545,10 +545,10 @@ const ProfileSettings = () => {
                       </ul>
                     </div>
                   </div>
-                </motion.div>
+                </Motion.div>
               )}
             </div>
-          </motion.div>
+          </Motion.div>
         </div>
       </div>
     </div>

@@ -121,6 +121,7 @@ const Layout = ({ children, onShowLanding }) => {
     if (path.includes("/performance")) return "performance";
     if (path.includes("/targets")) return "targets";
     if (path.includes("/upgrade")) return "upgrade";
+    if (path.includes("/education")) return "education";
     return "dashboard";
   }, [location.pathname]);
 

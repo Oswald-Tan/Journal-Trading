@@ -13,6 +13,7 @@ import ProfileSettings from "./pages/ProfileSettings";
 import VerifyEmailPage from "./pages/auth/VerifyEmailPage";
 import UpgradePage from "./components/UpgradePage";
 import ForexCalculator from "./components/ForexCalculator";
+import Education from "./pages/Education";
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/performance" element={<Performance />} />
             <Route path="/targets" element={<Targets />} />
+            <Route path="/education" element={<Education />} />
           </Route>
 
           <Route path="/upgrade" element={<UpgradePage />} />

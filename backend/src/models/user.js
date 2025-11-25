@@ -50,8 +50,8 @@ const User = db.define(
       defaultValue: 4, // user
     },
     status: {
-      type: DataTypes.ENUM("active", "suspended", "inactive"),
-      defaultValue: "active",
+      type: DataTypes.ENUM("active", "suspended", "inactive", "pending"),
+      defaultValue: "pending",
     },
     last_login: {
       type: DataTypes.DATE,
@@ -66,6 +66,14 @@ const User = db.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    emailVerificationToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    emailVerificationExpires: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    }
   },
   {
     timestamps: true,

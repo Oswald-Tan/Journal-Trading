@@ -96,3 +96,7 @@ body {
 *::-webkit-scrollbar-thumb:hover {
   background-color: rgba(0, 0, 0, 0.6); /* Warna scrollbar saat hover */
 }
+
+.clip-dashboard {
+  clip-path: inset(0 0 0px 0); 
+}

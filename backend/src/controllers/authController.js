@@ -31,15 +31,13 @@ export const handleRegister = async (req, res) => {
       defaults: { role_name: 'user' }
     });
 
-    console.log('Using role:', userRole.id, userRole.role_name);
-
     // Create user dengan status pending dan verification token
     const user = await User.create({
       email,
       password: hashedPassword,
       name,
       role_id: userRole.id,
-      status: 'pending', // Status awal pending
+      status: 'pending',
       emailVerificationToken,
       emailVerificationExpires
     });
@@ -207,7 +205,8 @@ export const resendVerificationEmail = async (req, res) => {
     await transporter.sendMail(mailOptions);
 
     res.status(200).json({
-      message: 'Verification email sent. Please check your email.'
+      message: 'Verification email sent. Please check your email.',
+      success: true
     });
   } catch (error) {
     console.error('Resend verification email error:', error);
@@ -386,21 +385,48 @@ export const updateProfile = async (req, res) => {
     const { name, email, phone_number } = req.body;
     const userId = req.session.userId;
 
-    console.log("Session userId:", userId); // Debug logging
-    console.log("Update data:", { name, email, phone_number }); // Debug logging
-
     if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
+      return res.status(401).json({ 
+        success: false,
+        message: "Unauthorized" 
+      });
     }
 
-    // Cari user yang akan diupdate
-    const user = await User.findByPk(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    // Get current user data
+    const currentUser = await User.findOne({
+      where: { id: userId },
+      attributes: ["id", "name", "email", "phone_number", "role_id", "status"]
+    });
+
+    if (!currentUser) {
+      return res.status(404).json({ 
+        success: false,
+        message: "User tidak ditemukan" 
+      });
+    }
+
+    // Check if there are any changes
+    const hasChanges = 
+      name !== currentUser.name ||
+      email !== currentUser.email ||
+      phone_number !== currentUser.phone_number;
+
+    if (!hasChanges) {
+      return res.status(200).json({
+        success: true,
+        message: "Tidak ada perubahan data",
+        user: {
+          id: currentUser.id,
+          name: currentUser.name,
+          email: currentUser.email,
+          phone_number: currentUser.phone_number,
+          status: currentUser.status,
+        }
+      });
     }
 
     // Check if email already exists (excluding current user)
-    if (email && email !== user.email) {
+    if (email && email !== currentUser.email) {
       const existingUser = await User.findOne({
         where: {
           email,
@@ -408,51 +434,48 @@ export const updateProfile = async (req, res) => {
         }
       });
       if (existingUser) {
-        return res.status(400).json({ message: "Email already exists" });
+        return res.status(400).json({ 
+          success: false,
+          message: "Email sudah digunakan oleh user lain" 
+        });
       }
     }
 
-    // Update user data
-    const updateData = {};
-    if (name !== undefined) updateData.name = name;
-    if (email !== undefined) updateData.email = email;
-    if (phone_number !== undefined) updateData.phone_number = phone_number;
+    // Update user
+    await User.update(
+      {
+        name: name || currentUser.name,
+        email: email || currentUser.email,
+        phone_number: phone_number !== undefined ? phone_number : currentUser.phone_number
+      },
+      {
+        where: { id: userId },
+        individualHooks: true
+      }
+    );
 
-    await User.update(updateData, {
-      where: { id: userId }
-    });
-
-    // Get updated user data with role
+    // Get updated user data
     const updatedUser = await User.findOne({
-      attributes: ["id", "name", "email", "phone_number", "role_id"],
-      include: [
-        {
-          model: Role,
-          as: "userRole",
-          attributes: ["role_name"],
-        },
-      ],
+      attributes: ["id", "name", "email", "phone_number", "role_id", "status"],
       where: { id: userId },
     });
 
-    if (!updatedUser) {
-      return res.status(404).json({ message: "User not found after update" });
-    }
-
     res.status(200).json({
-      message: "Profile updated successfully",
+      success: true,
+      message: "Profile berhasil diperbarui",
       user: {
         id: updatedUser.id,
         name: updatedUser.name,
         email: updatedUser.email,
         phone_number: updatedUser.phone_number,
-        role: updatedUser.userRole?.role_name,
+        status: updatedUser.status,
       }
     });
   } catch (error) {
     console.error("Update profile error:", error);
     res.status(500).json({ 
-      message: "Internal server error",
+      success: false,
+      message: "Terjadi kesalahan server",
       error: error.message 
     });
   }
