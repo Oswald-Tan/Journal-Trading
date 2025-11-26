@@ -565,25 +565,28 @@ export const requestResetOtp = async (req, res) => {
     // Cari user berdasarkan email
     const user = await User.findOne({ where: { email } });
     if (!user) {
-      return res.status(404).json({ message: "User tidak ditemukan" });
+      // Untuk keamanan, jangan beri tahu jika email tidak ditemukan
+      return res.status(200).json({ 
+        message: "Jika email terdaftar, OTP telah dikirim" 
+      });
     }
 
     console.log(`User with email ${email} found.`);
 
     // Generate OTP
     const resetOtp = crypto.randomInt(100000, 999999).toString();
-    console.log(`Generated OTP: ${resetOtp}`); // Logging OTP untuk debugging
+    console.log(`Generated OTP: ${resetOtp}`);
 
     // Simpan OTP dan waktu kadaluarsa ke database
     user.resetOtp = resetOtp;
     user.resetOtpExpires = Date.now() + 10 * 60 * 1000; // OTP expires in 10 minutes
     await user.save();
 
-    // Kirim OTP ke email dengan styling
+    // Kirim OTP ke email
     const mailOptions = {
       from: process.env.EMAIL_FROM,
       to: email,
-      subject: "Your OTP Code for Password Reset",
+      subject: "Your OTP Code for Password Reset - PipsDiary",
       html: `
         <!DOCTYPE html>
         <html>
@@ -600,49 +603,84 @@ export const requestResetOtp = async (req, res) => {
               max-width: 600px;
               margin: 20px auto;
               background: #fff;
+              padding: 30px;
+              border-radius: 12px;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+              border: 1px solid #e0e0e0;
+            }
+            .header {
+              background: linear-gradient(135deg, #8b5cf6, #a855f7);
               padding: 20px;
               border-radius: 8px;
-              box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+              text-align: center;
+              margin-bottom: 20px;
             }
             h1 {
-              color: #007BFF;
-              text-align: center;
+              color: white;
+              margin: 0;
+              font-size: 24px;
             }
-            p {
-              font-size: 16px;
+            .otp-container {
               text-align: center;
+              margin: 30px 0;
             }
             .otp {
-              font-size: 24px;
+              font-size: 32px;
               font-weight: bold;
-              color: #007BFF;
+              color: #8b5cf6;
+              letter-spacing: 8px;
+              background: #f8fafc;
+              padding: 15px 25px;
+              border-radius: 8px;
+              border: 2px dashed #e2e8f0;
+              display: inline-block;
+            }
+            .expiry {
+              color: #64748b;
+              font-size: 14px;
+              margin-top: 10px;
+            }
+            .footer {
+              margin-top: 30px;
+              padding-top: 20px;
+              border-top: 1px solid #e2e8f0;
               text-align: center;
+              color: #64748b;
+              font-size: 12px;
             }
           </style>
         </head>
         <body>
           <div class="container">
-            <h1>Password Reset OTP</h1>
-            <p>Your OTP code is:</p>
-            <p class="otp">${resetOtp}</p>
-            <p>This code will expire in 10 minutes.</p>
-            <p>If you did not request this, please ignore this email.</p>
+            <div class="header">
+              <h1>Password Reset OTP</h1>
+            </div>
+            
+            <p>Hello,</p>
+            <p>You requested to reset your password for your PipsDiary account. Use the following OTP code to proceed:</p>
+            
+            <div class="otp-container">
+              <div class="otp">${resetOtp}</div>
+              <div class="expiry">This code will expire in 10 minutes</div>
+            </div>
+            
+            <p>If you did not request this password reset, please ignore this email. Your account remains secure.</p>
+            
+            <div class="footer">
+              <p>&copy; 2024 PipsDiary. All rights reserved.</p>
+            </div>
           </div>
         </body>
         </html>
       `,
     };
 
-    // Logging data OTP dan waktu kadaluarsa untuk debugging
-    console.log(
-      `OTP Data to be Saved: resetOtp=${
-        user.resetOtp
-      }, resetOtpExpires=${new Date(user.resetOtpExpires).toISOString()}`
-    );
-
     await transporter.sendMail(mailOptions);
 
-    res.status(200).json({ message: "OTP telah dikirim ke email Anda." });
+    res.status(200).json({ 
+      message: "OTP telah dikirim ke email Anda",
+      expiresIn: "10 minutes"
+    });
   } catch (error) {
     console.error("Error in requestResetOtp:", error.message);
     res.status(500).json({
@@ -652,6 +690,7 @@ export const requestResetOtp = async (req, res) => {
   }
 };
 
+// Verify OTP
 export const verifyResetOtp = async (req, res) => {
   const { email, otp } = req.body;
 
@@ -664,20 +703,10 @@ export const verifyResetOtp = async (req, res) => {
     }
 
     // OTP valid
-    user.resetOtp = null;
-    user.resetOtpExpires = null;
-    await user.save();
-
-    // AUDIT LOG: Catat verifikasi OTP berhasil
-    await logAction(
-      req,
-      "otp_verify",
-      "user",
-      user.id,
-      `OTP berhasil diverifikasi`
-    );
-
-    res.status(200).json({ message: "OTP berhasil diverifikasi" });
+    res.status(200).json({ 
+      message: "OTP berhasil diverifikasi",
+      verified: true 
+    });
   } catch (error) {
     res.status(500).json({
       message: "Terjadi kesalahan saat memverifikasi OTP",
@@ -696,9 +725,9 @@ const validatePassword = (password) => {
   );
 };
 
-// Reset password after OTP verification
+// Reset password setelah OTP verified
 export const resetPassword = async (req, res) => {
-  const { newPassword, confirmPassword, email } = req.body;
+  const { email, newPassword, confirmPassword } = req.body;
 
   try {
     // Validasi konfirmasi password
@@ -724,7 +753,7 @@ export const resetPassword = async (req, res) => {
     // Enkripsi password baru
     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update password di database, reset attempts, and clear lockout
+    // Update password di database dan clear OTP fields
     await User.update(
       {
         password: hashedNewPassword,
@@ -733,6 +762,38 @@ export const resetPassword = async (req, res) => {
       },
       { where: { email } }
     );
+
+    // Kirim email notifikasi
+    const mailOptions = {
+      from: process.env.EMAIL_FROM,
+      to: email,
+      subject: "Password Changed Successfully - PipsDiary",
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 20px auto; background: #fff; padding: 30px; border-radius: 12px; }
+            .header { background: linear-gradient(135deg, #10b981, #059669); padding: 20px; border-radius: 8px; text-align: center; }
+            h1 { color: white; margin: 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Password Changed Successfully</h1>
+            </div>
+            <p>Hello,</p>
+            <p>Your PipsDiary account password has been successfully changed.</p>
+            <p>If you did not make this change, please contact our support team immediately.</p>
+          </div>
+        </body>
+        </html>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
 
     res.status(200).json({ message: "Password berhasil diubah" });
   } catch (err) {

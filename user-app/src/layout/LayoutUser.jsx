@@ -71,6 +71,8 @@ const LayoutUser = () => {
     if (location.pathname.includes("/targets")) return "targets";
     if (location.pathname.includes("/upgrade")) return "upgrade";
     if (location.pathname.includes("/education")) return "education";
+    if (location.pathname.includes("/gamification")) return "gamification";
+    if (location.pathname.includes("/leaderboard")) return "leaderboard";
     return "dashboard";
   }, [location.pathname]);
 

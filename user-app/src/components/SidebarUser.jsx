@@ -20,6 +20,8 @@ import {
   Settings,
   ChevronUp,
   ChevronDown,
+  Award,
+  Trophy,
 } from "lucide-react";
 
 const SidebarUser = () => {
@@ -48,11 +50,6 @@ const SidebarUser = () => {
         icon: BarChart3,
       },
       {
-        name: "Calculator",
-        link: "/calculator",
-        icon: Calculator,
-      },
-      {
         name: "Analytics",
         link: "/analytics",
         icon: PieChart,
@@ -68,9 +65,24 @@ const SidebarUser = () => {
         icon: Target,
       },
       {
+        name: "Calculator",
+        link: "/calculator",
+        icon: Calculator,
+      },
+      {
         name: "Education",
         link: "/education",
         icon: BookOpen,
+      },
+      {
+        name: "Achievements",
+        link: "/gamification",
+        icon: Award,
+      },
+      {
+        name: "Leaderboard",
+        link: "/leaderboard",
+        icon: Trophy,
       },
       // {
       //   name: "Profile Settings",

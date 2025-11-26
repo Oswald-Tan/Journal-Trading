@@ -15,6 +15,8 @@ import ForexCalculator from "./components/ForexCalculator";
 import LayoutUser from "./layout/LayoutUser";
 import EducationIndex from "./pages/Education/index";
 import EducationCategory from "./pages/Education/[category]";
+import Gamification from "./pages/Gamification";
+import Leaderboard from "./pages/Leaderboard";
 
 function App() {
   return (
@@ -35,12 +37,17 @@ function App() {
             <Route path="/targets" element={<Targets />} />
 
             <Route path="/education" element={<EducationIndex />} />
-            <Route path="/education/:category" element={<EducationCategory />} />
+            <Route
+              path="/education/:category"
+              element={<EducationCategory />}
+            />
+            <Route path="/gamification" element={<Gamification />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
           </Route>
 
           <Route path="/upgrade" element={<UpgradePage />} />
           <Route path="/profile-settings" element={<ProfileSettings />} />
-          
+
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/resend-verification" element={<VerifyEmailPage />} />
         </Routes>

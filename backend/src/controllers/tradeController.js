@@ -1,6 +1,7 @@
 import Trade from '../models/trade.js';
 import User from '../models/user.js';
 import { calculateStats } from '../utils/statsCalculator.js';
+import { processTradeForGamification } from './gamificationController.js';
 
 // Get all trades for user
 export const getTrades = async (req, res) => {
@@ -187,6 +188,14 @@ export const createTrade = async (req, res) => {
       { where: { id: req.userId } }
     );
 
+    // Process gamification
+    const gamificationResult = await processTradeForGamification(req.userId, {
+      profit: finalProfit,
+      result: finalResult,
+      // other trade data if needed
+    });
+
+
     // Get updated stats
     const stats = await calculateStats(req.userId);
 
@@ -195,7 +204,8 @@ export const createTrade = async (req, res) => {
       message: 'Trade created successfully',
       data: trade,
       stats: stats,
-      newBalance: newBalance
+      newBalance: newBalance,
+      gamification: gamificationResult,
     });
 
   } catch (error) {

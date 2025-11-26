@@ -22,6 +22,7 @@ import Balance from "./routes/balanceRoute.js";
 import Trade from "./routes/tradeRoute.js";
 import Target from "./routes/targetRoute.js";
 import Subscription from "./routes/subscriptionRoute.js";
+import Gamification from "./routes/gamificationRoute.js";
 
 const app = express();
 
@@ -111,6 +112,7 @@ app.use("/api/v1/balance", sessionMiddleware, Balance);
 app.use("/api/v1/trades", sessionMiddleware, Trade);
 app.use('/api/v1/target', sessionMiddleware, Target);
 app.use('/api/v1/subscription', sessionMiddleware, Subscription);
+app.use('/api/v1/gamification', sessionMiddleware, Gamification);
 
 const PORT = process.env.PORT;
 httpServer.listen(PORT, () => {

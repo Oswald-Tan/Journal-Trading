@@ -148,6 +148,74 @@ export const resendVerification = createAsyncThunk(
   }
 );
 
+export const requestResetOtp = createAsyncThunk(
+  "auth/requestResetOtp",
+  async (email, thunkAPI) => {
+    try {
+      const res = await axios.post(`${API_URL}/auth/request-reset-otp`, {
+        email,
+      });
+      return res.data;
+    } catch (error) {
+      if (error.response) {
+        const message =
+          error.response.data?.message ||
+          error.response.data?.msg ||
+          "Failed to send OTP";
+        return thunkAPI.rejectWithValue(message);
+      }
+      return thunkAPI.rejectWithValue("Network error occurred");
+    }
+  }
+);
+
+// Verify Reset OTP
+export const verifyResetOtp = createAsyncThunk(
+  "auth/verifyResetOtp",
+  async ({ email, otp }, thunkAPI) => {
+    try {
+      const res = await axios.post(`${API_URL}/auth/verify-reset-otp`, {
+        email,
+        otp,
+      });
+      return res.data;
+    } catch (error) {
+      if (error.response) {
+        const message =
+          error.response.data?.message ||
+          error.response.data?.msg ||
+          "OTP verification failed";
+        return thunkAPI.rejectWithValue(message);
+      }
+      return thunkAPI.rejectWithValue("Network error occurred");
+    }
+  }
+);
+
+// Reset Password
+export const resetPassword = createAsyncThunk(
+  "auth/resetPassword",
+  async ({ email, newPassword, confirmPassword }, thunkAPI) => {
+    try {
+      const res = await axios.post(`${API_URL}/auth/reset-password`, {
+        email,
+        newPassword,
+        confirmPassword,
+      });
+      return res.data;
+    } catch (error) {
+      if (error.response) {
+        const message =
+          error.response.data?.message ||
+          error.response.data?.msg ||
+          "Password reset failed";
+        return thunkAPI.rejectWithValue(message);
+      }
+      return thunkAPI.rejectWithValue("Network error occurred");
+    }
+  }
+);
+
 export const LogOut = createAsyncThunk("user/LogOut", async () => {
   await axios.delete(`${API_URL}/auth/logout`);
 });
@@ -159,6 +227,13 @@ export const authSlice = createSlice({
     reset: (state) => initialState,
     clearError: (state) => {
       state.isError = false;
+      state.error = "";
+      state.message = "";
+    },
+    resetPasswordState: (state) => {
+      state.isLoading = false;
+      state.isError = false;
+      state.isSuccess = false;
       state.error = "";
       state.message = "";
     },
@@ -281,8 +356,59 @@ export const authSlice = createSlice({
       state.error = action.payload;
       state.message = "";
     });
+
+    // Request Reset OTP Cases
+    builder.addCase(requestResetOtp.pending, (state) => {
+      state.isLoading = true;
+      state.isError = false;
+      state.error = "";
+    });
+    builder.addCase(requestResetOtp.fulfilled, (state, action) => {
+      state.isLoading = false;
+      state.isSuccess = true;
+      state.message = action.payload.message;
+    });
+    builder.addCase(requestResetOtp.rejected, (state, action) => {
+      state.isLoading = false;
+      state.isError = true;
+      state.error = action.payload;
+    });
+
+    // Verify Reset OTP Cases
+    builder.addCase(verifyResetOtp.pending, (state) => {
+      state.isLoading = true;
+      state.isError = false;
+      state.error = "";
+    });
+    builder.addCase(verifyResetOtp.fulfilled, (state, action) => {
+      state.isLoading = false;
+      state.isSuccess = true;
+      state.message = action.payload.message;
+    });
+    builder.addCase(verifyResetOtp.rejected, (state, action) => {
+      state.isLoading = false;
+      state.isError = true;
+      state.error = action.payload;
+    });
+
+    // Reset Password Cases
+    builder.addCase(resetPassword.pending, (state) => {
+      state.isLoading = true;
+      state.isError = false;
+      state.error = "";
+    });
+    builder.addCase(resetPassword.fulfilled, (state, action) => {
+      state.isLoading = false;
+      state.isSuccess = true;
+      state.message = action.payload.message;
+    });
+    builder.addCase(resetPassword.rejected, (state, action) => {
+      state.isLoading = false;
+      state.isError = true;
+      state.error = action.payload;
+    });
   },
 });
 
-export const { reset, clearError } = authSlice.actions;
+export const { reset, clearError, resetPasswordState  } = authSlice.actions;
 export default authSlice.reducer;
