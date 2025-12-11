@@ -1,20 +1,23 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { motion as Motion } from 'framer-motion';
-import { useDispatch, useSelector } from 'react-redux';
-import { 
-  ResponsiveContainer, 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
+import React, { useEffect, useMemo, useState } from "react";
+import { motion as Motion } from "framer-motion";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
   CartesianGrid,
   LineChart,
   Line,
-  Cell
-} from 'recharts';
-import { getTrades } from '../features/tradeSlice';
-import { formatCurrency, formatCompactCurrency } from '../utils/currencyFormatter';
+  Cell,
+} from "recharts";
+import { getTrades } from "../features/tradeSlice";
+import {
+  formatCurrency,
+  formatCompactCurrency,
+} from "../utils/currencyFormatter";
 import {
   BarChart3,
   Target,
@@ -34,12 +37,12 @@ import {
   Star,
   Crown,
   Trophy,
-  Wallet
-} from 'lucide-react';
+  Wallet,
+} from "lucide-react";
 
 const Performance = () => {
   const dispatch = useDispatch();
-  
+
   // State untuk tracking data loading
   const [dataFetched, setDataFetched] = useState(false);
 
@@ -57,7 +60,7 @@ const Performance = () => {
         try {
           await dispatch(getTrades());
         } catch (error) {
-          console.error('❌ Performance: Failed to fetch trades:', error);
+          console.error("❌ Performance: Failed to fetch trades:", error);
         } finally {
           setDataFetched(true);
         }
@@ -66,34 +69,37 @@ const Performance = () => {
         setDataFetched(true);
       }
     };
-    
+
     fetchData();
   }, [dispatch, trades.length, dataFetched]);
 
   // Safe stats dengan default values
-  const safeStats = useMemo(() => ({
-    netProfit: stats?.netProfit || 0,
-    winRate: stats?.winRate || 0,
-    profitFactor: stats?.profitFactor || 0,
-    avgProfit: stats?.avgProfit || 0,
-    roi: stats?.roi || 0,
-    totalPips: stats?.totalPips || 0,
-    totalTrades: stats?.totalTrades || trades.length || 0,
-    wins: stats?.wins || 0,
-    losses: stats?.losses || 0,
-    largestWin: stats?.largestWin || 0,
-    largestLoss: stats?.largestLoss || 0,
-    ...stats
-  }), [stats, trades]);
+  const safeStats = useMemo(
+    () => ({
+      netProfit: stats?.netProfit || 0,
+      winRate: stats?.winRate || 0,
+      profitFactor: stats?.profitFactor || 0,
+      avgProfit: stats?.avgProfit || 0,
+      roi: stats?.roi || 0,
+      totalPips: stats?.totalPips || 0,
+      totalTrades: stats?.totalTrades || trades.length || 0,
+      wins: stats?.wins || 0,
+      losses: stats?.losses || 0,
+      largestWin: stats?.largestWin || 0,
+      largestLoss: stats?.largestLoss || 0,
+      ...stats,
+    }),
+    [stats, trades]
+  );
 
   // Monthly performance data
   const monthlyData = useMemo(() => {
     if (trades.length === 0) return [];
-    
+
     const monthlyStats = {};
-    trades.forEach(entry => {
+    trades.forEach((entry) => {
       if (!entry.date) return;
-      
+
       const month = entry.date.substring(0, 7); // YYYY-MM format
       if (!monthlyStats[month]) {
         monthlyStats[month] = {
@@ -102,29 +108,31 @@ const Performance = () => {
           wins: 0,
           losses: 0,
           winRate: 0,
-          avgProfit: 0
+          avgProfit: 0,
         };
       }
       monthlyStats[month].profit += entry.profit || 0;
       monthlyStats[month].trades += 1;
-      if (entry.result?.toLowerCase().includes('win')) {
+      if (entry.result?.toLowerCase().includes("win")) {
         monthlyStats[month].wins += 1;
-      } else if (entry.result?.toLowerCase().includes('lose')) {
+      } else if (entry.result?.toLowerCase().includes("lose")) {
         monthlyStats[month].losses += 1;
       }
     });
 
     // Calculate derived stats
-    Object.keys(monthlyStats).forEach(month => {
+    Object.keys(monthlyStats).forEach((month) => {
       const data = monthlyStats[month];
-      data.winRate = data.trades > 0 ? Math.round((data.wins / data.trades) * 100) : 0;
-      data.avgProfit = data.trades > 0 ? Math.round(data.profit / data.trades) : 0;
+      data.winRate =
+        data.trades > 0 ? Math.round((data.wins / data.trades) * 100) : 0;
+      data.avgProfit =
+        data.trades > 0 ? Math.round(data.profit / data.trades) : 0;
     });
 
     return Object.entries(monthlyStats)
       .map(([month, data]) => ({
         month,
-        ...data
+        ...data,
       }))
       .sort((a, b) => a.month.localeCompare(b.month));
   }, [trades]);
@@ -132,17 +140,17 @@ const Performance = () => {
   // Best performing instruments
   const bestInstruments = useMemo(() => {
     if (trades.length === 0) return [];
-    
+
     const instrumentStats = {};
-    trades.forEach(entry => {
+    trades.forEach((entry) => {
       if (!entry.instrument) return;
-      
+
       if (!instrumentStats[entry.instrument]) {
         instrumentStats[entry.instrument] = { profit: 0, trades: 0, wins: 0 };
       }
       instrumentStats[entry.instrument].profit += entry.profit || 0;
       instrumentStats[entry.instrument].trades += 1;
-      if (entry.result?.toLowerCase().includes('win')) {
+      if (entry.result?.toLowerCase().includes("win")) {
         instrumentStats[entry.instrument].wins += 1;
       }
     });
@@ -153,7 +161,7 @@ const Performance = () => {
         profit: data.profit,
         trades: data.trades,
         winRate: Math.round((data.wins / data.trades) * 100) || 0,
-        avgProfit: Math.round(data.profit / data.trades) || 0
+        avgProfit: Math.round(data.profit / data.trades) || 0,
       }))
       .sort((a, b) => b.profit - a.profit)
       .slice(0, 5); // Top 5
@@ -162,17 +170,17 @@ const Performance = () => {
   // Worst performing instruments
   const worstInstruments = useMemo(() => {
     if (trades.length === 0) return [];
-    
+
     const instrumentStats = {};
-    trades.forEach(entry => {
+    trades.forEach((entry) => {
       if (!entry.instrument) return;
-      
+
       if (!instrumentStats[entry.instrument]) {
         instrumentStats[entry.instrument] = { profit: 0, trades: 0, wins: 0 };
       }
       instrumentStats[entry.instrument].profit += entry.profit || 0;
       instrumentStats[entry.instrument].trades += 1;
-      if (entry.result?.toLowerCase().includes('win')) {
+      if (entry.result?.toLowerCase().includes("win")) {
         instrumentStats[entry.instrument].wins += 1;
       }
     });
@@ -183,7 +191,7 @@ const Performance = () => {
         profit: data.profit,
         trades: data.trades,
         winRate: Math.round((data.wins / data.trades) * 100) || 0,
-        avgProfit: Math.round(data.profit / data.trades) || 0
+        avgProfit: Math.round(data.profit / data.trades) || 0,
       }))
       .sort((a, b) => a.profit - b.profit)
       .slice(0, 5); // Bottom 5
@@ -192,11 +200,11 @@ const Performance = () => {
   // Weekly performance trend
   const weeklyTrendData = useMemo(() => {
     if (trades.length === 0) return [];
-    
+
     const weeklyStats = {};
-    trades.forEach(entry => {
+    trades.forEach((entry) => {
       if (!entry.date) return;
-      
+
       const date = new Date(entry.date);
       const week = `${date.getFullYear()}-W${Math.ceil(date.getDate() / 7)}`;
       if (!weeklyStats[week]) {
@@ -210,7 +218,7 @@ const Performance = () => {
       .map(([week, data]) => ({
         week,
         profit: data.profit,
-        trades: data.trades
+        trades: data.trades,
       }))
       .sort((a, b) => a.week.localeCompare(b.week))
       .slice(-8); // Last 8 weeks
@@ -222,9 +230,13 @@ const Performance = () => {
       label: "Total Profit",
       value: formatCompactCurrency(safeStats.netProfit, currency),
       color: safeStats.netProfit >= 0 ? "text-emerald-700" : "text-rose-700",
-      bg: safeStats.netProfit >= 0 ? "bg-linear-to-br from-emerald-100 to-green-100" : "bg-linear-to-br from-rose-100 to-red-100",
-      border: safeStats.netProfit >= 0 ? "border-emerald-200" : "border-rose-200",
-      icon: <DollarSign className="w-6 h-6" />
+      bg:
+        safeStats.netProfit >= 0
+          ? "bg-linear-to-br from-emerald-100 to-green-100"
+          : "bg-linear-to-br from-rose-100 to-red-100",
+      border:
+        safeStats.netProfit >= 0 ? "border-emerald-200" : "border-rose-200",
+      icon: <DollarSign className="w-6 h-6" />,
     },
     {
       label: "Win Rate",
@@ -232,7 +244,7 @@ const Performance = () => {
       color: "text-violet-700",
       bg: "bg-linear-to-br from-violet-100 to-violet-100",
       border: "border-violet-200",
-      icon: <Target className="w-6 h-6" />
+      icon: <Target className="w-6 h-6" />,
     },
     {
       label: "Profit Factor",
@@ -240,23 +252,31 @@ const Performance = () => {
       color: "text-purple-700",
       bg: "bg-linear-to-br from-purple-100 to-rose-100",
       border: "border-purple-200",
-      icon: <Zap className="w-6 h-6" />
+      icon: <Zap className="w-6 h-6" />,
     },
     {
       label: "Average Profit per Trade",
       value: formatCompactCurrency(safeStats.avgProfit, currency),
       color: safeStats.avgProfit >= 0 ? "text-emerald-700" : "text-rose-700",
-      bg: safeStats.avgProfit >= 0 ? "bg-linear-to-br from-emerald-100 to-green-100" : "bg-linear-to-br from-rose-100 to-red-100",
-      border: safeStats.avgProfit >= 0 ? "border-emerald-200" : "border-rose-200",
-      icon: <BarChart3 className="w-6 h-6" />
+      bg:
+        safeStats.avgProfit >= 0
+          ? "bg-linear-to-br from-emerald-100 to-green-100"
+          : "bg-linear-to-br from-rose-100 to-red-100",
+      border:
+        safeStats.avgProfit >= 0 ? "border-emerald-200" : "border-rose-200",
+      icon: <BarChart3 className="w-6 h-6" />,
     },
     {
       label: "Return on Investment",
       value: `${safeStats.roi}%`,
       color: Number(safeStats.roi) >= 0 ? "text-emerald-700" : "text-rose-700",
-      bg: Number(safeStats.roi) >= 0 ? "bg-linear-to-br from-emerald-100 to-green-100" : "bg-linear-to-br from-rose-100 to-red-100",
-      border: Number(safeStats.roi) >= 0 ? "border-emerald-200" : "border-rose-200",
-      icon: <TrendingUp className="w-6 h-6" />
+      bg:
+        Number(safeStats.roi) >= 0
+          ? "bg-linear-to-br from-emerald-100 to-green-100"
+          : "bg-linear-to-br from-rose-100 to-red-100",
+      border:
+        Number(safeStats.roi) >= 0 ? "border-emerald-200" : "border-rose-200",
+      icon: <TrendingUp className="w-6 h-6" />,
     },
     {
       label: "Total Pips",
@@ -264,8 +284,8 @@ const Performance = () => {
       color: "text-amber-700",
       bg: "bg-linear-to-br from-amber-100 to-yellow-100",
       border: "border-amber-200",
-      icon: <PieChart className="w-6 h-6" />
-    }
+      icon: <PieChart className="w-6 h-6" />,
+    },
   ];
 
   // Calculate consistency metrics
@@ -276,7 +296,7 @@ const Performance = () => {
         maxConsecutiveLosses: 0,
         maxDrawdown: 0,
         recoveryFactor: "0.0",
-        currentStreak: 0
+        currentStreak: 0,
       };
     }
 
@@ -290,11 +310,13 @@ const Performance = () => {
     let runningBalance = initialBalance || 0;
 
     // Sort entries by date
-    const sortedEntries = [...trades].sort((a, b) => new Date(a.date) - new Date(b.date));
-    
-    sortedEntries.forEach(entry => {
+    const sortedEntries = [...trades].sort(
+      (a, b) => new Date(a.date) - new Date(b.date)
+    );
+
+    sortedEntries.forEach((entry) => {
       runningBalance += entry.profit || 0;
-      
+
       // Track peak and drawdown
       if (runningBalance > peak) {
         peak = runningBalance;
@@ -305,14 +327,14 @@ const Performance = () => {
       }
 
       // Track streaks
-      if (entry.result?.toLowerCase().includes('win')) {
+      if (entry.result?.toLowerCase().includes("win")) {
         consecutiveWins++;
         consecutiveLosses = 0;
         if (consecutiveWins > maxConsecutiveWins) {
           maxConsecutiveWins = consecutiveWins;
         }
         currentStreak = Math.max(currentStreak, consecutiveWins);
-      } else if (entry.result?.toLowerCase().includes('lose')) {
+      } else if (entry.result?.toLowerCase().includes("lose")) {
         consecutiveLosses++;
         consecutiveWins = 0;
         if (consecutiveLosses > maxConsecutiveLosses) {
@@ -322,22 +344,32 @@ const Performance = () => {
       }
     });
 
-    const recoveryFactor = maxDrawdown > 0 ? Math.abs(safeStats.netProfit / maxDrawdown) : 0;
+    const recoveryFactor =
+      maxDrawdown > 0 ? Math.abs(safeStats.netProfit / maxDrawdown) : 0;
 
     return {
       maxConsecutiveWins,
       maxConsecutiveLosses,
       maxDrawdown,
       recoveryFactor: recoveryFactor.toFixed(1),
-      currentStreak: currentStreak > 0 ? currentStreak : currentStreak
+      currentStreak: currentStreak > 0 ? currentStreak : currentStreak,
     };
   }, [trades, safeStats.netProfit, initialBalance]);
 
   // Custom Tooltip Formatter untuk chart
   const renderTooltipContent = (value, name) => {
-    if (name === 'profit' || name === 'avgProfit' || name === 'Total Profit' || name === 'Avg Profit') {
+    if (
+      name === "profit" ||
+      name === "avgProfit" ||
+      name === "Total Profit" ||
+      name === "Avg Profit"
+    ) {
       return [formatCurrency(value, currency), name];
-    } else if (name === 'winRate' || name === 'Win Rate %' || name === 'Win Rate') {
+    } else if (
+      name === "winRate" ||
+      name === "Win Rate %" ||
+      name === "Win Rate"
+    ) {
       return [`${value}%`, name];
     }
     return [value, name];
@@ -350,9 +382,7 @@ const Performance = () => {
     >
       <div className="flex items-center justify-between mb-2">
         <div className="text-sm text-slate-700 font-medium">{label}</div>
-        <div className={`${color}`}>
-          {icon}
-        </div>
+        <div className={`${color}`}>{icon}</div>
       </div>
       <div className={`text-2xl font-bold ${color}`}>{value}</div>
     </Motion.div>
@@ -373,12 +403,22 @@ const Performance = () => {
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b-2 border-slate-200 bg-linear-to-r from-slate-50 to-violet-50">
-              <th className="text-left p-4 text-sm font-bold text-slate-800">Instrument</th>
-              <th className="text-left p-4 text-sm font-bold text-slate-800">Trades</th>
-              <th className="text-left p-4 text-sm font-bold text-slate-800">Win Rate</th>
-              <th className="text-left p-4 text-sm font-bold text-slate-800">Total Profit</th>
-              <th className="text-left p-4 text-sm font-bold text-slate-800">Avg Profit</th>
+            <tr className="border-b-2 border-slate-200 bg-linear-to-r from-slate-50 to-violet-50 whitespace-nowrap">
+              <th className="text-left p-4 text-sm font-bold text-slate-800">
+                Instrument
+              </th>
+              <th className="text-left p-4 text-sm font-bold text-slate-800">
+                Trades
+              </th>
+              <th className="text-left p-4 text-sm font-bold text-slate-800">
+                Win Rate
+              </th>
+              <th className="text-left p-4 text-sm font-bold text-slate-800">
+                Total Profit
+              </th>
+              <th className="text-left p-4 text-sm font-bold text-slate-800">
+                Avg Profit
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -388,31 +428,43 @@ const Performance = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: index * 0.05 }}
-                className="border-b border-slate-100 hover:bg-linear-to-r hover:from-slate-50 hover:to-violet-50 transition-all"
+                className="border-b border-slate-100 hover:bg-linear-to-r hover:from-slate-50 hover:to-violet-50 transition-all whitespace-nowrap"
               >
-                <td className="p-4 text-sm font-bold text-violet-700">{item.instrument}</td>
-                <td className="p-4 text-sm text-slate-700 font-medium">{item.trades}</td>
-                <td className="p-4 text-sm font-bold text-violet-600">{item.winRate}%</td>
-                <td className={`p-4 text-sm font-bold ${
-                  item.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'
-                }`}>
+                <td className="p-4 text-sm font-bold text-violet-700">
+                  {item.instrument}
+                </td>
+                <td className="p-4 text-sm text-slate-700 font-medium">
+                  {item.trades}
+                </td>
+                <td className="p-4 text-sm font-bold text-violet-600">
+                  {item.winRate}%
+                </td>
+                <td
+                  className={`p-4 text-sm font-bold ${
+                    item.profit >= 0 ? "text-emerald-600" : "text-rose-600"
+                  }`}
+                >
                   {formatCompactCurrency(item.profit, currency)}
                 </td>
-                <td className={`p-4 text-sm font-bold ${
-                  item.avgProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'
-                }`}>
+                <td
+                  className={`p-4 text-sm font-bold ${
+                    item.avgProfit >= 0 ? "text-emerald-600" : "text-rose-600"
+                  }`}
+                >
                   {formatCompactCurrency(item.avgProfit, currency)}
                 </td>
               </Motion.tr>
             ))}
           </tbody>
         </table>
-        
+
         {data.length === 0 && (
           <div className="text-center py-12 text-slate-500">
             <FileText className="w-12 h-12 mx-auto mb-3 text-slate-400" />
             <p className="font-medium">No data available</p>
-            <p className="text-sm mt-1 font-light">Start adding trades to see performance data</p>
+            <p className="text-sm mt-1 font-light">
+              Start adding trades to see performance data
+            </p>
           </div>
         )}
       </div>
@@ -432,20 +484,23 @@ const Performance = () => {
             <TrendingUp className="w-8 h-8 text-violet-600" />
             Performance Metrics
           </h1>
-          <p className="text-slate-600 mt-1 font-light">Detailed analysis of your trading performance</p>
+          <p className="text-slate-600 mt-1 font-light">
+            Detailed analysis of your trading performance
+          </p>
         </div>
-        
-        <Motion.div
-          whileHover={{ scale: 1.05 }}
-          className="flex gap-3"
-        >
-          <div className={`px-6 py-3 rounded-2xl shadow-sm border-2 ${
-            safeStats.netProfit >= 0
-              ? 'bg-linear-to-br from-emerald-100 to-green-100 text-emerald-800 border-emerald-300'
-              : 'bg-linear-to-br from-rose-100 to-red-100 text-rose-800 border-rose-300'
-          }`}>
+
+        <Motion.div whileHover={{ scale: 1.05 }} className="flex gap-3">
+          <div
+            className={`px-6 py-3 rounded-2xl shadow-sm border-2 ${
+              safeStats.netProfit >= 0
+                ? "bg-linear-to-br from-emerald-100 to-green-100 text-emerald-800 border-emerald-300"
+                : "bg-linear-to-br from-rose-100 to-red-100 text-rose-800 border-rose-300"
+            }`}
+          >
             <div className="text-sm font-medium">Net P/L</div>
-            <div className="font-bold text-xl">{formatCompactCurrency(safeStats.netProfit, currency)}</div>
+            <div className="font-bold text-xl">
+              {formatCompactCurrency(safeStats.netProfit, currency)}
+            </div>
           </div>
         </Motion.div>
       </Motion.div>
@@ -466,14 +521,17 @@ const Performance = () => {
             >
               <BarChart3 className="w-16 h-16 mx-auto text-slate-400" />
             </Motion.div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">No Trading Data Yet</h3>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">
+              No Trading Data Yet
+            </h3>
             <p className="text-slate-600 mb-6 font-light">
-              Start adding trades to see detailed performance metrics and insights.
+              Start adding trades to see detailed performance metrics and
+              insights.
             </p>
             <Motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => window.location.href = '/trades'}
+              onClick={() => (window.location.href = "/trades")}
               className="bg-linear-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl transition-all shadow-sm font-medium flex items-center gap-2 mx-auto"
             >
               <Plus className="w-5 h-5" />
@@ -522,33 +580,35 @@ const Performance = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={weeklyTrendData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis 
-                      dataKey="week" 
+                    <XAxis
+                      dataKey="week"
                       stroke="#475569"
                       tick={{ fontSize: 11, fontWeight: 600 }}
-                      tickFormatter={(value) => value.split('-W')[1]}
+                      tickFormatter={(value) => value.split("-W")[1]}
                     />
-                    <YAxis 
+                    <YAxis
                       stroke="#475569"
                       tick={{ fontSize: 11, fontWeight: 600 }}
-                      tickFormatter={(value) => formatCompactCurrency(value, currency)}
+                      tickFormatter={(value) =>
+                        formatCompactCurrency(value, currency)
+                      }
                     />
                     <Tooltip
                       formatter={renderTooltipContent}
                       contentStyle={{
-                        borderRadius: '12px',
-                        border: '2px solid #8b5cf6',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                        backgroundColor: '#fafafa'
+                        borderRadius: "12px",
+                        border: "2px solid #8b5cf6",
+                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                        backgroundColor: "#fafafa",
                       }}
                     />
-                    <Line 
-                      type="monotone" 
-                      dataKey="profit" 
-                      stroke="#8b5cf6" 
+                    <Line
+                      type="monotone"
+                      dataKey="profit"
+                      stroke="#8b5cf6"
                       strokeWidth={3}
-                      dot={{ fill: '#7c3aed', strokeWidth: 2, r: 4 }}
-                      activeDot={{ r: 6, fill: '#7c3aed' }}
+                      dot={{ fill: "#7c3aed", strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, fill: "#7c3aed" }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -572,14 +632,28 @@ const Performance = () => {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b-2 border-slate-200 bg-linear-to-r from-slate-50 to-violet-50">
-                    <th className="text-left p-4 text-sm font-bold text-slate-800">Month</th>
-                    <th className="text-left p-4 text-sm font-bold text-slate-800">Trades</th>
-                    <th className="text-left p-4 text-sm font-bold text-slate-800">Wins</th>
-                    <th className="text-left p-4 text-sm font-bold text-slate-800">Losses</th>
-                    <th className="text-left p-4 text-sm font-bold text-slate-800">Win Rate</th>
-                    <th className="text-left p-4 text-sm font-bold text-slate-800">Total Profit</th>
-                    <th className="text-left p-4 text-sm font-bold text-slate-800">Avg Profit</th>
+                  <tr className="border-b-2 border-slate-200 bg-linear-to-r from-slate-50 to-violet-50 whitespace-nowrap">
+                    <th className="text-left p-4 text-sm font-bold text-slate-800">
+                      Month
+                    </th>
+                    <th className="text-left p-4 text-sm font-bold text-slate-800">
+                      Trades
+                    </th>
+                    <th className="text-left p-4 text-sm font-bold text-slate-800">
+                      Wins
+                    </th>
+                    <th className="text-left p-4 text-sm font-bold text-slate-800">
+                      Losses
+                    </th>
+                    <th className="text-left p-4 text-sm font-bold text-slate-800">
+                      Win Rate
+                    </th>
+                    <th className="text-left p-4 text-sm font-bold text-slate-800">
+                      Total Profit
+                    </th>
+                    <th className="text-left p-4 text-sm font-bold text-slate-800">
+                      Avg Profit
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -589,37 +663,53 @@ const Performance = () => {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: index * 0.05 }}
-                      className="border-b border-slate-100 hover:bg-linear-to-r hover:from-slate-50 hover:to-violet-50 transition-all"
+                      className="border-b border-slate-100 hover:bg-linear-to-r hover:from-slate-50 hover:to-violet-50 transition-all whitespace-nowrap"
                     >
-                      <td className="p-4 text-sm font-bold text-violet-700">{month.month}</td>
-                      <td className="p-4 text-sm text-slate-700 font-medium">{month.trades}</td>
+                      <td className="p-4 text-sm font-bold text-violet-700">
+                        {month.month}
+                      </td>
+                      <td className="p-4 text-sm text-slate-700 font-medium">
+                        {month.trades}
+                      </td>
                       <td className="p-4 text-sm font-bold text-emerald-600 flex items-center gap-1">
                         <TrendingUp className="w-3 h-3" /> {month.wins}
                       </td>
                       <td className="p-4 text-sm font-bold text-rose-600 flex items-center gap-1">
                         <TrendingDown className="w-3 h-3" /> {month.losses}
                       </td>
-                      <td className="p-4 text-sm font-bold text-violet-600">{month.winRate}%</td>
-                      <td className={`p-4 text-sm font-bold ${
-                        month.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'
-                      }`}>
+                      <td className="p-4 text-sm font-bold text-violet-600">
+                        {month.winRate}%
+                      </td>
+                      <td
+                        className={`p-4 text-sm font-bold ${
+                          month.profit >= 0
+                            ? "text-emerald-600"
+                            : "text-rose-600"
+                        }`}
+                      >
                         {formatCompactCurrency(month.profit, currency)}
                       </td>
-                      <td className={`p-4 text-sm font-bold ${
-                        month.avgProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'
-                      }`}>
+                      <td
+                        className={`p-4 text-sm font-bold ${
+                          month.avgProfit >= 0
+                            ? "text-emerald-600"
+                            : "text-rose-600"
+                        }`}
+                      >
                         {formatCompactCurrency(month.avgProfit, currency)}
                       </td>
                     </Motion.tr>
                   ))}
                 </tbody>
               </table>
-              
+
               {monthlyData.length === 0 && (
                 <div className="text-center py-12 text-slate-500">
                   <FileText className="w-12 h-12 mx-auto mb-3 text-slate-400" />
                   <p className="font-medium">No monthly data available</p>
-                  <p className="text-sm mt-1 font-light">Start adding trades to see monthly performance</p>
+                  <p className="text-sm mt-1 font-light">
+                    Start adding trades to see monthly performance
+                  </p>
                 </div>
               )}
             </div>
@@ -637,7 +727,7 @@ const Performance = () => {
               data={bestInstruments}
               icon={<Star className="w-5 h-5 text-violet-600" />}
             />
-            
+
             <PerformanceTable
               title="Worst Performing Instruments"
               data={worstInstruments}
@@ -663,36 +753,51 @@ const Performance = () => {
                   whileHover={{ x: 5 }}
                   className="flex justify-between items-center p-3 bg-linear-to-r from-emerald-50 to-green-50 rounded-xl border border-emerald-200"
                 >
-                  <span className="text-slate-700 font-medium">Max Consecutive Wins</span>
+                  <span className="text-slate-700 font-medium">
+                    Max Consecutive Wins
+                  </span>
                   <span className="font-bold text-emerald-600 text-lg flex items-center gap-1">
-                    <Zap className="w-4 h-4" /> {consistencyMetrics.maxConsecutiveWins}
+                    <Zap className="w-4 h-4" />{" "}
+                    {consistencyMetrics.maxConsecutiveWins}
                   </span>
                 </Motion.div>
                 <Motion.div
                   whileHover={{ x: 5 }}
                   className="flex justify-between items-center p-3 bg-linear-to-r from-rose-50 to-red-50 rounded-xl border border-rose-200"
                 >
-                  <span className="text-slate-700 font-medium">Max Consecutive Losses</span>
+                  <span className="text-slate-700 font-medium">
+                    Max Consecutive Losses
+                  </span>
                   <span className="font-bold text-rose-600 text-lg flex items-center gap-1">
-                    <TrendingDown className="w-4 h-4" /> {consistencyMetrics.maxConsecutiveLosses}
+                    <TrendingDown className="w-4 h-4" />{" "}
+                    {consistencyMetrics.maxConsecutiveLosses}
                   </span>
                 </Motion.div>
                 <Motion.div
                   whileHover={{ x: 5 }}
                   className="flex justify-between items-center p-3 bg-linear-to-r from-amber-50 to-yellow-50 rounded-xl border border-amber-200"
                 >
-                  <span className="text-slate-700 font-medium">Max Drawdown</span>
+                  <span className="text-slate-700 font-medium">
+                    Max Drawdown
+                  </span>
                   <span className="font-bold text-amber-600 text-lg flex items-center gap-1">
-                    <ArrowUpDown className="w-4 h-4" /> {formatCompactCurrency(consistencyMetrics.maxDrawdown, currency)}
+                    <ArrowUpDown className="w-4 h-4" />{" "}
+                    {formatCompactCurrency(
+                      consistencyMetrics.maxDrawdown,
+                      currency
+                    )}
                   </span>
                 </Motion.div>
                 <Motion.div
                   whileHover={{ x: 5 }}
                   className="flex justify-between items-center p-3 bg-linear-to-r from-violet-50 to-violet-50 rounded-xl border border-violet-200"
                 >
-                  <span className="text-slate-700 font-medium">Recovery Factor</span>
+                  <span className="text-slate-700 font-medium">
+                    Recovery Factor
+                  </span>
                   <span className="font-bold text-violet-600 text-lg flex items-center gap-1">
-                    <Zap className="w-4 h-4" /> {consistencyMetrics.recoveryFactor}
+                    <Zap className="w-4 h-4" />{" "}
+                    {consistencyMetrics.recoveryFactor}
                   </span>
                 </Motion.div>
               </div>
@@ -709,36 +814,53 @@ const Performance = () => {
                   whileHover={{ x: 5 }}
                   className="flex justify-between items-center p-3 bg-linear-to-r from-violet-50 to-violet-50 rounded-xl border border-violet-200"
                 >
-                  <span className="text-slate-700 font-medium">Largest Win</span>
+                  <span className="text-slate-700 font-medium">
+                    Largest Win
+                  </span>
                   <span className="font-bold text-violet-600 text-lg flex items-center gap-1">
-                    <Trophy className="w-4 h-4" /> {formatCompactCurrency(safeStats.largestWin, currency)}
+                    <Trophy className="w-4 h-4" />{" "}
+                    {formatCompactCurrency(safeStats.largestWin, currency)}
                   </span>
                 </Motion.div>
                 <Motion.div
                   whileHover={{ x: 5 }}
                   className="flex justify-between items-center p-3 bg-linear-to-r from-amber-50 to-yellow-50 rounded-xl border border-amber-200"
                 >
-                  <span className="text-slate-700 font-medium">Largest Loss</span>
+                  <span className="text-slate-700 font-medium">
+                    Largest Loss
+                  </span>
                   <span className="font-bold text-amber-600 text-lg flex items-center gap-1">
-                    <BarChart3 className="w-4 h-4" /> {formatCompactCurrency(safeStats.largestLoss, currency)}
+                    <BarChart3 className="w-4 h-4" />{" "}
+                    {formatCompactCurrency(safeStats.largestLoss, currency)}
                   </span>
                 </Motion.div>
                 <Motion.div
                   whileHover={{ x: 5 }}
                   className="flex justify-between items-center p-3 bg-linear-to-r from-amber-50 to-yellow-50 rounded-xl border border-amber-200"
                 >
-                  <span className="text-slate-700 font-medium">Win/Loss Ratio</span>
+                  <span className="text-slate-700 font-medium">
+                    Win/Loss Ratio
+                  </span>
                   <span className="font-bold text-amber-600 text-lg flex items-center gap-1">
-                    <ArrowUpDown className="w-4 h-4" /> {(safeStats.wins / Math.max(safeStats.losses, 1)).toFixed(2)}
+                    <ArrowUpDown className="w-4 h-4" />{" "}
+                    {(safeStats.wins / Math.max(safeStats.losses, 1)).toFixed(
+                      2
+                    )}
                   </span>
                 </Motion.div>
                 <Motion.div
                   whileHover={{ x: 5 }}
                   className="flex justify-between items-center p-3 bg-linear-to-r from-emerald-50 to-green-50 rounded-xl border border-emerald-200"
                 >
-                  <span className="text-slate-700 font-medium">Risk/Reward Ratio</span>
+                  <span className="text-slate-700 font-medium">
+                    Risk/Reward Ratio
+                  </span>
                   <span className="font-bold text-emerald-600 text-lg flex items-center gap-1">
-                    <Target className="w-4 h-4" /> 1:{(safeStats.avgProfit / Math.max(Math.abs(safeStats.largestLoss), 1)).toFixed(1)}
+                    <Target className="w-4 h-4" /> 1:
+                    {(
+                      safeStats.avgProfit /
+                      Math.max(Math.abs(safeStats.largestLoss), 1)
+                    ).toFixed(1)}
                   </span>
                 </Motion.div>
               </div>
@@ -750,25 +872,44 @@ const Performance = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="bg-linear-to-r from-violet-600 via-purple-600 to-violet-600 rounded-3xl p-6 shadow-sm border-2 border-violet-300"
+            className="bg-linear-to-r from-violet-600 via-purple-600 to-violet-600 rounded-3xl p-5 shadow-sm border-2 border-violet-300"
           >
-            <div className="flex items-center justify-between text-white">
-              <div>
-                <h3 className="text-2xl font-bold mb-2 flex items-center gap-2">
-                  <Crown className="w-8 h-8" />
-                  Track Your Progress Daily!
-                </h3>
-                <p className="text-violet-100 font-light">
-                  Consistency is the key to long-term trading success. Keep analyzing and improving!
-                </p>
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between text-white gap-5">
+              <div className="flex items-start gap-4">
+                <div className="bg-white/20 p-2.5 rounded-full">
+                  <Crown className="w-6 h-6 sm:w-7 sm:h-7" />
+                </div>
+                <div>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-1.5">
+                    Track Your Progress Daily!
+                  </h3>
+                  <p className="text-violet-100/90 font-light text-sm sm:text-base">
+                    Consistency is the key to long-term trading success. Keep
+                    analyzing and improving!
+                  </p>
+                </div>
               </div>
+
               <Motion.button
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
-                className="bg-white text-violet-600 px-6 py-3 rounded-xl font-medium shadow-sm hover:shadow-sm transition-all flex items-center gap-2"
+                className="w-full md:w-auto bg-white text-violet-600 hover:bg-violet-50 px-5 py-3 rounded-xl font-medium shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
               >
                 <Download className="w-4 h-4" />
-                Export Report
+                <span>Export Report</span>
+                <svg
+                  className="w-4 h-4 ml-1 md:hidden"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 7l5 5m0 0l-5 5m5-5H6"
+                  />
+                </svg>
               </Motion.button>
             </div>
           </Motion.div>

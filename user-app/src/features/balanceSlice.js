@@ -6,7 +6,7 @@ import { API_URL } from "../config";
 const initialState = {
   initialBalance: 0,
   currentBalance: 0,
-  currency: "IDR", // Default value
+  currency: "USD", // Default value
   isLoading: false,
   isError: false,
   isSuccess: false,

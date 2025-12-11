@@ -89,6 +89,28 @@ export const deleteTrade = createAsyncThunk(
   }
 );
 
+// Delete all trades
+export const deleteAllTrades = createAsyncThunk(
+  'trades/deleteAllTrades',
+  async (_, thunkAPI) => {
+    try {
+      const res = await axios.delete(`${API_URL}/trades/delete-all`);
+      
+      // Refresh data setelah delete
+      await thunkAPI.dispatch(getBalance());
+      await thunkAPI.dispatch(getTrades());
+      
+      return res.data;
+    } catch (error) {
+      if (error.response) {
+        const message = error.response.data.message || error.response.data.msg;
+        return thunkAPI.rejectWithValue(message);
+      }
+      return thunkAPI.rejectWithValue("Network error occurred");
+    }
+  }
+);
+
 export const tradeSlice = createSlice({
   name: "trades",
   initialState,
@@ -190,7 +212,23 @@ export const tradeSlice = createSlice({
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
-      });
+      })
+      
+       // Delete All Trades
+    .addCase(deleteAllTrades.pending, (state) => {
+      state.isLoading = true;
+    })
+    .addCase(deleteAllTrades.fulfilled, (state, action) => {
+      state.isLoading = false;
+      state.isSuccess = true;
+      state.trades = [];
+      state.message = action.payload.message;
+    })
+    .addCase(deleteAllTrades.rejected, (state, action) => {
+      state.isLoading = false;
+      state.isError = true;
+      state.message = action.payload;
+    });
   },
 });
 

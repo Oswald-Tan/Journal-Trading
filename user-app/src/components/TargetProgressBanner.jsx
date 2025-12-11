@@ -26,9 +26,9 @@ const TargetProgressBanner = ({
   const displayInitialBalance = targetProgress.initialBalance || initialBalance;
 
   // Tentukan ukuran berdasarkan prop size
-  const titleSize = size === 'large' ? 'text-3xl' : 'text-2xl';
-  const valueSize = size === 'large' ? 'text-2xl' : 'text-xl';
-  const daysRemainingSize = size === 'large' ? 'text-4xl' : 'text-3xl';
+  const titleSize = size === 'large' ? 'text-xl sm:text-2xl lg:text-3xl' : 'text-lg sm:text-xl';
+  const valueSize = size === 'large' ? 'text-lg sm:text-xl lg:text-2xl' : 'text-base sm:text-lg';
+  const daysRemainingSize = size === 'large' ? 'text-2xl sm:text-3xl lg:text-4xl' : 'text-xl sm:text-2xl';
 
   // Tentukan ikon dan warna berdasarkan status
   const getBannerConfig = () => {
@@ -61,7 +61,7 @@ const TargetProgressBanner = ({
     
     return {
       icon: TrendingUp,
-      gradient: "from-orange-500 to-amber-500",
+      gradient: "from-red-500 to-orange-500",
       border: "border-orange-300",
       iconColor: "text-white"
     };
@@ -70,20 +70,32 @@ const TargetProgressBanner = ({
   const bannerConfig = getBannerConfig();
   const BannerIcon = bannerConfig.icon;
 
+  // Fungsi untuk format target text
+  const getTargetText = () => {
+    if (targetProgress.useDailyTarget) {
+      // Untuk target harian: tampilkan persentase
+      return `Target: ${target.dailyTargetPercentage}% per hari (${formatCompactCurrency(target.dailyTargetAmount || 0, currency)})`;
+    } else {
+      // Untuk target dengan tanggal: tampilkan target balance
+      return `Target: ${formatCompactCurrency(target.targetBalance || 0, currency)}`;
+    }
+  };
+
   return (
     <Motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 }}
-      className={`p-6 rounded-3xl shadow-sm border-2 bg-linear-to-r ${bannerConfig.gradient} text-white ${bannerConfig.border}`}
+      className={`p-4 sm:p-6 rounded-3xl shadow-sm border bg-linear-to-r ${bannerConfig.gradient} text-white ${bannerConfig.border}`}
     >
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-        <div className="flex items-center gap-3">
-          <div className={`p-3 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30`}>
-            <BannerIcon className={`w-8 h-8 ${bannerConfig.iconColor}`} />
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-6">
+        <div className="flex items-start gap-3 w-full md:w-auto">
+          <div className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 shrink-0`}>
+            <BannerIcon className={`w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 ${bannerConfig.iconColor}`} />
           </div>
-          <div>
-            <h2 className={`${titleSize} font-bold mb-2 flex items-center gap-2`}>
+          <div className="flex-1 min-w-0">
+            <h2 className={`${titleSize} font-bold mb-1 sm:mb-2 flex items-center gap-2 truncate`}>
               {targetProgress.useDailyTarget 
                 ? "Target Harian"
                 : targetProgress.isCompleted 
@@ -93,22 +105,20 @@ const TargetProgressBanner = ({
                 : "Active Target"
               }
             </h2>
-            <p className="opacity-90 text-lg font-medium">
-              {target.description ||
-                (targetProgress.useDailyTarget
-                  ? `Target: ${target.dailyTargetPercentage}% per hari`
-                  : `Target: ${formatCompactCurrency(target.targetBalance, currency)}`)}
+            <p className="opacity-90 text-sm sm:text-base lg:text-lg font-medium truncate">
+              {getTargetText()}
             </p>
           </div>
         </div>
         
+        {/* Days Remaining - hanya untuk target dengan tanggal */}
         {!targetProgress.useDailyTarget && (
           <Motion.div
             whileHover={{ scale: 1.05 }}
-            className="mt-4 md:mt-0 text-right bg-white/20 backdrop-blur-sm rounded-2xl px-6 py-4 border border-white/30"
+            className="w-full md:w-auto mt-4 md:mt-0 text-center md:text-right bg-white/20 backdrop-blur-sm rounded-xl sm:rounded-2xl px-4 py-3 sm:px-6 sm:py-4 border border-white/30"
           >
-            <div className="flex items-center gap-2 text-sm opacity-90 font-semibold">
-              <Calendar className="w-4 h-4" />
+            <div className="flex items-center justify-center md:justify-end gap-2 text-xs sm:text-sm opacity-90 font-semibold">
+              <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
               Days Remaining
             </div>
             <div className={`${daysRemainingSize} font-bold`}>
@@ -121,17 +131,17 @@ const TargetProgressBanner = ({
       {/* Progress Bar - Hanya untuk target dengan tanggal */}
       {!targetProgress.useDailyTarget && (
         <div className="mb-6">
-          <div className="flex justify-between text-sm mb-2 font-bold">
+          <div className="flex flex-col sm:flex-row justify-between text-xs sm:text-sm mb-2 font-bold gap-1 sm:gap-0">
             <span className="flex items-center gap-1">
-              <TrendingUp className="w-4 h-4" />
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
               {formatCompactCurrency(displayInitialBalance, currency)}
             </span>
             <span className="flex items-center gap-1">
-              <Target className="w-4 h-4" />
+              <Target className="w-3 h-3 sm:w-4 sm:h-4" />
               {formatCompactCurrency(target.targetBalance, currency)}
             </span>
           </div>
-          <div className="w-full bg-white/30 rounded-full h-5 border-2 border-white/40">
+          <div className="w-full bg-white/30 rounded-full h-3 sm:h-4 lg:h-5 border border-white/40">
             <Motion.div
               initial={{ width: 0 }}
               animate={{ width: `${targetProgress.progress}%` }}
@@ -150,10 +160,10 @@ const TargetProgressBanner = ({
 
       {/* Progress Stats */}
       <div
-        className={`grid gap-4 ${
+        className={`grid gap-3 sm:gap-4 ${
           targetProgress.useDailyTarget
             ? "grid-cols-1 md:grid-cols-3"
-            : "grid-cols-2 md:grid-cols-4"
+            : "grid-cols-2 sm:grid-cols-2 md:grid-cols-4"
         }`}
       >
         {targetProgress.useDailyTarget ? (
@@ -161,56 +171,56 @@ const TargetProgressBanner = ({
           <>
             <Motion.div
               whileHover={{ scale: 1.05 }}
-              className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30"
+              className="bg-white/20 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-white/30"
             >
-              <div className="flex items-center gap-2 text-sm opacity-90 font-semibold">
-                <Target className="w-4 h-4" />
+              <div className="flex items-center gap-2 text-xs sm:text-sm opacity-90 font-semibold">
+                <Target className="w-3 h-3 sm:w-4 sm:h-4" />
                 Target Harian
               </div>
               <div className={`${valueSize} font-bold mt-1`}>
                 {target.dailyTargetPercentage}%
               </div>
-              <div className="text-sm opacity-90">
+              <div className="text-xs sm:text-sm opacity-90 truncate">
                 ({formatCompactCurrency(target.dailyTargetAmount, currency)})
               </div>
             </Motion.div>
             
             <Motion.div
               whileHover={{ scale: 1.05 }}
-              className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30"
+              className="bg-white/20 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-white/30"
             >
-              <div className="flex items-center gap-2 text-sm opacity-90 font-semibold">
-                <BarChart3 className="w-4 h-4" />
+              <div className="flex items-center gap-2 text-xs sm:text-sm opacity-90 font-semibold">
+                <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4" />
                 Rata-rata Harian
               </div>
               <div className={`${valueSize} font-bold mt-1`}>
                 {formatCompactCurrency(targetProgress.dailyAchieved, currency)}
               </div>
-              <div className="text-sm opacity-90">
+              <div className="text-xs sm:text-sm opacity-90">
                 {targetProgress.daysPassed} hari
               </div>
             </Motion.div>
             
             <Motion.div
               whileHover={{ scale: 1.05 }}
-              className={`backdrop-blur-sm rounded-2xl p-4 border ${
+              className={`backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border ${
                 targetProgress.onTrack
                   ? "bg-emerald-500/30 border-emerald-300"
                   : "bg-amber-500/30 border-amber-300"
               }`}
             >
-              <div className="flex items-center gap-2 text-sm opacity-90 font-semibold">
+              <div className="flex items-center gap-2 text-xs sm:text-sm opacity-90 font-semibold">
                 {targetProgress.onTrack ? (
-                  <CheckCircle2 className="w-4 h-4" />
+                  <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4" />
                 ) : (
-                  <AlertTriangle className="w-4 h-4" />
+                  <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4" />
                 )}
                 Status
               </div>
               <div className={`${valueSize} font-bold mt-1`}>
                 {targetProgress.onTrack ? "On Track" : "Perlu Improvement"}
               </div>
-              <div className="text-sm opacity-90">
+              <div className="text-xs sm:text-sm opacity-90">
                 {targetProgress.progress > 100
                   ? "100%"
                   : targetProgress.progress.toFixed(1)}
@@ -223,10 +233,10 @@ const TargetProgressBanner = ({
           <>
             <Motion.div
               whileHover={{ scale: 1.05 }}
-              className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30"
+              className="bg-white/20 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-white/30"
             >
-              <div className="flex items-center gap-2 text-sm opacity-90 font-semibold">
-                <TrendingUp className="w-4 h-4" />
+              <div className="flex items-center gap-2 text-xs sm:text-sm opacity-90 font-semibold">
+                <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
                 Progress
               </div>
               <div className={`${valueSize} font-bold mt-1`}>
@@ -236,10 +246,10 @@ const TargetProgressBanner = ({
             
             <Motion.div
               whileHover={{ scale: 1.05 }}
-              className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30"
+              className="bg-white/20 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-white/30"
             >
-              <div className="flex items-center gap-2 text-sm opacity-90 font-semibold">
-                <Trophy className="w-4 h-4" />
+              <div className="flex items-center gap-2 text-xs sm:text-sm opacity-90 font-semibold">
+                <Trophy className="w-3 h-3 sm:w-4 sm:h-4" />
                 Achieved
               </div>
               <div className={`${valueSize} font-bold mt-1`}>
@@ -249,10 +259,10 @@ const TargetProgressBanner = ({
             
             <Motion.div
               whileHover={{ scale: 1.05 }}
-              className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30"
+              className="bg-white/20 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-white/30"
             >
-              <div className="flex items-center gap-2 text-sm opacity-90 font-semibold">
-                <Target className="w-4 h-4" />
+              <div className="flex items-center gap-2 text-xs sm:text-sm opacity-90 font-semibold">
+                <Target className="w-3 h-3 sm:w-4 sm:h-4" />
                 Needed
               </div>
               <div className={`${valueSize} font-bold mt-1`}>
@@ -262,14 +272,14 @@ const TargetProgressBanner = ({
             
             <Motion.div
               whileHover={{ scale: 1.05 }}
-              className={`backdrop-blur-sm rounded-2xl p-4 border ${
+              className={`backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border ${
                 targetProgress.onTrack
                   ? "bg-emerald-500/30 border-emerald-300"
                   : "bg-amber-500/30 border-amber-300"
               }`}
             >
-              <div className="flex items-center gap-2 text-sm opacity-90 font-semibold">
-                <Zap className="w-4 h-4" />
+              <div className="flex items-center gap-2 text-xs sm:text-sm opacity-90 font-semibold">
+                <Zap className="w-3 h-3 sm:w-4 sm:h-4" />
                 Daily Target
               </div>
               <div className={`${valueSize} font-bold mt-1`}>

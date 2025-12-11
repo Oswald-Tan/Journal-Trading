@@ -18,7 +18,7 @@ export default function Header() {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        const response = await axios.get("http://localhost:8082/api/v1/auth/me", {
+        const response = await axios.get("https://api.pipsdiary.com/api/v1/auth/me", {
           withCredentials: true, // Penting untuk mengirim session cookie
         });
 
@@ -44,7 +44,7 @@ export default function Header() {
   };
 
   const handleLogin = () => {
-    window.location.href = "http://localhost:5173/";
+    window.location.href = "https://app.pipsdiary.com";
   };
 
   // Tampilkan loading state jika masih checking auth
@@ -103,7 +103,7 @@ export default function Header() {
               <>
                 <button
                   onClick={handleLogin}
-                  className="px-4 py-2 rounded-full bg-violet-600 text-white text-sm shadow hover:brightness-95"
+                  className="px-4 py-2 rounded-full bg-violet-600 text-white text-sm shadow hover:brightness-95 cursor-pointer"
                 >
                   Try free
                 </button>

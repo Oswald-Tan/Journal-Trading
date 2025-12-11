@@ -1,4 +1,10 @@
-import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
 import { motion as Motion, AnimatePresence } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useOutletContext } from "react-router-dom";
@@ -29,7 +35,7 @@ import {
   Zap,
   FileText,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
 } from "lucide-react";
 
 // Helper functions untuk formatting angka
@@ -115,22 +121,22 @@ const Trades = () => {
 
   // PERBAIKAN: Gunakan subscription langsung dari props tanpa override
   const actualSubscription = useMemo(() => {
-    return subscription || { plan: 'free' };
+    return subscription || { plan: "free" };
   }, [subscription]);
 
   // PERBAIKAN: Safe currentPlan berdasarkan actual subscription
   const safeCurrentPlan = useMemo(() => {
-    const planName = actualSubscription.plan || 'free';
-    
+    const planName = actualSubscription.plan || "free";
+
     // Jika plan adalah pro atau lifetime, berikan unlimited entries
-    if (planName === 'pro' || planName === 'lifetime') {
+    if (planName === "pro" || planName === "lifetime") {
       return {
         name: planName.charAt(0).toUpperCase() + planName.slice(1),
         maxEntries: 1000, // Essentially unlimited
         ...currentPlan,
       };
     }
-    
+
     // Default ke Free plan
     return {
       name: currentPlan?.name || "Free",
@@ -174,7 +180,12 @@ const Trades = () => {
   // PERBAIKAN: Handle messages dengan pendekatan yang lebih aman - pisahkan effect untuk success dan error
   useEffect(() => {
     // Skip jika tidak ada message atau action yang dikecualikan
-    const shouldNotShowMessage = ["close", "cancel", "error", "no-changes"].includes(lastAction);
+    const shouldNotShowMessage = [
+      "close",
+      "cancel",
+      "error",
+      "no-changes",
+    ].includes(lastAction);
 
     if (!message || shouldNotShowMessage || effectRun.current) {
       return;
@@ -191,10 +202,10 @@ const Trades = () => {
           setLastAction(null);
           effectRun.current = false;
         }, 3000);
-        
+
         return () => clearTimeout(hideTimer);
       }, 0);
-      
+
       return () => {
         if (timer) clearTimeout(timer);
       };
@@ -203,7 +214,12 @@ const Trades = () => {
 
   useEffect(() => {
     // Skip jika tidak ada message atau action yang dikecualikan
-    const shouldNotShowMessage = ["close", "cancel", "error", "no-changes"].includes(lastAction);
+    const shouldNotShowMessage = [
+      "close",
+      "cancel",
+      "error",
+      "no-changes",
+    ].includes(lastAction);
 
     if (!message || shouldNotShowMessage || effectRun.current) {
       return;
@@ -220,10 +236,10 @@ const Trades = () => {
           setLastAction(null);
           effectRun.current = false;
         }, 5000);
-        
+
         return () => clearTimeout(hideTimer);
       }, 0);
-      
+
       return () => {
         if (timer) clearTimeout(timer);
       };
@@ -262,7 +278,7 @@ const Trades = () => {
     // PERBAIKAN: Redirect ke halaman upgrade jika melebihi batas dan plan free
     if (
       trades.length >= safeCurrentPlan.maxEntries &&
-      actualSubscription.plan === 'free'
+      actualSubscription.plan === "free"
     ) {
       navigate("/upgrade");
       return;
@@ -372,7 +388,7 @@ const Trades = () => {
     if (
       !editing &&
       trades.length >= safeCurrentPlan.maxEntries &&
-      actualSubscription.plan === 'free'
+      actualSubscription.plan === "free"
     ) {
       navigate("/upgrade");
       return;
@@ -543,7 +559,7 @@ const Trades = () => {
             <FileText className="w-8 h-8 text-violet-600" />
             Trading Entries
             {/* Tampilkan badge plan */}
-            {actualSubscription.plan !== 'free' && (
+            {actualSubscription.plan !== "free" && (
               <span className="bg-linear-to-r from-green-500 to-emerald-600 text-white text-sm px-3 py-1 rounded-full font-semibold">
                 {actualSubscription.plan.toUpperCase()} PLAN
               </span>
@@ -551,7 +567,7 @@ const Trades = () => {
           </h1>
           <p className="text-slate-600 mt-1 font-light">
             Manage your trading journal entries
-            {actualSubscription.plan !== 'free' && (
+            {actualSubscription.plan !== "free" && (
               <span className="text-green-600 font-semibold ml-2">
                 • Unlimited entries
               </span>
@@ -609,32 +625,63 @@ const Trades = () => {
       )}
 
       {/* PERBAIKAN: Plan Info Banner - HANYA TAMPIL JIKA PLAN FREE */}
-      {actualSubscription.plan === 'free' && (
+      {actualSubscription.plan === "free" && (
         <Motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-linear-to-r from-red-100 to-red-100 border-2 border-red-300 rounded-3xl p-5 shadow-sm"
         >
-          <div className="flex items-center justify-between">
-            <div>
+          {/* Ubah flex-col pada mobile, dan atur alignment */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="w-full sm:w-auto">
               <h3 className="font-bold text-red-900 text-lg flex items-center gap-2">
-                <Crown className="w-5 h-5 text-red-600" />
+                <Crown className="w-5 h-5 text-red-600 shrink-0" />
                 Free Plan
+                {/* Tambah badge di mobile untuk info cepat */}
+                <span className="sm:hidden ml-2 bg-red-200 text-red-800 text-xs px-2 py-0.5 rounded-full">
+                  {entriesLeft} left
+                </span>
               </h3>
               <p className="text-red-800 text-sm mt-1 font-light">
                 {entriesLeft} entries remaining of {safeCurrentPlan.maxEntries}
+                {/* Sembunyikan info lengkap di mobile jika sudah ada badge */}
+                <span className="hidden sm:inline">
+                  • Upgrade for unlimited entries
+                </span>
+              </p>
+              {/* Info tambahan hanya di mobile */}
+              <p className="text-red-700 text-xs mt-2 sm:hidden">
+                Upgrade to Pro for unlimited entries
               </p>
             </div>
+
+            {/* Tombol upgrade - full width di mobile, auto di desktop */}
             <Motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleUpgradeClick}
-              className="bg-linear-to-r from-pink-500 to-red-600 hover:from-pink-600 hover:to-red-700 text-white px-6 py-3 rounded-xl transition-all duration-200 text-sm font-medium shadow-sm flex items-center gap-2"
+              className="w-full sm:w-auto bg-linear-to-r from-pink-500 to-red-600 hover:from-pink-600 hover:to-red-700 text-white px-6 py-3 rounded-xl transition-all duration-200 text-sm font-medium shadow-sm flex items-center justify-center gap-2"
             >
-              <Zap className="w-4 h-4" />
-              Upgrade Now
+              <Zap className="w-4 h-4 shrink-0" />
+              <span>Upgrade Now</span>
+              {/* Arrow icon hanya di mobile */}
+              <svg
+                className="w-4 h-4 ml-1 sm:hidden"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
+              </svg>
             </Motion.button>
           </div>
+
+          
         </Motion.div>
       )}
 
@@ -654,7 +701,7 @@ const Trades = () => {
           </div>
           <div className="text-2xl font-bold text-slate-800">
             {trades.length}
-            {actualSubscription.plan === 'free' && (
+            {actualSubscription.plan === "free" && (
               <span className="text-sm text-slate-600 ml-1">
                 / {safeCurrentPlan.maxEntries}
               </span>

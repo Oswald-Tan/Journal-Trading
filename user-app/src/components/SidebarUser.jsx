@@ -89,11 +89,11 @@ const SidebarUser = () => {
       //   link: "/profile-settings",
       //   icon: Settings,
       // },
-      {
-        name: "Logout",
-        action: "logout",
-        icon: LogOutIcon,
-      },
+      // {
+      //   name: "Logout",
+      //   action: "logout",
+      //   icon: LogOutIcon,
+      // },
     ],
     []
   );

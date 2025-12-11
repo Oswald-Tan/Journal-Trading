@@ -2,6 +2,10 @@ import React from "react";
 import Dashboard from "./Dashboard";
 
 export default function Hero() {
+  const handleLogin = () => {
+    window.location.href = "https://app.pipsdiary.com";
+  };
+
   return (
     <section className="h-[120vh] overflow-visible p-4">
       <div className="relative h-full flex flex-col">
@@ -45,7 +49,7 @@ export default function Hero() {
                 </p>
 
                 {/* Get Started Button */}
-                <button className="mt-8 px-10 py-3 bg-black text-white rounded-full font-base text-sm hover:bg-gray-800 transition-colors duration-200 shadow-lg">
+                <button onClick={handleLogin} className="mt-8 px-10 py-3 bg-black text-white rounded-full font-base text-sm hover:bg-gray-800 transition-colors duration-200 shadow-lg cursor-pointer">
                   Get Started
                 </button>
               </div>

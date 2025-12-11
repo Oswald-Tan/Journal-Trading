@@ -8,6 +8,7 @@ import Swal from "sweetalert2";
 import { useSubscription } from "../hooks/useSubscription";
 import { useSidebar } from "../context/useSidebar";
 import { useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Header = ({
   stats,
@@ -27,6 +28,7 @@ const Header = ({
   const dispatch = useDispatch();
   const { toggleSidebar } = useSidebar();
   const dropdownRef = useRef(null);
+  const navigate = useNavigate();
 
   // Gunakan useSubscription hook
   const { subscription: reduxSubscription, isLoading: subscriptionLoading } =
@@ -71,6 +73,7 @@ const Header = ({
       if (result.isConfirmed) {
         dispatch(LogOut());
         dispatch(reset());
+        navigate("/");
       }
     });
   };
@@ -85,7 +88,7 @@ const Header = ({
               <div className="flex items-center space-x-4">
                 <div className="text-2xl font-bold bg-linear-to-r from-violet-600 to-purple-700 bg-clip-text text-transparent flex items-center gap-2">
                   <img src={GradientLogo} alt="Logo" className="w-10" />
-                  PipsDiary
+                  Pips Diary
                 </div>
               </div>
               <div className="animate-pulse bg-violet-200 h-8 w-24 rounded-xl"></div>
@@ -104,7 +107,7 @@ const Header = ({
           <div className="flex justify-between items-center h-16">
             {/* Toggle Sidebar */}
             <button
-                className="cursor-pointer text-slate-900"
+                className="cursor-pointer text-violet-900"
                 onClick={toggleSidebar}
                 aria-label="Toggle Sidebar"
               >
@@ -120,7 +123,7 @@ const Header = ({
                 className="cursor-pointer text-center"
               >
                 <div className="text-xs text-violet-700 font-bold">Balance</div>
-                <div className="font-bold text-violet-900 text-lg">
+                <div className="font-bold text-violet-900 md:text-lg text-md">
                   {formatCompactCurrency(stats.currentBalance, currency)}
                 </div>
               </Motion.div>
@@ -135,7 +138,7 @@ const Header = ({
                   <div className="text-xs text-emerald-700 font-bold">
                     Target Progress
                   </div>
-                  <div className="font-bold text-emerald-900 text-lg">
+                  <div className="font-bold text-emerald-900 md:text-lg text-md">
                     {targetProgress.progress.toFixed(1)}%
                   </div>
                 </Motion.div>
@@ -147,7 +150,7 @@ const Header = ({
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={onShowUpgradeModal}
-                  className="cursor-pointer bg-linear-to-r from-violet-500 to-purple-500 text-white px-5 py-2 rounded-xl hover:shadow-lg transition-all duration-200 font-bold border-2 border-violet-400/50"
+                  className="hidden md:block cursor-pointer bg-linear-to-r from-violet-500 to-purple-500 text-white px-5 py-2 rounded-xl hover:shadow-lg transition-all duration-200 font-bold border-2 border-violet-400/50"
                 >
                   🚀 Upgrade
                 </Motion.button>

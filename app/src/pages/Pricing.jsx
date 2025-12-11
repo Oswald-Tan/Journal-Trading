@@ -122,7 +122,7 @@ export default function Pricing() {
 
               {/* CTA Button */}
               <button
-                className={`w-full py-3 rounded-full font-medium text-sm transition-all duration-200 ${
+                className={`w-full py-3 rounded-full font-medium text-sm transition-all duration-200 cursor-pointer ${
                   plan.popular
                     ? "bg-violet-600 text-white hover:bg-violet-700 shadow-lg"
                     : "bg-black text-white hover:bg-gray-800 shadow-md"

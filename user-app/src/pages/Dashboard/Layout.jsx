@@ -17,9 +17,6 @@ const Layout = (props) => {
     onShowUpgradeModal: props.onShowUpgradeModal || (() => {}),
   };
 
-  console.log('DashboardPage - Final Props:', safeProps);
-  console.log('DashboardPage - onShowUpgradeModal available:', !!props.onShowUpgradeModal); // Debug
-
   return <Dashboard {...safeProps} />;
 };
 

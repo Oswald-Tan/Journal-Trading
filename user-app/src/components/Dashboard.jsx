@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { motion as Motion } from 'framer-motion';
+import { motion as Motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
@@ -25,15 +25,15 @@ import {
   Briefcase,
   Zap,
   Rocket,
-  FileText,
   PieChart,
   Plus,
-  Settings,
-  ArrowRight
 } from "lucide-react";
 import StatCard from "./StatCard";
-import { formatCurrency, formatCompactCurrency } from '../utils/currencyFormatter';
-import TargetProgressBanner from '../components/TargetProgressBanner';
+import {
+  formatCurrency,
+  formatCompactCurrency,
+} from "../utils/currencyFormatter";
+import TargetProgressBanner from "../components/TargetProgressBanner";
 import BalanceModal from "./modals/BalanceModal";
 
 const Dashboard = ({
@@ -172,7 +172,9 @@ const Dashboard = ({
             <BarChart3 className="w-8 h-8 text-violet-600" />
             Trading Dashboard
           </h1>
-          <p className="text-slate-600 mt-1 font-light">Your complete trading overview</p>
+          <p className="text-slate-600 mt-1 font-light">
+            Your complete trading overview
+          </p>
         </div>
       </Motion.div>
 
@@ -241,7 +243,7 @@ const Dashboard = ({
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={chartData}
-                margin={{ left: 30, right: 20, top: 10, bottom: 10 }}
+                margin={{ left: 0, right: 0, top: 10, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis
@@ -258,7 +260,9 @@ const Dashboard = ({
                   stroke="#475569"
                   width={70}
                   tick={{ fontSize: 11, fontWeight: 600 }}
-                  tickFormatter={(value) => formatCompactCurrency(value, currency)}
+                  tickFormatter={(value) =>
+                    formatCompactCurrency(value, currency)
+                  }
                 />
                 <Tooltip
                   formatter={(value, name) => {
@@ -325,7 +329,7 @@ const Dashboard = ({
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={performanceData}
-                margin={{ left: 30, right: 20, top: 10, bottom: 10 }}
+                margin={{ left: 0, right: 0, top: 10, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis
@@ -357,7 +361,9 @@ const Dashboard = ({
                   stroke="#475569"
                   width={70}
                   tick={{ fontSize: 11, fontWeight: 600 }}
-                  tickFormatter={(value) => formatCompactCurrency(value, currency)}
+                  tickFormatter={(value) =>
+                    formatCompactCurrency(value, currency)
+                  }
                 />
                 <Tooltip
                   formatter={(value, name) => {
@@ -556,7 +562,7 @@ const Dashboard = ({
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => navigate("/targets")}
-              className="cursor-pointer w-full text-left p-5 bg-linear-to-br from-violet-600 to-purple-600 rounded-2xl hover:from-violet-700 hover:to-purple-700 transition-all duration-300 flex items-center shadow-sm hover:shadow-md border-2 border-violet-400/50"
+              className="cursor-pointer w-full text-left p-5 bg-linear-to-br from-red-600 to-rose-600 rounded-2xl hover:from-red-700 hover:to-rose-700 transition-all duration-300 flex items-center shadow-sm hover:shadow-md border-2 border-red-400/50"
             >
               <Target className="w-8 h-8 text-white mr-4" />
               <div>
@@ -575,7 +581,7 @@ const Dashboard = ({
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => navigate("/trades")}
-              className="cursor-pointer w-full text-left p-5 bg-linear-to-br from-blue-600 to-cyan-600 rounded-2xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 flex items-center shadow-sm hover:shadow-md border-2 border-blue-300/50"
+              className="cursor-pointer w-full text-left p-5 bg-linear-to-br from-orange-600 to-amber-600 rounded-2xl hover:from-orange-700 hover:to-amber-700 transition-all duration-300 flex items-center shadow-sm hover:shadow-md border-2 border-orange-300/50"
             >
               <Plus className="w-8 h-8 text-white mr-4" />
               <div>
@@ -592,7 +598,7 @@ const Dashboard = ({
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => navigate("/analytics")}
-              className="cursor-pointer w-full text-left p-5 bg-linear-to-br from-violet-600 to-purple-600 rounded-2xl hover:from-violet-700 hover:to-violet-700 transition-all duration-300 flex items-center shadow-sm hover:shadow-md border-2 border-violet-300/50"
+              className="cursor-pointer w-full text-left p-5 bg-linear-to-br from-lime-600 to-green-600 rounded-2xl hover:from-lime-700 hover:to-lime-700 transition-all duration-300 flex items-center shadow-sm hover:shadow-md border-2 border-lime-300/50"
             >
               <PieChart className="w-8 h-8 text-white mr-4" />
               <div>
@@ -613,26 +619,30 @@ const Dashboard = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="bg-linear-to-r from-violet-600 via-pink-600 to-purple-600 rounded-3xl p-6 shadow-2xl border-2 border-violet-300"
+        className="bg-linear-to-r from-violet-600 via-pink-500 to-purple-600 rounded-3xl p-5 shadow-2xl border-2 border-violet-300"
       >
-        <div className="flex items-center justify-between text-white">
-          <div>
-            <h3 className="text-2xl font-bold mb-2 flex items-center gap-2">
-              <Rocket className="w-8 h-8" />
-              Keep Trading Smart!
-            </h3>
-            <p className="text-violet-100 font-light">
-              Consistency and discipline are keys to long-term success.
-            </p>
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between text-white gap-5">
+          <div className="flex items-start gap-4">
+            <div className="bg-white/20 p-2.5 rounded-full">
+              <Rocket className="w-6 h-6 sm:w-7 sm:h-7" />
+            </div>
+            <div>
+              <h3 className="text-xl sm:text-2xl font-bold mb-1.5">
+                Keep Trading Smart!
+              </h3>
+              <p className="text-violet-100/90 font-light text-sm sm:text-base">
+                Consistency and discipline are keys to long-term success.
+              </p>
+            </div>
           </div>
           <Motion.button
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => navigate("/analytics")}
-            className="cursor-pointer bg-white text-violet-600 px-6 py-3 rounded-xl font-medium shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+            className="w-full md:w-auto bg-white text-violet-600 hover:bg-violet-50 px-5 py-3 rounded-xl font-medium shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
           >
             <BarChart3 className="w-4 h-4" />
-            View Analytics
+            <span>View Analytics</span>
           </Motion.button>
         </div>
       </Motion.div>

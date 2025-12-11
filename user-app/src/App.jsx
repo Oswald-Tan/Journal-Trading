@@ -11,7 +11,7 @@ import Targets from "./pages/Targets";
 import ProfileSettings from "./pages/ProfileSettings";
 import VerifyEmailPage from "./pages/auth/VerifyEmailPage";
 import UpgradePage from "./components/UpgradePage";
-import ForexCalculator from "./components/ForexCalculator";
+import ForexCalculator from "./pages/ForexCalculator";
 import LayoutUser from "./layout/LayoutUser";
 import EducationIndex from "./pages/Education/index";
 import EducationCategory from "./pages/Education/[category]";

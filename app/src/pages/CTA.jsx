@@ -2,7 +2,7 @@ import React from "react";
 
 export default function CTA() {
   const handleLogin = () => {
-    window.location.href = "http://localhost:5173/";
+    window.location.href = "https:app.pipsdiary.com";
   };
 
   return (

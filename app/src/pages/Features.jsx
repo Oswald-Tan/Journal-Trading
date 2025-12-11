@@ -49,7 +49,7 @@ export default function Features() {
   ];
 
   const handleLogin = () => {
-    window.location.href = "http://localhost:5173/";
+    window.location.href = "https://app.pipsdiary.com";
   };
 
   return (
@@ -93,7 +93,7 @@ export default function Features() {
         <div className="text-center mt-16">
           <button
             onClick={handleLogin}
-            className="px-8 py-3 bg-black text-white rounded-full font-medium text-sm hover:bg-gray-800 transition-colors duration-200 shadow-lg"
+            className="px-8 py-3 bg-black text-white rounded-full font-medium text-sm hover:bg-gray-800 transition-colors duration-200 shadow-lg cursor-pointer"
           >
             Explore All Features
           </button>

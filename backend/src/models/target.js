@@ -25,6 +25,7 @@ const Target = db.define(
     },
     targetBalance: {
       type: DataTypes.DECIMAL(15, 2),
+      defaultValue: 0,
     },
     targetDate: {
       type: DataTypes.DATEONLY,

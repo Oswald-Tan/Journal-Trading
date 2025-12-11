@@ -1,23 +1,21 @@
 import React, { useState, useMemo } from 'react';
 import { motion as Motion } from 'framer-motion';
-import { useSelector } from 'react-redux';
-import { formatCompactCurrency } from '../utils/currencyFormatter';
+import { formatCompactCurrency } from '../../utils/currencyFormatter';
 import {
   Calculator,
   Trash2,
   BarChart3,
   TrendingUp,
   Lightbulb,
-  DollarSign,
-  Target,
   PieChart,
   AlertTriangle,
   CheckCircle,
-  Info
+  Info,
+  ChevronDown
 } from 'lucide-react';
 
-const ForexCalculator = () => {
-  const { currency } = useSelector((state) => state.balance);
+const Layout = () => {
+  // State untuk form calculator
   const [calculatorForm, setCalculatorForm] = useState({
     balance: '',
     type: 'Buy',
@@ -27,21 +25,63 @@ const ForexCalculator = () => {
     risk: '3' // default 3%
   });
 
-  // Fungsi untuk normalisasi input (mengganti koma dengan titik)
-  const normalizeInput = (value) => {
-    if (typeof value === 'string') {
-      return value.replace(/,/g, '.');
+  // State untuk currency selector
+  const [selectedCurrency, setSelectedCurrency] = useState('USD');
+  const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
+
+  // Daftar currency yang tersedia
+  const availableCurrencies = [
+    { code: 'USD', symbol: '$', name: 'US Dollar' },
+    { code: 'EUR', symbol: '€', name: 'Euro' },
+    { code: 'GBP', symbol: '£', name: 'British Pound' },
+    { code: 'JPY', symbol: '¥', name: 'Japanese Yen' },
+    { code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah' },
+    { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar' },
+    { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
+    { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
+    { code: 'CHF', symbol: 'CHF', name: 'Swiss Franc' },
+    { code: 'CNY', symbol: '¥', name: 'Chinese Yuan' },
+  ];
+
+  // Fungsi untuk memformat angka dengan pemisah ribuan yang benar
+  const formatNumberWithCommas = (value) => {
+    if (!value) return '';
+    
+    // Hapus semua karakter non-digit kecuali koma
+    let cleanValue = value.toString().replace(/[^\d,]/g, '');
+    
+    // Hapus semua koma yang ada untuk memulai dari awal
+    cleanValue = cleanValue.replace(/,/g, '');
+    
+    // Format dengan menambahkan titik setiap 3 digit dari belakang
+    let formatted = '';
+    let count = 0;
+    
+    for (let i = cleanValue.length - 1; i >= 0; i--) {
+      if (count > 0 && count % 3 === 0) {
+        formatted = '.' + formatted;
+      }
+      formatted = cleanValue[i] + formatted;
+      count++;
     }
-    return value;
+    
+    return formatted;
+  };
+
+  // Fungsi untuk menghapus formatting (mengembalikan ke angka murni)
+  const removeFormatting = (value) => {
+    if (!value) return '';
+    // Hapus semua pemisah ribuan (titik)
+    return value.toString().replace(/\./g, '');
   };
 
   // Calculate position size and results
   const calculationResults = useMemo(() => {
-    const balance = parseFloat(normalizeInput(calculatorForm.balance)) || 0;
-    const open = parseFloat(normalizeInput(calculatorForm.openPrice)) || 0;
-    const sl = parseFloat(normalizeInput(calculatorForm.slPrice)) || 0;
-    const tp = parseFloat(normalizeInput(calculatorForm.tpPrice)) || 0;
-    const riskPercent = parseFloat(normalizeInput(calculatorForm.risk)) || 0;
+    const balance = parseFloat(removeFormatting(calculatorForm.balance)) || 0;
+    const open = parseFloat(calculatorForm.openPrice) || 0;
+    const sl = parseFloat(calculatorForm.slPrice) || 0;
+    const tp = parseFloat(calculatorForm.tpPrice) || 0;
+    const riskPercent = parseFloat(calculatorForm.risk) || 0;
 
     if (!balance || !open || !sl || !riskPercent) {
       return null;
@@ -74,12 +114,19 @@ const ForexCalculator = () => {
   }, [calculatorForm]);
 
   const handleInputChange = (field, value) => {
-    // Validasi input: hanya angka, titik, dan koma
-    const validatedValue = value.replace(/[^\d.,]/g, '');
+    let processedValue = value;
+
+    // Khusus untuk balance, format dengan pemisah ribuan
+    if (field === 'balance') {
+      processedValue = formatNumberWithCommas(value);
+    } else {
+      // Untuk field lain, hanya validasi input dasar
+      processedValue = value.replace(/[^\d.,]/g, '');
+    }
     
     setCalculatorForm(prev => ({
       ...prev,
-      [field]: validatedValue
+      [field]: processedValue
     }));
   };
 
@@ -94,17 +141,16 @@ const ForexCalculator = () => {
     });
   };
 
-  // Auto-format input ketika kehilangan fokus (blur)
-  const handleBlur = (field, value) => {
-    if (value) {
-      const normalized = normalizeInput(value);
-      // Format ke 2 desimal
-      const formatted = parseFloat(normalized).toFixed(2);
-      setCalculatorForm(prev => ({
-        ...prev,
-        [field]: formatted
-      }));
-    }
+  // Handler untuk memilih currency
+  const handleCurrencySelect = (currencyCode) => {
+    setSelectedCurrency(currencyCode);
+    setIsCurrencyOpen(false);
+  };
+
+  // Dapatkan simbol currency yang dipilih
+  const getCurrencySymbol = () => {
+    const currency = availableCurrencies.find(c => c.code === selectedCurrency);
+    return currency ? currency.symbol : '$';
   };
 
   return (
@@ -150,20 +196,63 @@ const ForexCalculator = () => {
           </h3>
           
           <div className="space-y-4">
-            {/* Balance */}
+            {/* Balance dengan Currency Selector */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Account Balance ({currency})
+                Account Balance
               </label>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={calculatorForm.balance}
-                onChange={(e) => handleInputChange('balance', e.target.value)}
-                onBlur={(e) => handleBlur('balance', e.target.value)}
-                placeholder="contoh: 10000 atau 10.000 atau 10,000"
-                className="w-full p-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 transition-all bg-white font-light"
-              />
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={calculatorForm.balance}
+                    onChange={(e) => handleInputChange('balance', e.target.value)}
+                    placeholder="1.000.000"
+                    className="w-full p-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 transition-all bg-white font-light"
+                  />
+                </div>
+                
+                {/* Currency Selector */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsCurrencyOpen(!isCurrencyOpen)}
+                    className="flex items-center gap-2 px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 transition-all bg-white hover:bg-slate-50 min-w-[120px] justify-between"
+                  >
+                    <span className="font-medium text-slate-700">{selectedCurrency}</span>
+                    <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${isCurrencyOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {/* Currency Dropdown */}
+                  {isCurrencyOpen && (
+                    <div className="absolute top-full right-0 mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-10 max-h-60 overflow-y-auto">
+                      {availableCurrencies.map((currency) => (
+                        <button
+                          key={currency.code}
+                          type="button"
+                          onClick={() => handleCurrencySelect(currency.code)}
+                          className={`w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors flex items-center justify-between ${
+                            selectedCurrency === currency.code ? 'bg-violet-50 text-violet-700' : 'text-slate-700'
+                          } first:rounded-t-xl last:rounded-b-xl`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="font-medium text-slate-600">{currency.symbol}</span>
+                            <span className="font-medium">{currency.code}</span>
+                            <span className="text-slate-500 text-sm">{currency.name}</span>
+                          </div>
+                          {selectedCurrency === currency.code && (
+                            <CheckCircle className="w-4 h-4 text-violet-600" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 mt-1 font-light">
+                Selected currency: {selectedCurrency} - {getCurrencySymbol()}
+              </p>
             </div>
 
             {/* Trade Type */}
@@ -192,8 +281,7 @@ const ForexCalculator = () => {
                   inputMode="decimal"
                   value={calculatorForm.openPrice}
                   onChange={(e) => handleInputChange('openPrice', e.target.value)}
-                  onBlur={(e) => handleBlur('openPrice', e.target.value)}
-                  placeholder="1873.15"
+                  placeholder="4075.18"
                   className="w-full p-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 transition-all bg-white font-light"
                 />
               </div>
@@ -208,8 +296,7 @@ const ForexCalculator = () => {
                     inputMode="decimal"
                     value={calculatorForm.slPrice}
                     onChange={(e) => handleInputChange('slPrice', e.target.value)}
-                    onBlur={(e) => handleBlur('slPrice', e.target.value)}
-                    placeholder="Stop Loss"
+                    placeholder="4072.10"
                     className="w-full p-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 transition-all bg-white font-light"
                   />
                 </div>
@@ -222,8 +309,7 @@ const ForexCalculator = () => {
                     inputMode="decimal"
                     value={calculatorForm.tpPrice}
                     onChange={(e) => handleInputChange('tpPrice', e.target.value)}
-                    onBlur={(e) => handleBlur('tpPrice', e.target.value)}
-                    placeholder="Take Profit"
+                    placeholder="4080.15"
                     className="w-full p-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 transition-all bg-white font-light"
                   />
                 </div>
@@ -240,8 +326,7 @@ const ForexCalculator = () => {
                 inputMode="decimal"
                 value={calculatorForm.risk}
                 onChange={(e) => handleInputChange('risk', e.target.value)}
-                onBlur={(e) => handleBlur('risk', e.target.value)}
-                placeholder="contoh: 1 atau 1,5 atau 2.5"
+                placeholder="contoh: 1 atau 1.5"
                 className="w-full p-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 transition-all bg-white font-light"
               />
             </div>
@@ -288,7 +373,7 @@ const ForexCalculator = () => {
                 <div className="bg-violet-50 p-4 rounded-xl border border-violet-200">
                   <div className="text-sm text-violet-700 font-medium">Lot Size</div>
                   <div className="text-2xl font-bold text-violet-900">
-                    {calculationResults.lotSize.toFixed(3)}
+                    {calculationResults.lotSize.toFixed(2)}
                   </div>
                   <div className="text-xs text-violet-600 mt-1 font-light">Recommended Position</div>
                 </div>
@@ -309,7 +394,7 @@ const ForexCalculator = () => {
                 <div className="bg-red-50 p-4 rounded-xl border border-red-200">
                   <div className="text-sm text-red-700 font-medium">Nett SL</div>
                   <div className="text-2xl font-bold text-red-900">
-                    {formatCompactCurrency(calculationResults.nettSL, currency)}
+                    {formatCompactCurrency(calculationResults.nettSL, selectedCurrency)}
                   </div>
                   <div className="text-xs text-red-600 mt-1 font-light">Potential Loss</div>
                 </div>
@@ -318,7 +403,7 @@ const ForexCalculator = () => {
                 <div className="bg-green-50 p-4 rounded-xl border border-green-200">
                   <div className="text-sm text-green-700 font-medium">Nett TP</div>
                   <div className="text-2xl font-bold text-green-900">
-                    {formatCompactCurrency(calculationResults.nettTP, currency)}
+                    {formatCompactCurrency(calculationResults.nettTP, selectedCurrency)}
                   </div>
                   <div className="text-xs text-green-600 mt-1 font-light">Potential Profit</div>
                 </div>
@@ -328,10 +413,10 @@ const ForexCalculator = () => {
               <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
                 <div className="text-sm text-blue-700 font-medium">Risk Amount</div>
                 <div className="text-xl font-bold text-blue-900">
-                  {formatCompactCurrency(calculationResults.riskAmount, currency)}
+                  {formatCompactCurrency(calculationResults.riskAmount, selectedCurrency)}
                 </div>
                 <div className="text-xs text-blue-600 mt-1 font-light">
-                  {calculatorForm.risk}% of {formatCompactCurrency(parseFloat(normalizeInput(calculatorForm.balance)) || 0, currency)} balance
+                  {calculatorForm.risk}% of {formatCompactCurrency(parseFloat(removeFormatting(calculatorForm.balance)) || 0, selectedCurrency)} balance
                 </div>
               </div>
 
@@ -344,8 +429,9 @@ const ForexCalculator = () => {
                 <div className="text-sm text-violet-800 space-y-1 font-light">
                   <div>• <span className="font-medium">{calculatorForm.type}</span> position on XAUUSD</div>
                   <div>• Risk: <span className="font-medium">{calculatorForm.risk}%</span> of account</div>
-                  <div>• Lot size: <span className="font-medium">{calculationResults.lotSize.toFixed(3)}</span> lots</div>
+                  <div>• Lot size: <span className="font-medium">{calculationResults.lotSize.toFixed(2)}</span> lots</div>
                   <div>• Risk/Reward: <span className="font-medium">1:{calculationResults.riskRewardRatio.toFixed(2)}</span></div>
+                  <div>• Currency: <span className="font-medium">{selectedCurrency}</span></div>
                 </div>
               </div>
             </div>
@@ -377,10 +463,11 @@ const ForexCalculator = () => {
               Input Format
             </h4>
             <ul className="space-y-1 font-light">
-              <li>• Use <strong>dot (.)</strong> or <strong>comma (,)</strong> as decimal separator</li>
-              <li>• Examples: <strong>1873.15</strong> or <strong>1873,15</strong></li>
-              <li>• For balance: <strong>10000</strong> or <strong>10.000</strong> or <strong>10,000</strong></li>
-              <li>• For risk: <strong>1</strong> or <strong>1.5</strong> or <strong>2,5</strong></li>
+              <li>• Balance auto-formats with thousand separators</li>
+              <li>• Examples: <strong>1000000</strong> → <strong>1.000.000</strong></li>
+              <li>• For prices: use <strong>dot (.)</strong> as decimal separator</li>
+              <li>• For risk: <strong>1</strong> or <strong>1.5</strong></li>
+              <li>• Select your preferred currency for calculations</li>
             </ul>
           </div>
           <div>
@@ -393,6 +480,8 @@ const ForexCalculator = () => {
               <li>• SL Pips = |Open - SL| × 100</li>
               <li>• TP Pips = |Open - TP| × 100</li>
               <li>• Lot Size = Risk Amount ÷ (SL Pips × 1)</li>
+              <li>• All calculations in selected currency: <strong>{selectedCurrency}</strong></li>
+              <li>• Lot size rounded to <strong>2 decimal places</strong></li>
             </ul>
           </div>
         </div>
@@ -412,6 +501,7 @@ const ForexCalculator = () => {
             <p className="text-amber-800 text-sm font-light">
               This calculator provides estimates for educational purposes only. Trading forex and CFDs carries a high level of risk and may not be suitable for all investors. 
               Past performance is not indicative of future results. Always practice proper risk management and consider seeking advice from a qualified financial advisor.
+              Currency selection is for display purposes only and does not affect the underlying calculations.
             </p>
           </div>
         </div>
@@ -420,4 +510,4 @@ const ForexCalculator = () => {
   );
 };
 
-export default ForexCalculator;
+export default Layout;

@@ -11,6 +11,8 @@ import {
   Target,
   Users,
   TrendingUp,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 const Layout = () => {
@@ -19,7 +21,9 @@ const Layout = () => {
   const context = useOutletContext();
 
   const [leaderboardType, setLeaderboardType] = useState("level");
-  const [timeRange, setTimeRange] = useState("all"); // all, weekly, monthly
+  const [timeRange, setTimeRange] = useState("all");
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const [setIsScrolled] = useState(false);
 
   useEffect(() => {
     dispatch(getLeaderboard({ type: leaderboardType, limit: 100 }));
@@ -63,6 +67,24 @@ const Layout = () => {
     { id: "monthly", label: "This Month" },
     { id: "weekly", label: "This Week" },
   ];
+
+  const scrollContainer = (direction) => {
+    const container = document.getElementById('leaderboard-types-container');
+    const scrollAmount = 200;
+    
+    if (container) {
+      const newPosition = direction === 'left' 
+        ? Math.max(0, scrollPosition - scrollAmount)
+        : scrollPosition + scrollAmount;
+      
+      container.scrollTo({
+        left: newPosition,
+        behavior: 'smooth'
+      });
+      setScrollPosition(newPosition);
+      setIsScrolled(newPosition > 0);
+    }
+  };
 
   const getRankColor = (rank) => {
     if (rank === 1) return "from-yellow-400 to-yellow-600";
@@ -116,7 +138,7 @@ const Layout = () => {
 
   return (
     <div className="min-h-screen">
-      <div className="space-y-6 ">
+      <div className="space-y-6">
         {/* Header */}
         <Motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -142,9 +164,9 @@ const Layout = () => {
           transition={{ delay: 0.1 }}
           className="mb-8"
         >
-          <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 border border-slate-200">
+          <div className="bg-white/80 backdrop-blur-md rounded-3xl p-4 sm:p-6 border border-slate-200">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div>
+              <div className="mb-4 lg:mb-0">
                 <h3 className="text-lg font-bold text-slate-800 mb-2">
                   Global Rankings
                 </h3>
@@ -156,40 +178,48 @@ const Layout = () => {
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col gap-4 w-full lg:w-auto">
                 {/* Time Range Selector */}
-                <div className="flex bg-slate-100 p-1 rounded-xl">
-                  {timeRanges.map((range) => (
-                    <button
-                      key={range.id}
-                      onClick={() => setTimeRange(range.id)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                        timeRange === range.id
-                          ? "bg-white text-violet-700 shadow-sm"
-                          : "text-slate-600 hover:text-slate-800"
-                      }`}
-                    >
-                      {range.label}
-                    </button>
-                  ))}
+                <div className="relative">
+                  <div className="flex bg-slate-100 p-1 rounded-xl w-full lg:w-auto overflow-x-auto scrollbar-hide">
+                    {timeRanges.map((range) => (
+                      <button
+                        key={range.id}
+                        onClick={() => setTimeRange(range.id)}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all shrink-0 ${
+                          timeRange === range.id
+                            ? "bg-white text-violet-700 shadow-sm"
+                            : "text-slate-600 hover:text-slate-800"
+                        }`}
+                      >
+                        {range.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Leaderboard Type Selector */}
-                <div className="flex bg-slate-100 p-1 rounded-xl">
-                  {leaderboardTypes.map((type) => (
-                    <button
-                      key={type.id}
-                      onClick={() => setLeaderboardType(type.id)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                        leaderboardType === type.id
-                          ? "bg-white text-violet-700 shadow-sm"
-                          : "text-slate-600 hover:text-slate-800"
-                      }`}
-                    >
-                      {type.icon}
-                      {type.label}
-                    </button>
-                  ))}
+                <div className="relative">
+
+                  <div 
+                    id="leaderboard-types-container"
+                    className="flex bg-slate-100 p-1 rounded-xl overflow-x-auto scrollbar-hide scroll-smooth px-1"
+                  >
+                    {leaderboardTypes.map((type) => (
+                      <button
+                        key={type.id}
+                        onClick={() => setLeaderboardType(type.id)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all shrink-0 ${
+                          leaderboardType === type.id
+                            ? "bg-white text-violet-700 shadow-sm"
+                            : "text-slate-600 hover:text-slate-800"
+                        }`}
+                      >
+                        {type.icon}
+                        <span className="whitespace-nowrap">{type.label}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -205,11 +235,11 @@ const Layout = () => {
         >
           {/* Top 3 Podium */}
           {leaderboard?.leaders?.slice(0, 3).length > 0 && (
-            <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 border border-slate-200">
+            <div className="bg-white/80 backdrop-blur-md rounded-3xl p-4 sm:p-6 border border-slate-200">
               <h3 className="text-xl font-bold text-slate-800 mb-6 text-center">
                 Top Performers
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                 {leaderboard.leaders.slice(0, 3).map((leader, index) => (
                   <Motion.div
                     key={leader.userId}
@@ -227,26 +257,26 @@ const Layout = () => {
                     <div
                       className={`bg-linear-to-br ${getRankColor(
                         index + 1
-                      )} rounded-2xl p-6 text-white text-center relative shadow-lg`}
+                      )} rounded-2xl p-4 sm:p-6 text-white text-center relative shadow-lg`}
                     >
                       {/* Rank Crown */}
                       <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
-                          <span className="text-lg font-bold text-slate-800">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
+                          <span className="text-base sm:text-lg font-bold text-slate-800">
                             {getRankIcon(index + 1)}
                           </span>
                         </div>
                       </div>
 
                       {/* User Avatar */}
-                      <div className="mt-4 mb-4">
-                        <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto border-4 border-white/30">
-                          <Users className="w-10 h-10" />
+                      <div className="mt-6 mb-4">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto border-4 border-white/30">
+                          <Users className="w-8 h-8 sm:w-10 sm:h-10" />
                         </div>
                       </div>
 
                       {/* User Info */}
-                      <h4 className="font-bold text-xl mb-2 truncate">
+                      <h4 className="font-bold text-lg sm:text-xl mb-2 truncate px-2">
                         {leader.User?.name || `Trader ${leader.userId}`}
                       </h4>
 
@@ -282,7 +312,7 @@ const Layout = () => {
 
           {/* Full Leaderboard List */}
           <div className="bg-white/80 backdrop-blur-md rounded-3xl border border-slate-200 overflow-hidden">
-            <div className="p-6 border-b border-slate-200">
+            <div className="p-4 sm:p-6 border-b border-slate-200">
               <h3 className="text-xl font-bold text-slate-800">
                 Global Leaderboard
               </h3>
@@ -320,33 +350,33 @@ const Layout = () => {
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3 sm:gap-4">
                         {/* Rank */}
-                        <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center">
-                          <span className="font-bold text-slate-700">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-slate-100 rounded-full flex items-center justify-center shrink-0">
+                          <span className="font-bold text-slate-700 text-sm sm:text-base">
                             {index + 4}
                           </span>
                         </div>
 
                         {/* User Info */}
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-slate-200 rounded-full flex items-center justify-center">
-                            <Users className="w-6 h-6 text-slate-600" />
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-200 rounded-full flex items-center justify-center shrink-0">
+                            <Users className="w-4 h-4 sm:w-6 sm:h-6 text-slate-600" />
                           </div>
-                          <div>
-                            <h4 className="font-bold text-slate-800">
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-slate-800 truncate text-sm sm:text-base">
                               {leader.User?.name || `Trader ${leader.userId}`}
                             </h4>
-                            <div className="flex items-center gap-3 text-sm text-slate-600 mt-1">
-                              <span className="flex items-center gap-1">
+                            <div className="flex items-center gap-1 sm:gap-3 text-xs sm:text-sm text-slate-600 mt-1 overflow-x-auto scrollbar-hide">
+                              <span className="flex items-center gap-1 shrink-0">
                                 <Crown className="w-3 h-3" />
                                 Level {leader.level}
                               </span>
-                              <span className="flex items-center gap-1">
+                              <span className="flex items-center gap-1 shrink-0">
                                 <Zap className="w-3 h-3" />
                                 {leader.dailyStreak}d streak
                               </span>
-                              <span className="flex items-center gap-1">
+                              <span className="flex items-center gap-1 shrink-0">
                                 <Target className="w-3 h-3" />
                                 {leader.totalTrades} trades
                               </span>
@@ -356,13 +386,13 @@ const Layout = () => {
                       </div>
 
                       {/* Main Stat */}
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-slate-800 mb-1">
+                      <div className="text-right ml-2">
+                        <div className="text-base sm:text-lg font-bold text-slate-800 mb-1 whitespace-nowrap">
                           {getValueByType(leader, leaderboardType)}
                         </div>
 
                         {/* Progress Bar */}
-                        <div className="w-32 bg-slate-200 rounded-full h-2">
+                        <div className="w-24 sm:w-32 bg-slate-200 rounded-full h-2">
                           <div
                             className="h-2 rounded-full bg-linear-to-r from-violet-500 to-purple-500"
                             style={{
@@ -396,21 +426,21 @@ const Layout = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="p-6 bg-linear-to-r from-violet-600 to-purple-600 border-t border-violet-500"
+                className="p-4 sm:p-6 bg-linear-to-r from-violet-600 to-purple-600 border-t border-violet-500"
               >
                 <div className="flex items-center justify-between text-white">
                   <div>
-                    <h4 className="font-bold text-lg mb-1">Your Position</h4>
-                    <p className="text-violet-100">
+                    <h4 className="font-bold text-base sm:text-lg mb-1">Your Position</h4>
+                    <p className="text-violet-100 text-sm sm:text-base">
                       You're ranking #{leaderboard.userRank} globally
                     </p>
                   </div>
 
                   <div className="text-right">
-                    <div className="text-3xl font-bold mb-1">
+                    <div className="text-2xl sm:text-3xl font-bold mb-1">
                       #{leaderboard.userRank}
                     </div>
-                    <div className="text-violet-100 text-sm">
+                    <div className="text-violet-100 text-xs sm:text-sm">
                       out of {leaderboard.totalUsers} traders
                     </div>
                   </div>
@@ -419,7 +449,7 @@ const Layout = () => {
                 {/* Progress to next rank */}
                 {leaderboard.userRank > 10 && (
                   <div className="mt-4">
-                    <div className="flex justify-between text-violet-100 text-sm mb-1">
+                    <div className="flex justify-between text-violet-100 text-xs sm:text-sm mb-1">
                       <span>Progress to Top 10</span>
                       <span>
                         {Math.round(
@@ -449,6 +479,17 @@ const Layout = () => {
           </div>
         </Motion.div>
       </div>
+
+      {/* Add custom CSS for scrollbar hiding */}
+      <style jsx>{`
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </div>
   );
 };

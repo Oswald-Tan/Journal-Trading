@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion as Motion } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import { useOutletContext } from "react-router-dom";
@@ -17,7 +17,6 @@ import {
   Star,
   Zap,
   Target,
-  Calendar,
   TrendingUp,
   Users,
   BarChart3,
@@ -127,23 +126,28 @@ const Layout = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="mb-8"
+          className="mb-6 sm:mb-8"
         >
-          <div className="flex space-x-1 bg-slate-100 p-1 rounded-2xl w-fit">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  activeTab === tab.id
-                    ? "bg-white text-violet-700 shadow-sm"
-                    : "text-slate-600 hover:text-slate-800"
-                }`}
-              >
-                {tab.icon}
-                {tab.label}
-              </button>
-            ))}
+          <div className="relative">
+            {/* Scrollable container */}
+            <div className="flex overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100 pb-3 -mx-4 sm:mx-0 px-4 sm:px-0">
+              <div className="flex space-x-2 bg-slate-100 p-1.5 rounded-2xl min-w-max sm:min-w-0 sm:w-fit mx-auto sm:mx-0">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap shrink-0 ${
+                      activeTab === tab.id
+                        ? "bg-white text-violet-700 shadow-sm"
+                        : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
+                    }`}
+                  >
+                    {tab.icon}
+                    <span>{tab.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </Motion.div>
 

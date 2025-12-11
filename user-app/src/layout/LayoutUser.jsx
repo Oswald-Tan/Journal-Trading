@@ -69,6 +69,7 @@ const LayoutUser = () => {
     if (location.pathname.includes("/analytics")) return "analytics";
     if (location.pathname.includes("/performance")) return "performance";
     if (location.pathname.includes("/targets")) return "targets";
+    if (location.pathname.includes("/calculator")) return "calculator";
     if (location.pathname.includes("/upgrade")) return "upgrade";
     if (location.pathname.includes("/education")) return "education";
     if (location.pathname.includes("/gamification")) return "gamification";
@@ -212,6 +213,13 @@ const LayoutUser = () => {
   const handleShowLanding = useCallback(() => {
     navigate("/");
   }, [navigate]);
+
+  useEffect(() => {
+  // Pastikan data balance tersedia untuk outlet context
+  if (currentBalance !== undefined && currentBalance !== null) {
+    console.log("Balance available for context:", currentBalance);
+  }
+}, [currentBalance, initialBalance]);
 
   // PERBAIKAN: Props untuk children components - tanpa useMemo yang bermasalah
   const commonProps = {

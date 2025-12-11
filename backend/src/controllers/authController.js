@@ -55,7 +55,7 @@ export const handleRegister = async (req, res) => {
     });
 
     // Kirim email verifikasi
-    const verificationUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/verify-email?token=${emailVerificationToken}`;
+    const verificationUrl = `${process.env.CLIENT_URL || 'https://pipsdiary.com'}/verify-email?token=${emailVerificationToken}`;
     
     const mailOptions = {
       from: process.env.EMAIL_USER,
@@ -180,7 +180,7 @@ export const resendVerificationEmail = async (req, res) => {
     });
 
     // Kirim email verifikasi
-    const verificationUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/verify-email?token=${emailVerificationToken}`;
+    const verificationUrl = `${process.env.CLIENT_URL || 'https://pipsdiary.com''}/verify-email?token=${emailVerificationToken}`;
     
     const mailOptions = {
       from: process.env.EMAIL_USER,

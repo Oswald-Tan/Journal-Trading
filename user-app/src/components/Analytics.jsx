@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { motion as Motion } from 'framer-motion';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useEffect, useMemo, useState } from "react";
+import { motion as Motion } from "framer-motion";
+import { useDispatch, useSelector } from "react-redux";
+import axios from "axios";
 import {
   ResponsiveContainer,
   BarChart,
@@ -14,10 +15,13 @@ import {
   Pie,
   Legend,
   LineChart,
-  Line
-} from 'recharts';
-import { getTrades } from '../features/tradeSlice';
-import { formatCurrency, formatCompactCurrency } from '../utils/currencyFormatter';
+  Line,
+} from "recharts";
+import { getTrades } from "../features/tradeSlice";
+import {
+  formatCurrency,
+  formatCompactCurrency,
+} from "../utils/currencyFormatter";
 import {
   BarChart3,
   Trophy,
@@ -32,16 +36,21 @@ import {
   Download,
   Rocket,
   Award,
-  Zap
-} from 'lucide-react';
+  Zap,
+} from "lucide-react";
+import { API_URL } from "../config";
+import Swal from "sweetalert2";
 
 const Analytics = () => {
   const dispatch = useDispatch();
   const { currency } = useSelector((state) => state.balance);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Ambil data dari Redux store
   const { trades = [], stats = {} } = useSelector((state) => state.trades);
-  const { initialBalance, currentBalance } = useSelector((state) => state.balance);
+  const { initialBalance, currentBalance } = useSelector(
+    (state) => state.balance
+  );
 
   // State untuk tracking data loading
   const [dataFetched, setDataFetched] = useState(false);
@@ -53,11 +62,11 @@ const Analytics = () => {
       // 1. Belum pernah fetch sebelumnya
       // 2. Trades masih kosong
       if (!dataFetched && trades.length === 0) {
-        console.log('🔄 Analytics: Fetching trades data...');
+        console.log("🔄 Analytics: Fetching trades data...");
         try {
           await dispatch(getTrades());
         } catch (error) {
-          console.error('❌ Analytics: Failed to fetch trades:', error);
+          console.error("❌ Analytics: Failed to fetch trades:", error);
         } finally {
           setDataFetched(true);
         }
@@ -66,49 +75,55 @@ const Analytics = () => {
         setDataFetched(true);
       }
     };
-    
+
     fetchData();
   }, [dispatch, trades.length, dataFetched]);
 
   // Safe stats dengan default values
-  const safeStats = useMemo(() => ({
-    totalTrades: stats?.totalTrades || trades.length || 0,
-    wins: stats?.wins || 0,
-    losses: stats?.losses || 0,
-    breakEven: stats?.breakEven || 0,
-    winRate: stats?.winRate || 0,
-    avgPips: stats?.avgPips || 0,
-    profitFactor: stats?.profitFactor || 0,
-    largestWin: stats?.largestWin || 0,
-    largestLoss: stats?.largestLoss || 0,
-    netProfit: stats?.netProfit || 0,
-    ...stats
-  }), [stats, trades]);
+  const safeStats = useMemo(
+    () => ({
+      totalTrades: stats?.totalTrades || trades.length || 0,
+      wins: stats?.wins || 0,
+      losses: stats?.losses || 0,
+      breakEven: stats?.breakEven || 0,
+      winRate: stats?.winRate || 0,
+      avgPips: stats?.avgPips || 0,
+      profitFactor: stats?.profitFactor || 0,
+      largestWin: stats?.largestWin || 0,
+      largestLoss: stats?.largestLoss || 0,
+      netProfit: stats?.netProfit || 0,
+      ...stats,
+    }),
+    [stats, trades]
+  );
 
   // Instrument Performance Data
   const instrumentData = useMemo(() => {
     if (trades.length === 0) return [];
-    
+
     const instrumentStats = {};
-    trades.forEach(entry => {
+    trades.forEach((entry) => {
       if (!entry.instrument) return;
-     
+
       if (!instrumentStats[entry.instrument]) {
         instrumentStats[entry.instrument] = { profit: 0, trades: 0, wins: 0 };
       }
       instrumentStats[entry.instrument].profit += entry.profit || 0;
       instrumentStats[entry.instrument].trades += 1;
-      if (entry.result?.toLowerCase().includes('win')) {
+      if (entry.result?.toLowerCase().includes("win")) {
         instrumentStats[entry.instrument].wins += 1;
       }
     });
 
-    return Object.entries(instrumentStats).map(([instrument, data]) => ({
-      instrument,
-      profit: data.profit,
-      trades: data.trades,
-      winRate: Math.round((data.wins / data.trades) * 100) || 0
-    })).sort((a, b) => b.profit - a.profit).slice(0, 8);
+    return Object.entries(instrumentStats)
+      .map(([instrument, data]) => ({
+        instrument,
+        profit: data.profit,
+        trades: data.trades,
+        winRate: Math.round((data.wins / data.trades) * 100) || 0,
+      }))
+      .sort((a, b) => b.profit - a.profit)
+      .slice(0, 8);
   }, [trades]);
 
   // Win/Loss Distribution Data for Pie Chart
@@ -118,35 +133,39 @@ const Analytics = () => {
     }
 
     const resultStats = {
-      'Win': 0,
-      'Lose': 0,
-      'Break Even': 0
+      Win: 0,
+      Lose: 0,
+      "Break Even": 0,
     };
 
-    trades.forEach(entry => {
+    trades.forEach((entry) => {
       if (entry.result) {
         const result = entry.result.toLowerCase();
-        if (result.includes('win')) resultStats['Win']++;
-        else if (result.includes('lose')) resultStats['Lose']++;
-        else if (result.includes('break')) resultStats['Break Even']++;
+        if (result.includes("win")) resultStats["Win"]++;
+        else if (result.includes("lose")) resultStats["Lose"]++;
+        else if (result.includes("break")) resultStats["Break Even"]++;
       }
     });
 
     return [
-      { name: 'Wins', value: resultStats['Win'], color: '#10b981' },
-      { name: 'Losses', value: resultStats['Lose'], color: '#ef4444' },
-      { name: 'Break Even', value: resultStats['Break Even'], color: '#f59e0b' }
-    ].filter(item => item.value > 0);
+      { name: "Wins", value: resultStats["Win"], color: "#10b981" },
+      { name: "Losses", value: resultStats["Lose"], color: "#ef4444" },
+      {
+        name: "Break Even",
+        value: resultStats["Break Even"],
+        color: "#f59e0b",
+      },
+    ].filter((item) => item.value > 0);
   }, [trades]);
 
   // Daily Performance Data
   const dailyPerformanceData = useMemo(() => {
     if (trades.length === 0) return [];
-    
+
     const dailyStats = {};
-    trades.forEach(entry => {
+    trades.forEach((entry) => {
       if (!entry.date) return;
-     
+
       if (!dailyStats[entry.date]) {
         dailyStats[entry.date] = { profit: 0, trades: 0 };
       }
@@ -158,7 +177,7 @@ const Analytics = () => {
       .map(([date, data]) => ({
         date,
         profit: data.profit,
-        trades: data.trades
+        trades: data.trades,
       }))
       .sort((a, b) => new Date(a.date) - new Date(b.date))
       .slice(-30);
@@ -167,81 +186,91 @@ const Analytics = () => {
   // Strategy Performance
   const strategyData = useMemo(() => {
     if (trades.length === 0) return [];
-    
+
     const strategyStats = {};
-    trades.forEach(entry => {
-      const strategy = entry.strategy || 'No Strategy';
+    trades.forEach((entry) => {
+      const strategy = entry.strategy || "No Strategy";
       if (!strategyStats[strategy]) {
         strategyStats[strategy] = { profit: 0, trades: 0, wins: 0 };
       }
       strategyStats[strategy].profit += entry.profit || 0;
       strategyStats[strategy].trades += 1;
-      if (entry.result?.toLowerCase().includes('win')) {
+      if (entry.result?.toLowerCase().includes("win")) {
         strategyStats[strategy].wins += 1;
       }
     });
 
-    return Object.entries(strategyStats).map(([strategy, data]) => ({
-      strategy: strategy.length > 20 ? strategy.substring(0, 20) + '...' : strategy,
-      profit: data.profit,
-      trades: data.trades,
-      winRate: Math.round((data.wins / data.trades) * 100) || 0
-    })).sort((a, b) => b.profit - a.profit).slice(0, 6);
+    return Object.entries(strategyStats)
+      .map(([strategy, data]) => ({
+        strategy:
+          strategy.length > 20 ? strategy.substring(0, 20) + "..." : strategy,
+        profit: data.profit,
+        trades: data.trades,
+        winRate: Math.round((data.wins / data.trades) * 100) || 0,
+      }))
+      .sort((a, b) => b.profit - a.profit)
+      .slice(0, 6);
   }, [trades]);
 
-  // Time of Day Analysis
+  // SOLUSI 2: Lebih jelas dengan format 24 jam
   const timeOfDayData = useMemo(() => {
     if (trades.length === 0) return [];
-    
-    const timeStats = {
-      'Morning (6-12)': { profit: 0, trades: 0, wins: 0 },
-      'Afternoon (12-18)': { profit: 0, trades: 0, wins: 0 },
-      'Evening (18-24)': { profit: 0, trades: 0, wins: 0 },
-      'Night (0-6)': { profit: 0, trades: 0, wins: 0 }
-    };
 
-    trades.forEach(entry => {
+    const timeSlots = [
+      { name: "Night (00:00-05:59)", min: 0, max: 5 },
+      { name: "Morning (06:00-11:59)", min: 6, max: 11 },
+      { name: "Afternoon (12:00-17:59)", min: 12, max: 17 },
+      { name: "Evening (18:00-23:59)", min: 18, max: 23 },
+    ];
+
+    const timeStats = {};
+    timeSlots.forEach((slot) => {
+      timeStats[slot.name] = { profit: 0, trades: 0, wins: 0 };
+    });
+
+    trades.forEach((entry) => {
       if (!entry.date) return;
-     
-      const hour = new Date(entry.date).getHours();
-      let timeSlot;
-     
-      if (hour >= 6 && hour < 12) timeSlot = 'Morning (6-12)';
-      else if (hour >= 12 && hour < 18) timeSlot = 'Afternoon (12-18)';
-      else if (hour >= 18 && hour < 24) timeSlot = 'Evening (18-24)';
-      else timeSlot = 'Night (0-6)';
 
-      timeStats[timeSlot].profit += entry.profit || 0;
-      timeStats[timeSlot].trades += 1;
-      if (entry.result?.toLowerCase().includes('win')) {
-        timeStats[timeSlot].wins += 1;
+      const hour = new Date(entry.date).getHours();
+
+      // Cari slot yang sesuai
+      const slot = timeSlots.find((s) => hour >= s.min && hour <= s.max);
+      if (!slot) return; // Jika tidak ditemukan (seharusnya tidak terjadi)
+
+      timeStats[slot.name].profit += entry.profit || 0;
+      timeStats[slot.name].trades += 1;
+      if (entry.result?.toLowerCase().includes("win")) {
+        timeStats[slot.name].wins += 1;
       }
     });
 
-    return Object.entries(timeStats).map(([time, data]) => ({
-      time,
-      profit: data.profit,
-      trades: data.trades,
-      wins: data.wins,
-      winRate: data.trades > 0 ? Math.round((data.wins / data.trades) * 100) : 0,
-      avgProfit: data.trades > 0 ? Math.round(data.profit / data.trades) : 0
-    })).filter(item => item.trades > 0);
+    return Object.entries(timeStats)
+      .map(([time, data]) => ({
+        time,
+        profit: data.profit,
+        trades: data.trades,
+        wins: data.wins,
+        winRate:
+          data.trades > 0 ? Math.round((data.wins / data.trades) * 100) : 0,
+        avgProfit: data.trades > 0 ? Math.round(data.profit / data.trades) : 0,
+      }))
+      .filter((item) => item.trades > 0);
   }, [trades]);
 
   // Trade Type Performance (Buy vs Sell)
   const tradeTypeData = useMemo(() => {
     if (trades.length === 0) return [];
-    
+
     const typeStats = {
-      'Buy': { profit: 0, trades: 0, wins: 0 },
-      'Sell': { profit: 0, trades: 0, wins: 0 }
+      Buy: { profit: 0, trades: 0, wins: 0 },
+      Sell: { profit: 0, trades: 0, wins: 0 },
     };
 
-    trades.forEach(entry => {
+    trades.forEach((entry) => {
       if (typeStats[entry.type]) {
         typeStats[entry.type].profit += entry.profit || 0;
         typeStats[entry.type].trades += 1;
-        if (entry.result?.toLowerCase().includes('win')) {
+        if (entry.result?.toLowerCase().includes("win")) {
           typeStats[entry.type].wins += 1;
         }
       }
@@ -252,46 +281,46 @@ const Analytics = () => {
       profit: data.profit,
       trades: data.trades,
       winRate: Math.round((data.wins / data.trades) * 100) || 0,
-      avgProfit: Math.round(data.profit / data.trades) || 0
+      avgProfit: Math.round(data.profit / data.trades) || 0,
     }));
   }, [trades]);
 
   // Profit/Loss Distribution
   const profitDistributionData = useMemo(() => {
     if (trades.length === 0) return [];
-    
+
     const profitRanges = {
-      'Large Loss (< -500k)': 0,
-      'Medium Loss (-500k to -100k)': 0,
-      'Small Loss (-100k to 0)': 0,
-      'Small Profit (0 to 100k)': 0,
-      'Medium Profit (100k to 500k)': 0,
-      'Large Profit (> 500k)': 0
+      "Large Loss (< -500k)": 0,
+      "Medium Loss (-500k to -100k)": 0,
+      "Small Loss (-100k to 0)": 0,
+      "Small Profit (0 to 100k)": 0,
+      "Medium Profit (100k to 500k)": 0,
+      "Large Profit (> 500k)": 0,
     };
 
-    trades.forEach(entry => {
+    trades.forEach((entry) => {
       const profit = entry.profit || 0;
-      if (profit < -500000) profitRanges['Large Loss (< -500k)']++;
-      else if (profit < -100000) profitRanges['Medium Loss (-500k to -100k)']++;
-      else if (profit < 0) profitRanges['Small Loss (-100k to 0)']++;
-      else if (profit < 100000) profitRanges['Small Profit (0 to 100k)']++;
-      else if (profit < 500000) profitRanges['Medium Profit (100k to 500k)']++;
-      else profitRanges['Large Profit (> 500k)']++;
+      if (profit < -500000) profitRanges["Large Loss (< -500k)"]++;
+      else if (profit < -100000) profitRanges["Medium Loss (-500k to -100k)"]++;
+      else if (profit < 0) profitRanges["Small Loss (-100k to 0)"]++;
+      else if (profit < 100000) profitRanges["Small Profit (0 to 100k)"]++;
+      else if (profit < 500000) profitRanges["Medium Profit (100k to 500k)"]++;
+      else profitRanges["Large Profit (> 500k)"]++;
     });
 
     return Object.entries(profitRanges)
       .map(([range, count]) => ({ range, count }))
-      .filter(item => item.count > 0);
+      .filter((item) => item.count > 0);
   }, [trades]);
 
   // Monthly Performance Trend
   const monthlyTrendData = useMemo(() => {
     if (trades.length === 0) return [];
-    
+
     const monthlyStats = {};
-    trades.forEach(entry => {
+    trades.forEach((entry) => {
       if (!entry.date) return;
-     
+
       const month = entry.date.substring(0, 7);
       if (!monthlyStats[month]) {
         monthlyStats[month] = { profit: 0, trades: 0 };
@@ -304,11 +333,90 @@ const Analytics = () => {
       .map(([month, data]) => ({
         month,
         profit: data.profit,
-        trades: data.trades
+        trades: data.trades,
       }))
       .sort((a, b) => a.month.localeCompare(b.month))
       .slice(-6);
   }, [trades]);
+
+  // Add this function inside Analytics component
+  const handleExportPDF = async () => {
+    try {
+      // Set loading state
+      setIsExporting(true);
+     
+
+      // Make API call with axios
+      const response = await axios.get(`${API_URL}/trades/export/pdf`, {
+        responseType: "blob",
+      });
+
+      // Create blob from response
+      const blob = new Blob([response.data], { type: "application/pdf" });
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Trading-Report-${
+        new Date().toISOString().split("T")[0]
+      }.pdf`;
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+
+      // Show success message
+      Swal.fire({
+        icon: "success",
+        title: "PDF exported successfully",
+        text: "Your PDF file has been downloaded.",
+        showConfirmButton: false,
+        timer: 1500,
+      })
+    } catch (error) {
+      console.error("Export PDF error:", error);
+
+      // Handle different types of errors
+      if (error.response) {
+        // Server responded with error status
+        console.error(
+          "Server error:",
+          error.response.status,
+          error.response.data
+        );
+        Swal.fire({
+          icon: "error",
+          title: "Failed to export PDF",
+          text: `Export failed: ${
+            error.response.data.message ||
+            `Server error ${error.response.status}`
+          }`,
+        });
+      } else if (error.request) {
+        // Request made but no response
+        console.error("No response:", error.request);
+        Swal.fire({
+          icon: "error",
+          title: "Failed to export PDF",
+          text: "Export failed: No response from server. Please check your connection.",
+        })
+      } else {
+        // Other errors
+        console.error("Error:", error.message);
+        Swal.fire({
+          icon: "error",
+          title: "Failed to export PDF",
+          text: `Export failed: ${error.message}`,
+        })
+      }
+    } finally {
+      // Reset loading state
+      setIsExporting(false);
+    }
+  };
 
   const ChartCard = ({ title, children, className = "", icon }) => (
     <Motion.div
@@ -326,9 +434,18 @@ const Analytics = () => {
 
   // Custom Tooltip Formatter untuk chart
   const renderTooltipContent = (value, name) => {
-    if (name === 'profit' || name === 'avgProfit' || name === 'Total Profit' || name === 'Avg Profit') {
+    if (
+      name === "profit" ||
+      name === "avgProfit" ||
+      name === "Total Profit" ||
+      name === "Avg Profit"
+    ) {
       return [formatCurrency(value, currency), name];
-    } else if (name === 'winRate' || name === 'Win Rate %' || name === 'Win Rate') {
+    } else if (
+      name === "winRate" ||
+      name === "Win Rate %" ||
+      name === "Win Rate"
+    ) {
       return [`${value}%`, name];
     }
     return [value, name];
@@ -347,23 +464,33 @@ const Analytics = () => {
             <BarChart3 className="w-8 h-8 text-violet-600" />
             Trading Analytics
           </h1>
-          <p className="text-slate-600 mt-1 font-light">Deep insights into your trading performance</p>
+          <p className="text-slate-600 mt-1 font-light">
+            Deep insights into your trading performance
+          </p>
         </div>
-       
-        <div className="flex gap-3">
+
+        <div className="flex flex-row gap-3 w-full sm:w-auto">
+          {/* Mobile: Full width, Desktop: Auto width */}
           <Motion.div
             whileHover={{ scale: 1.05 }}
-            className="bg-linear-to-br from-slate-100 to-violet-100 border-2 border-slate-200 rounded-2xl px-6 py-3 shadow-sm"
+            className="w-full sm:w-auto bg-linear-to-br from-slate-100 to-violet-100 border-2 border-slate-200 rounded-2xl px-6 py-3 shadow-sm flex-1 sm:flex-none"
           >
-            <div className="text-sm text-slate-700 font-medium">Total Trades</div>
-            <div className="font-bold text-2xl text-slate-800">{safeStats.totalTrades}</div>
+            <div className="text-sm text-slate-700 font-medium">
+              Total Trades
+            </div>
+            <div className="font-bold text-2xl text-slate-800">
+              {safeStats.totalTrades}
+            </div>
           </Motion.div>
+
           <Motion.div
             whileHover={{ scale: 1.05 }}
-            className="bg-linear-to-br from-emerald-100 to-green-100 border-2 border-emerald-200 rounded-2xl px-6 py-3 shadow-sm"
+            className="w-full sm:w-auto bg-linear-to-br from-emerald-100 to-green-100 border-2 border-emerald-200 rounded-2xl px-6 py-3 shadow-sm flex-1 sm:flex-none"
           >
             <div className="text-sm text-emerald-700 font-medium">Win Rate</div>
-            <div className="font-bold text-2xl text-emerald-900">{safeStats.winRate}%</div>
+            <div className="font-bold text-2xl text-emerald-900">
+              {safeStats.winRate}%
+            </div>
           </Motion.div>
         </div>
       </Motion.div>
@@ -384,14 +511,17 @@ const Analytics = () => {
             >
               <BarChart3 className="w-16 h-16 mx-auto text-slate-400" />
             </Motion.div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">No Trading Data Yet</h3>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">
+              No Trading Data Yet
+            </h3>
             <p className="text-slate-600 mb-6 font-light">
-              Start adding trades to see detailed analytics and insights about your trading performance.
+              Start adding trades to see detailed analytics and insights about
+              your trading performance.
             </p>
             <Motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => window.location.href = '/trades'}
+              onClick={() => (window.location.href = "/trades")}
               className="bg-linear-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl transition-all shadow-sm font-medium flex items-center gap-2 mx-auto"
             >
               <Zap className="w-5 h-5" />
@@ -407,8 +537,8 @@ const Analytics = () => {
           {/* Top Charts Row - Win/Loss Distribution dan Instrument Performance */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Win/Loss Distribution */}
-            <ChartCard 
-              title="Win/Loss Distribution" 
+            <ChartCard
+              title="Win/Loss Distribution"
               icon={<Trophy className="w-5 h-5 text-violet-600" />}
             >
               <div className="h-80">
@@ -423,11 +553,13 @@ const Analytics = () => {
                         outerRadius={100}
                         fill="#8884d8"
                         dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        label={({ name, percent }) =>
+                          `${name} ${(percent * 100).toFixed(0)}%`
+                        }
                         labelStyle={{
-                          fontWeight: 'bold',
-                          fontSize: '14px',
-                          fill: '#475569'
+                          fontWeight: "bold",
+                          fontSize: "14px",
+                          fill: "#475569",
                         }}
                       >
                         {winLossData.map((entry, index) => (
@@ -437,18 +569,18 @@ const Analytics = () => {
                       <Tooltip
                         formatter={(value, name) => [value, `${name}`]}
                         contentStyle={{
-                          borderRadius: '12px',
-                          border: '2px solid #8b5cf6',
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                          backgroundColor: '#fafafa',
-                          fontSize: '14px',
-                          fontWeight: '600'
+                          borderRadius: "12px",
+                          border: "2px solid #8b5cf6",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          backgroundColor: "#fafafa",
+                          fontSize: "14px",
+                          fontWeight: "600",
                         }}
                       />
                       <Legend
                         wrapperStyle={{
                           fontWeight: 600,
-                          fontSize: '12px'
+                          fontSize: "12px",
                         }}
                         iconType="circle"
                         layout="horizontal"
@@ -461,7 +593,9 @@ const Analytics = () => {
                   <div className="flex flex-col items-center justify-center h-full text-slate-500">
                     <PieChartIcon className="w-12 h-12 mb-2 text-slate-400" />
                     <p className="font-medium">No win/loss data available</p>
-                    <p className="text-sm mt-1 font-light">Add trades with results to see distribution</p>
+                    <p className="text-sm mt-1 font-light">
+                      Add trades with results to see distribution
+                    </p>
                   </div>
                 )}
               </div>
@@ -469,19 +603,25 @@ const Analytics = () => {
 
             {/* Instrument Performance */}
             {instrumentData.length > 0 && (
-              <ChartCard 
-                title="Instrument Performance" 
+              <ChartCard
+                title="Instrument Performance"
                 icon={<Target className="w-5 h-5 text-violet-600" />}
               >
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={instrumentData} layout="vertical" margin={{ left: 10 }}>
+                    <BarChart
+                      data={instrumentData}
+                      layout="vertical"
+                      margin={{ left: 0 }}
+                    >
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis 
-                        type="number" 
-                        stroke="#475569" 
+                      <XAxis
+                        type="number"
+                        stroke="#475569"
                         tick={{ fontSize: 11 }}
-                        tickFormatter={(value) => formatCompactCurrency(value, currency)}
+                        tickFormatter={(value) =>
+                          formatCompactCurrency(value, currency)
+                        }
                       />
                       <YAxis
                         type="category"
@@ -493,15 +633,18 @@ const Analytics = () => {
                       <Tooltip
                         formatter={renderTooltipContent}
                         contentStyle={{
-                          borderRadius: '12px',
-                          border: '2px solid #8b5cf6',
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                          backgroundColor: '#fafafa'
+                          borderRadius: "12px",
+                          border: "2px solid #8b5cf6",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          backgroundColor: "#fafafa",
                         }}
                       />
                       <Bar dataKey="profit" radius={[0, 8, 8, 0]}>
                         {instrumentData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.profit >= 0 ? '#8b5cf6' : '#ef4444'} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.profit >= 0 ? "#8b5cf6" : "#ef4444"}
+                          />
                         ))}
                       </Bar>
                     </BarChart>
@@ -515,13 +658,13 @@ const Analytics = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Daily Performance */}
             {dailyPerformanceData.length > 0 && (
-              <ChartCard 
-                title="Daily Performance (Last 30 Days)" 
+              <ChartCard
+                title="Daily Performance (Last 30 Days)"
                 icon={<Calendar className="w-5 h-5 text-violet-600" />}
               >
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={dailyPerformanceData} margin={{ left: 10 }}>
+                    <BarChart data={dailyPerformanceData} margin={{ left: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis
                         dataKey="date"
@@ -532,30 +675,32 @@ const Analytics = () => {
                           return `${date.getDate()}/${date.getMonth() + 1}`;
                         }}
                       />
-                      <YAxis 
-                        stroke="#475569" 
+                      <YAxis
+                        stroke="#475569"
                         tick={{ fontSize: 11 }}
-                        tickFormatter={(value) => formatCompactCurrency(value, currency)}
+                        tickFormatter={(value) =>
+                          formatCompactCurrency(value, currency)
+                        }
                       />
                       <Tooltip
                         formatter={renderTooltipContent}
                         labelFormatter={(value) => {
                           const date = new Date(value);
-                          return date.toLocaleDateString('id-ID');
+                          return date.toLocaleDateString("id-ID");
                         }}
                         contentStyle={{
-                          borderRadius: '12px',
-                          border: '2px solid #8b5cf6',
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                          backgroundColor: '#fafafa'
+                          borderRadius: "12px",
+                          border: "2px solid #8b5cf6",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          backgroundColor: "#fafafa",
                         }}
                       />
-                      <Bar
-                        dataKey="profit"
-                        radius={[8, 8, 0, 0]}
-                      >
+                      <Bar dataKey="profit" radius={[8, 8, 0, 0]}>
                         {dailyPerformanceData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.profit >= 0 ? '#8b5cf6' : '#ef4444'} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.profit >= 0 ? "#8b5cf6" : "#ef4444"}
+                          />
                         ))}
                       </Bar>
                     </BarChart>
@@ -566,8 +711,8 @@ const Analytics = () => {
 
             {/* Monthly Trend */}
             {monthlyTrendData.length > 0 && (
-              <ChartCard 
-                title="Monthly Trend" 
+              <ChartCard
+                title="Monthly Trend"
                 icon={<TrendingUp className="w-5 h-5 text-violet-600" />}
               >
                 <div className="h-80">
@@ -579,22 +724,24 @@ const Analytics = () => {
                         stroke="#475569"
                         tick={{ fontSize: 11, fontWeight: 600 }}
                         tickFormatter={(value) => {
-                          const [year, month] = value.split('-');
+                          const [year, month] = value.split("-");
                           return `${month}/${year.slice(2)}`;
                         }}
                       />
                       <YAxis
                         stroke="#475569"
                         tick={{ fontSize: 11, fontWeight: 600 }}
-                        tickFormatter={(value) => formatCompactCurrency(value, currency)}
+                        tickFormatter={(value) =>
+                          formatCompactCurrency(value, currency)
+                        }
                       />
                       <Tooltip
                         formatter={renderTooltipContent}
                         contentStyle={{
-                          borderRadius: '12px',
-                          border: '2px solid #8b5cf6',
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                          backgroundColor: '#fafafa'
+                          borderRadius: "12px",
+                          border: "2px solid #8b5cf6",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          backgroundColor: "#fafafa",
                         }}
                       />
                       <Line
@@ -602,8 +749,8 @@ const Analytics = () => {
                         dataKey="profit"
                         stroke="#8b5cf6"
                         strokeWidth={3}
-                        dot={{ fill: '#7c3aed', strokeWidth: 2, r: 4 }}
-                        activeDot={{ r: 6, fill: '#7c3aed' }}
+                        dot={{ fill: "#7c3aed", strokeWidth: 2, r: 4 }}
+                        activeDot={{ r: 6, fill: "#7c3aed" }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -616,19 +763,25 @@ const Analytics = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Strategy Performance */}
             {strategyData.length > 0 && (
-              <ChartCard 
-                title="Strategy Performance" 
+              <ChartCard
+                title="Strategy Performance"
                 icon={<Settings className="w-5 h-5 text-violet-600" />}
               >
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={strategyData} layout="vertical" margin={{ left: 10 }}>
+                    <BarChart
+                      data={strategyData}
+                      layout="vertical"
+                      margin={{ left: 0 }}
+                    >
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis 
-                        type="number" 
-                        stroke="#475569" 
+                      <XAxis
+                        type="number"
+                        stroke="#475569"
                         tick={{ fontSize: 11 }}
-                        tickFormatter={(value) => formatCompactCurrency(value, currency)}
+                        tickFormatter={(value) =>
+                          formatCompactCurrency(value, currency)
+                        }
                       />
                       <YAxis
                         type="category"
@@ -640,15 +793,18 @@ const Analytics = () => {
                       <Tooltip
                         formatter={renderTooltipContent}
                         contentStyle={{
-                          borderRadius: '12px',
-                          border: '2px solid #8b5cf6',
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                          backgroundColor: '#fafafa'
+                          borderRadius: "12px",
+                          border: "2px solid #8b5cf6",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          backgroundColor: "#fafafa",
                         }}
                       />
                       <Bar dataKey="profit" radius={[0, 8, 8, 0]}>
                         {strategyData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.profit >= 0 ? '#8b5cf6' : '#ef4444'} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.profit >= 0 ? "#8b5cf6" : "#ef4444"}
+                          />
                         ))}
                       </Bar>
                     </BarChart>
@@ -659,13 +815,13 @@ const Analytics = () => {
 
             {/* Time of Day Performance */}
             {timeOfDayData.length > 0 && (
-              <ChartCard 
-                title="Time of Day Performance" 
+              <ChartCard
+                title="Time of Day Performance"
                 icon={<Clock className="w-5 h-5 text-violet-600" />}
               >
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={timeOfDayData} margin={{ left: 10 }}>
+                    <BarChart data={timeOfDayData} margin={{ left: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis
                         dataKey="time"
@@ -675,26 +831,28 @@ const Analytics = () => {
                         textAnchor="end"
                         height={60}
                       />
-                      <YAxis 
-                        stroke="#475569" 
+                      <YAxis
+                        stroke="#475569"
                         tick={{ fontSize: 11 }}
-                        tickFormatter={(value) => formatCompactCurrency(value, currency)}
+                        tickFormatter={(value) =>
+                          formatCompactCurrency(value, currency)
+                        }
                       />
                       <Tooltip
                         formatter={renderTooltipContent}
                         contentStyle={{
-                          borderRadius: '12px',
-                          border: '2px solid #8b5cf6',
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                          backgroundColor: '#fafafa'
+                          borderRadius: "12px",
+                          border: "2px solid #8b5cf6",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          backgroundColor: "#fafafa",
                         }}
                       />
-                      <Bar
-                        dataKey="profit"
-                        radius={[8, 8, 0, 0]}
-                      >
+                      <Bar dataKey="profit" radius={[8, 8, 0, 0]}>
                         {timeOfDayData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.profit >= 0 ? '#10b981' : '#ef4444'} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.profit >= 0 ? "#10b981" : "#ef4444"}
+                          />
                         ))}
                       </Bar>
                     </BarChart>
@@ -708,39 +866,41 @@ const Analytics = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Trade Type Performance */}
             {tradeTypeData.length > 0 && (
-              <ChartCard 
-                title="Trade Type Performance" 
+              <ChartCard
+                title="Trade Type Performance"
                 icon={<BarChart3 className="w-5 h-5 text-violet-600" />}
               >
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={tradeTypeData} margin={{ left: 10 }}>
+                    <BarChart data={tradeTypeData} margin={{ left: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis
                         dataKey="type"
                         stroke="#475569"
                         tick={{ fontSize: 12, fontWeight: 600 }}
                       />
-                      <YAxis 
-                        stroke="#475569" 
+                      <YAxis
+                        stroke="#475569"
                         tick={{ fontSize: 11 }}
-                        tickFormatter={(value) => formatCompactCurrency(value, currency)}
+                        tickFormatter={(value) =>
+                          formatCompactCurrency(value, currency)
+                        }
                       />
                       <Tooltip
                         formatter={renderTooltipContent}
                         contentStyle={{
-                          borderRadius: '12px',
-                          border: '2px solid #8b5cf6',
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                          backgroundColor: '#fafafa'
+                          borderRadius: "12px",
+                          border: "2px solid #8b5cf6",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          backgroundColor: "#fafafa",
                         }}
                       />
-                      <Bar
-                        dataKey="profit"
-                        radius={[8, 8, 0, 0]}
-                      >
+                      <Bar dataKey="profit" radius={[8, 8, 0, 0]}>
                         {tradeTypeData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.profit >= 0 ? '#8b5cf6' : '#ef4444'} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.profit >= 0 ? "#8b5cf6" : "#ef4444"}
+                          />
                         ))}
                       </Bar>
                     </BarChart>
@@ -751,13 +911,16 @@ const Analytics = () => {
 
             {/* Profit Distribution */}
             {profitDistributionData.length > 0 && (
-              <ChartCard 
-                title="Profit/Loss Distribution" 
+              <ChartCard
+                title="Profit/Loss Distribution"
                 icon={<Wallet className="w-5 h-5 text-violet-600" />}
               >
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={profitDistributionData} margin={{ left: 10 }}>
+                    <BarChart
+                      data={profitDistributionData}
+                      margin={{ left: 0 }}
+                    >
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis
                         dataKey="range"
@@ -769,12 +932,12 @@ const Analytics = () => {
                       />
                       <YAxis stroke="#475569" tick={{ fontSize: 11 }} />
                       <Tooltip
-                        formatter={(value) => [value, 'Trades']}
+                        formatter={(value) => [value, "Trades"]}
                         contentStyle={{
-                          borderRadius: '12px',
-                          border: '2px solid #8b5cf6',
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                          backgroundColor: '#fafafa'
+                          borderRadius: "12px",
+                          border: "2px solid #8b5cf6",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          backgroundColor: "#fafafa",
                         }}
                       />
                       <Bar
@@ -790,8 +953,8 @@ const Analytics = () => {
           </div>
 
           {/* Trading Statistics */}
-          <ChartCard 
-            title="Trading Statistics" 
+          <ChartCard
+            title="Trading Statistics"
             icon={<Award className="w-5 h-5 text-violet-600" />}
           >
             <div className="space-y-4 h-80 flex flex-col justify-center">
@@ -800,32 +963,48 @@ const Analytics = () => {
                   whileHover={{ scale: 1.05 }}
                   className="text-center p-5 bg-linear-to-br from-slate-100 to-violet-100 rounded-2xl shadow-sm border border-slate-200"
                 >
-                  <div className="text-3xl font-bold text-slate-700">{safeStats.totalTrades}</div>
-                  <div className="text-sm text-slate-800 font-medium mt-1">Total Trades</div>
+                  <div className="text-3xl font-bold text-slate-700">
+                    {safeStats.totalTrades}
+                  </div>
+                  <div className="text-sm text-slate-800 font-medium mt-1">
+                    Total Trades
+                  </div>
                 </Motion.div>
                 <Motion.div
                   whileHover={{ scale: 1.05 }}
                   className="text-center p-5 bg-linear-to-br from-emerald-100 to-green-100 rounded-2xl shadow-sm border border-emerald-200"
                 >
-                  <div className="text-3xl font-bold text-emerald-700">{safeStats.winRate}%</div>
-                  <div className="text-sm text-emerald-800 font-medium mt-1">Win Rate</div>
+                  <div className="text-3xl font-bold text-emerald-700">
+                    {safeStats.winRate}%
+                  </div>
+                  <div className="text-sm text-emerald-800 font-medium mt-1">
+                    Win Rate
+                  </div>
                 </Motion.div>
                 <Motion.div
                   whileHover={{ scale: 1.05 }}
                   className="text-center p-5 bg-linear-to-br from-violet-100 to-violet-100 rounded-2xl shadow-sm border border-violet-200"
                 >
-                  <div className="text-3xl font-bold text-violet-700">{safeStats.avgPips}</div>
-                  <div className="text-sm text-violet-800 font-medium mt-1">Avg Pips/Trade</div>
+                  <div className="text-3xl font-bold text-violet-700">
+                    {safeStats.avgPips}
+                  </div>
+                  <div className="text-sm text-violet-800 font-medium mt-1">
+                    Avg Pips/Trade
+                  </div>
                 </Motion.div>
                 <Motion.div
                   whileHover={{ scale: 1.05 }}
                   className="text-center p-5 bg-linear-to-br from-amber-100 to-yellow-100 rounded-2xl shadow-sm border border-amber-200"
                 >
-                  <div className="text-3xl font-bold text-amber-700">{safeStats.profitFactor?.toFixed(2) || 0}</div>
-                  <div className="text-sm text-amber-800 font-medium mt-1">Profit Factor</div>
+                  <div className="text-3xl font-bold text-amber-700">
+                    {safeStats.profitFactor?.toFixed(2) || 0}
+                  </div>
+                  <div className="text-sm text-amber-800 font-medium mt-1">
+                    Profit Factor
+                  </div>
                 </Motion.div>
               </div>
-             
+
               <div className="grid grid-cols-2 gap-4 mt-4">
                 <Motion.div
                   whileHover={{ scale: 1.05 }}
@@ -852,36 +1031,78 @@ const Analytics = () => {
               </div>
             </div>
           </ChartCard>
+
+          {/* Additional Info Banner dengan Export PDF - HANYA tampil jika ada data trades */}
+          {trades.length > 0 && (
+            <Motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-linear-to-r from-violet-600 via-pink-500 to-violet-600 rounded-3xl p-5 shadow-sm border-2 border-violet-300"
+            >
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between text-white gap-5">
+                <div className="flex items-start gap-4">
+                  <div className="bg-white/20 p-2.5 rounded-full">
+                    <Rocket className="w-6 h-6 sm:w-7 sm:h-7" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl sm:text-2xl font-bold mb-1.5">
+                      Keep Improving Your Trading!
+                    </h3>
+                    <p className="text-violet-100/90 font-light text-sm sm:text-base">
+                      Analyze your patterns, learn from your trades, and grow
+                      consistently.
+                    </p>
+                  </div>
+                </div>
+
+                <Motion.button
+                  whileHover={!isExporting ? { scale: 1.05, y: -2 } : {}}
+                  whileTap={!isExporting ? { scale: 0.95 } : {}}
+                  onClick={handleExportPDF}
+                  disabled={isExporting}
+                  className={`w-full md:w-auto px-5 py-3 rounded-xl font-medium shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 ${
+                    isExporting
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-white text-violet-600 hover:bg-violet-50"
+                  }`}
+                >
+                  {isExporting ? (
+                    <>
+                      <svg
+                        className="animate-spin w-4 h-4 mr-2 text-violet-600"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      <span>Generating PDF...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      <span>Export Report</span>
+                    </>
+                  )}
+                </Motion.button>
+              </div>
+            </Motion.div>
+          )}
         </>
       )}
-
-      {/* Additional Info Banner */}
-      <Motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="bg-linear-to-r from-violet-600 via-pink-600 to-violet-600 rounded-3xl p-6 shadow-sm border-2 border-violet-300"
-      >
-        <div className="flex items-center justify-between text-white">
-          <div>
-            <h3 className="text-2xl font-bold mb-2 flex items-center gap-2">
-              <Rocket className="w-8 h-8" />
-              Keep Improving Your Trading!
-            </h3>
-            <p className="text-violet-100 font-light">
-              Analyze your patterns, learn from your trades, and grow consistently.
-            </p>
-          </div>
-          <Motion.button
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-            className="bg-white text-violet-600 px-6 py-3 rounded-xl font-medium shadow-sm hover:shadow-md transition-all flex items-center gap-2"
-          >
-            <Download className="w-4 h-4" />
-            Export Report
-          </Motion.button>
-        </div>
-      </Motion.div>
     </div>
   );
 };

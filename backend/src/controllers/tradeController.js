@@ -1,5 +1,7 @@
+import Target from '../models/target.js';
 import Trade from '../models/trade.js';
 import User from '../models/user.js';
+import { generateTradingReportPDF } from '../utils/pdfGenerator.js';
 import { calculateStats } from '../utils/statsCalculator.js';
 import { processTradeForGamification } from './gamificationController.js';
 
@@ -412,4 +414,374 @@ const recalculateBalances = async (userId) => {
     console.error('Recalculate balances error:', error);
     throw error;
   }
+};
+
+// Delete all trades for user
+export const deleteAllTrades = async (req, res) => {
+  try {
+    const userId = req.userId;
+    
+    console.log(`Deleting all trades and resetting target for user: ${userId}`);
+    
+    // Cek apakah user memiliki trades
+    const tradeCount = await Trade.count({
+      where: { userId }
+    });
+
+    console.log(`Found ${tradeCount} trades to delete`);
+
+    if (tradeCount === 0) {
+      return res.status(200).json({
+        success: true,
+        message: 'No trades to delete',
+        deletedCount: 0
+      });
+    }
+
+    // 1. Hapus semua trades user
+    const deletedCount = await Trade.destroy({
+      where: { userId }
+    });
+
+    console.log(`Deleted ${deletedCount} trades successfully`);
+
+    // 2. Reset balance ke initial balance
+    const user = await User.findByPk(userId);
+    let newBalance = user.initialBalance;
+    
+    if (user) {
+      await user.update({
+        currentBalance: user.initialBalance
+      });
+      console.log(`Reset balance to initial: ${user.initialBalance}`);
+    }
+
+    // 3. Reset atau nonaktifkan target user dan set targetBalance ke 0
+    let targetAction = 'none';
+    const target = await Target.findOne({
+      where: { userId }
+    });
+
+    if (target) {
+      if (target.enabled) {
+        // Nonaktifkan target karena tidak ada data trades dan set targetBalance ke 0
+        await target.update({
+          enabled: false,
+          targetBalance: 0, // Set targetBalance menjadi 0
+          targetDate: null, // Reset targetDate
+          description: target.description ? 
+            `${target.description} (Target dinonaktifkan karena semua trades dihapus)` : 
+            'Target dinonaktifkan karena semua trades dihapus',
+          updated_at: new Date()
+        });
+        targetAction = 'disabled';
+        console.log(`Target disabled and balance reset to 0 for user: ${userId}`);
+      } else {
+        // Jika target sudah dinonaktifkan, pastikan targetBalance = 0
+        if (parseFloat(target.targetBalance) !== 0) {
+          await target.update({
+            targetBalance: 0,
+            targetDate: null,
+            updated_at: new Date()
+          });
+          targetAction = 'balance_reset';
+          console.log(`Target balance reset to 0 for user: ${userId}`);
+        } else {
+          targetAction = 'already_disabled';
+        }
+      }
+    } else {
+      targetAction = 'no_target';
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Successfully deleted ${deletedCount} trades`,
+      deletedCount: deletedCount,
+      newBalance: newBalance,
+      targetAction: targetAction,
+      note: targetAction === 'disabled' ? 
+        'Target telah dinonaktifkan dan balance direset ke 0 karena semua data trading dihapus' : 
+        targetAction === 'balance_reset' ? 
+        'Target balance direset ke 0 karena semua data trading dihapus' : undefined
+    });
+
+  } catch (error) {
+    console.error('Delete all trades error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error: ' + error.message
+    });
+  }
+};
+
+// Export PDF Report
+export const exportPDFReport = async (req, res) => {
+  try {
+    const userId = req.userId;
+    
+    // Get all trades
+    const trades = await Trade.findAll({
+      where: { userId: req.userId },
+      order: [['date', 'DESC']],
+    });
+
+    // Get user info
+    const user = await User.findByPk(userId);
+    
+    // Calculate stats
+    const stats = await calculateStats(userId);
+    
+    // Prepare analytics data
+    const analyticsData = {
+      winLossData: calculateWinLossData(trades),
+      instrumentData: calculateInstrumentPerformance(trades),
+      dailyPerformanceData: calculateDailyPerformance(trades),
+      strategyData: calculateStrategyPerformance(trades),
+      timeOfDayData: calculateTimeOfDayPerformance(trades),
+      tradeTypeData: calculateTradeTypePerformance(trades),
+      monthlyTrendData: calculateMonthlyTrend(trades),
+      profitDistributionData: calculateProfitDistribution(trades)
+    };
+
+    // Generate PDF
+    const pdfBuffer = await generateTradingReportPDF(trades, stats, user, analyticsData);
+    
+    // Set response headers
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=trading-report-${Date.now()}.pdf`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    
+    // Send PDF
+    res.send(pdfBuffer);
+    
+  } catch (error) {
+    console.error('Export PDF error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate PDF report'
+    });
+  }
+};
+
+// Helper functions for analytics data
+const calculateWinLossData = (trades) => {
+  const resultStats = { Win: 0, Lose: 0, 'Break Even': 0 };
+  
+  trades.forEach(entry => {
+    if (entry.result) {
+      const result = entry.result.toLowerCase();
+      if (result.includes('win')) resultStats['Win']++;
+      else if (result.includes('lose')) resultStats['Lose']++;
+      else if (result.includes('break')) resultStats['Break Even']++;
+    }
+  });
+  
+  return [
+    { name: 'Wins', value: resultStats['Win'], color: '#10b981' },
+    { name: 'Losses', value: resultStats['Lose'], color: '#ef4444' },
+    { name: 'Break Even', value: resultStats['Break Even'], color: '#f59e0b' }
+  ].filter(item => item.value > 0);
+};
+
+const calculateInstrumentPerformance = (trades) => {
+  const instrumentStats = {};
+  
+  trades.forEach(entry => {
+    if (!entry.instrument) return;
+    
+    if (!instrumentStats[entry.instrument]) {
+      instrumentStats[entry.instrument] = { profit: 0, trades: 0, wins: 0 };
+    }
+    instrumentStats[entry.instrument].profit += entry.profit || 0;
+    instrumentStats[entry.instrument].trades += 1;
+    if (entry.result?.toLowerCase().includes('win')) {
+      instrumentStats[entry.instrument].wins += 1;
+    }
+  });
+  
+  return Object.entries(instrumentStats)
+    .map(([instrument, data]) => ({
+      instrument,
+      profit: data.profit,
+      trades: data.trades,
+      winRate: Math.round((data.wins / data.trades) * 100) || 0
+    }))
+    .sort((a, b) => b.profit - a.profit)
+    .slice(0, 8);
+};
+
+const calculateDailyPerformance = (trades) => {
+  if (trades.length === 0) return [];
+
+  const dailyStats = {};
+  trades.forEach((entry) => {
+    if (!entry.date) return;
+
+    if (!dailyStats[entry.date]) {
+      dailyStats[entry.date] = { profit: 0, trades: 0 };
+    }
+    dailyStats[entry.date].profit += entry.profit || 0;
+    dailyStats[entry.date].trades += 1;
+  });
+
+  return Object.entries(dailyStats)
+    .map(([date, data]) => ({
+      date,
+      profit: data.profit,
+      trades: data.trades,
+    }))
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .slice(-30);
+};
+
+const calculateStrategyPerformance = (trades) => {
+  if (trades.length === 0) return [];
+
+  const strategyStats = {};
+  trades.forEach((entry) => {
+    const strategy = entry.strategy || "No Strategy";
+    if (!strategyStats[strategy]) {
+      strategyStats[strategy] = { profit: 0, trades: 0, wins: 0 };
+    }
+    strategyStats[strategy].profit += entry.profit || 0;
+    strategyStats[strategy].trades += 1;
+    if (entry.result?.toLowerCase().includes("win")) {
+      strategyStats[strategy].wins += 1;
+    }
+  });
+
+  return Object.entries(strategyStats)
+    .map(([strategy, data]) => ({
+      strategy:
+        strategy.length > 20 ? strategy.substring(0, 20) + "..." : strategy,
+      profit: data.profit,
+      trades: data.trades,
+      winRate: Math.round((data.wins / data.trades) * 100) || 0,
+    }))
+    .sort((a, b) => b.profit - a.profit)
+    .slice(0, 6);
+};
+
+const calculateTimeOfDayPerformance = (trades) => {
+  if (trades.length === 0) return [];
+
+  const timeSlots = [
+    { name: "Night (00:00-05:59)", min: 0, max: 5 },
+    { name: "Morning (06:00-11:59)", min: 6, max: 11 },
+    { name: "Afternoon (12:00-17:59)", min: 12, max: 17 },
+    { name: "Evening (18:00-23:59)", min: 18, max: 23 },
+  ];
+
+  const timeStats = {};
+  timeSlots.forEach(slot => {
+    timeStats[slot.name] = { profit: 0, trades: 0, wins: 0 };
+  });
+
+  trades.forEach((entry) => {
+    if (!entry.date) return;
+
+    const hour = new Date(entry.date).getHours();
+    
+    // Cari slot yang sesuai
+    const slot = timeSlots.find(s => hour >= s.min && hour <= s.max);
+    if (!slot) return; // Jika tidak ditemukan (seharusnya tidak terjadi)
+
+    timeStats[slot.name].profit += entry.profit || 0;
+    timeStats[slot.name].trades += 1;
+    if (entry.result?.toLowerCase().includes("win")) {
+      timeStats[slot.name].wins += 1;
+    }
+  });
+
+  return Object.entries(timeStats)
+    .map(([time, data]) => ({
+      time,
+      profit: data.profit,
+      trades: data.trades,
+      wins: data.wins,
+      winRate: data.trades > 0 ? Math.round((data.wins / data.trades) * 100) : 0,
+      avgProfit: data.trades > 0 ? Math.round(data.profit / data.trades) : 0,
+    }))
+    .filter((item) => item.trades > 0);
+};
+
+// Tambahkan juga fungsi-fungsi tambahan lainnya yang mungkin dibutuhkan
+const calculateTradeTypePerformance = (trades) => {
+  if (trades.length === 0) return [];
+
+  const typeStats = {
+    Buy: { profit: 0, trades: 0, wins: 0 },
+    Sell: { profit: 0, trades: 0, wins: 0 },
+  };
+
+  trades.forEach((entry) => {
+    if (typeStats[entry.type]) {
+      typeStats[entry.type].profit += entry.profit || 0;
+      typeStats[entry.type].trades += 1;
+      if (entry.result?.toLowerCase().includes("win")) {
+        typeStats[entry.type].wins += 1;
+      }
+    }
+  });
+
+  return Object.entries(typeStats).map(([type, data]) => ({
+    type,
+    profit: data.profit,
+    trades: data.trades,
+    winRate: Math.round((data.wins / data.trades) * 100) || 0,
+    avgProfit: Math.round(data.profit / data.trades) || 0,
+  }));
+};
+
+const calculateMonthlyTrend = (trades) => {
+  if (trades.length === 0) return [];
+
+  const monthlyStats = {};
+  trades.forEach((entry) => {
+    if (!entry.date) return;
+
+    const month = entry.date.substring(0, 7);
+    if (!monthlyStats[month]) {
+      monthlyStats[month] = { profit: 0, trades: 0 };
+    }
+    monthlyStats[month].profit += entry.profit || 0;
+    monthlyStats[month].trades += 1;
+  });
+
+  return Object.entries(monthlyStats)
+    .map(([month, data]) => ({
+      month,
+      profit: data.profit,
+      trades: data.trades,
+    }))
+    .sort((a, b) => a.month.localeCompare(b.month))
+    .slice(-6);
+};
+
+const calculateProfitDistribution = (trades) => {
+  if (trades.length === 0) return [];
+
+  const profitRanges = {
+    "Large Loss (< -500k)": 0,
+    "Medium Loss (-500k to -100k)": 0,
+    "Small Loss (-100k to 0)": 0,
+    "Small Profit (0 to 100k)": 0,
+    "Medium Profit (100k to 500k)": 0,
+    "Large Profit (> 500k)": 0,
+  };
+
+  trades.forEach((entry) => {
+    const profit = entry.profit || 0;
+    if (profit < -500000) profitRanges["Large Loss (< -500k)"]++;
+    else if (profit < -100000) profitRanges["Medium Loss (-500k to -100k)"]++;
+    else if (profit < 0) profitRanges["Small Loss (-100k to 0)"]++;
+    else if (profit < 100000) profitRanges["Small Profit (0 to 100k)"]++;
+    else if (profit < 500000) profitRanges["Medium Profit (100k to 500k)"]++;
+    else profitRanges["Large Profit (> 500k)"]++;
+  });
+
+  return Object.entries(profitRanges)
+    .map(([range, count]) => ({ range, count }))
+    .filter((item) => item.count > 0);
 };

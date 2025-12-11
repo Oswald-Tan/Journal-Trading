@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from "react";
-import { motion as Motion } from 'framer-motion';
+import { motion as Motion } from "framer-motion";
 import {
   ResponsiveContainer,
   LineChart,
@@ -29,7 +29,7 @@ import {
   Award,
   Zap,
   Plus,
-  Edit
+  Edit,
 } from "lucide-react";
 
 // Pindahkan komponen StatCard ke luar fungsi utama
@@ -40,9 +40,7 @@ const StatCard = ({ label, value, color, bg, border, icon }) => (
   >
     <div className="flex items-center justify-between mb-2">
       <div className="text-sm text-slate-700 font-medium">{label}</div>
-      <div className={`${color}`}>
-        {icon}
-      </div>
+      <div className={`${color}`}>{icon}</div>
     </div>
     <div className={`text-2xl font-bold ${color}`}>{value}</div>
   </Motion.div>
@@ -84,10 +82,7 @@ const MilestoneCard = ({ milestone, currentBalance, currency }) => (
       <Motion.div
         initial={{ width: 0 }}
         animate={{
-          width: `${Math.min(
-            100,
-            (currentBalance / milestone.target) * 100
-          )}%`,
+          width: `${Math.min(100, (currentBalance / milestone.target) * 100)}%`,
         }}
         transition={{ duration: 0.8, ease: "easeOut" }}
         className={`h-full rounded-full ${
@@ -119,7 +114,7 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
 
   const handleSetTarget = () => {
     console.log("handleSetTarget called - current balance:", currentBalance);
-    
+
     if (
       currentBalance === 0 ||
       currentBalance === null ||
@@ -200,27 +195,27 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
     () => [
       {
         label: "10% Profit",
-        target: initialBalance * 1.1,
+        target: Math.round(initialBalance * 1.1 * 100) / 100, // Bulatkan ke 2 desimal
         achieved: currentBalance >= initialBalance * 1.1,
       },
       {
         label: "25% Profit",
-        target: initialBalance * 1.25,
+        target: Math.round(initialBalance * 1.25 * 100) / 100,
         achieved: currentBalance >= initialBalance * 1.25,
       },
       {
         label: "50% Profit",
-        target: initialBalance * 1.5,
+        target: Math.round(initialBalance * 1.5 * 100) / 100,
         achieved: currentBalance >= initialBalance * 1.5,
       },
       {
         label: "100% Profit (2x)",
-        target: initialBalance * 2,
+        target: Math.round(initialBalance * 2 * 100) / 100,
         achieved: currentBalance >= initialBalance * 2,
       },
       {
         label: "200% Profit (3x)",
-        target: initialBalance * 3,
+        target: Math.round(initialBalance * 3 * 100) / 100,
         achieved: currentBalance >= initialBalance * 3,
       },
     ],
@@ -245,15 +240,19 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
       color: "text-slate-800",
       bg: "bg-linear-to-br from-slate-100 to-slate-50",
       border: "border-slate-200",
-      icon: <Wallet className="w-6 h-6" />
+      icon: <Wallet className="w-6 h-6" />,
     },
     {
       label: "Net Profit",
       value: formatCompactCurrency(stats.netProfit || 0, currency),
       color: (stats.netProfit || 0) >= 0 ? "text-emerald-700" : "text-rose-700",
-      bg: (stats.netProfit || 0) >= 0 ? "bg-linear-to-br from-emerald-100 to-green-100" : "bg-linear-to-br from-rose-100 to-red-100",
-      border: (stats.netProfit || 0) >= 0 ? "border-emerald-200" : "border-rose-200",
-      icon: <DollarSign className="w-6 h-6" />
+      bg:
+        (stats.netProfit || 0) >= 0
+          ? "bg-linear-to-br from-emerald-100 to-green-100"
+          : "bg-linear-to-br from-rose-100 to-red-100",
+      border:
+        (stats.netProfit || 0) >= 0 ? "border-emerald-200" : "border-rose-200",
+      icon: <DollarSign className="w-6 h-6" />,
     },
     {
       label: "Win Rate",
@@ -261,7 +260,7 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
       color: "text-violet-700",
       bg: "bg-linear-to-br from-violet-100 to-purple-100",
       border: "border-violet-200",
-      icon: <Target className="w-6 h-6" />
+      icon: <Target className="w-6 h-6" />,
     },
     {
       label: "Total Trades",
@@ -269,17 +268,15 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
       color: "text-slate-800",
       bg: "bg-linear-to-br from-amber-100 to-yellow-100",
       border: "border-amber-200",
-      icon: <BarChart3 className="w-6 h-6" />
-    }
+      icon: <BarChart3 className="w-6 h-6" />,
+    },
   ];
 
   if (isLoading && !targetProgress) {
     return (
       <div className="min-h-screen flex items-center justify-center flex-col space-y-4">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-violet-500"></div>
-        <p className="text-slate-700 font-medium">
-          Loading target progress...
-        </p>
+        <p className="text-slate-700 font-medium">Loading target progress...</p>
       </div>
     );
   }
@@ -298,7 +295,9 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
               <Target className="w-8 h-8 text-violet-600" />
               Trading Targets
             </h1>
-            <p className="text-slate-600 mt-1 font-light">Set and track your trading goals</p>
+            <p className="text-slate-600 mt-1 font-light">
+              Set and track your trading goals
+            </p>
           </div>
         </Motion.div>
 
@@ -318,9 +317,12 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
             >
               <Target className="w-16 h-16 mx-auto text-slate-400" />
             </Motion.div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">No Target Set</h3>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">
+              No Target Set
+            </h3>
             <p className="text-slate-600 mb-6 font-light">
-              Set a trading target to track your progress and stay motivated towards your financial goals.
+              Set a trading target to track your progress and stay motivated
+              towards your financial goals.
             </p>
             <Motion.button
               whileHover={{ scale: 1.05 }}
@@ -370,7 +372,9 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
             <Target className="w-8 h-8 text-violet-600" />
             Trading Targets
           </h1>
-          <p className="text-slate-600 mt-1 font-light">Track your progress towards your trading goals</p>
+          <p className="text-slate-600 mt-1 font-light">
+            Track your progress towards your trading goals
+          </p>
         </div>
 
         <Motion.button
@@ -410,7 +414,7 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={targetData}
-                margin={{ left: 30, right: 20, top: 10, bottom: 10 }}
+                margin={{ left: 0, right: 20, top: 10, bottom: 10 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis
@@ -521,9 +525,7 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
                 whileHover={{ x: 5 }}
                 className="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-200"
               >
-                <span className="text-slate-700 font-medium">
-                  Target Date
-                </span>
+                <span className="text-slate-700 font-medium">Target Date</span>
                 <span className="font-bold text-slate-800">
                   {target.targetDate}
                 </span>
@@ -549,8 +551,8 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {milestones.map((milestone, index) => (
-              <MilestoneCard 
-                key={index} 
+              <MilestoneCard
+                key={index}
                 milestone={milestone}
                 currentBalance={currentBalance}
                 currency={currency}
@@ -586,17 +588,43 @@ const Targets = ({ onShowTargetModal = () => {} }) => {
         <StatCard
           label="Profit/Loss"
           value={formatCompactCurrency(stats.netProfit || 0, currency)}
-          color={(stats.netProfit || 0) >= 0 ? "text-emerald-700" : "text-rose-700"}
-          bg={(stats.netProfit || 0) >= 0 ? "bg-linear-to-br from-emerald-100 to-green-100" : "bg-linear-to-br from-rose-100 to-red-100"}
-          border={(stats.netProfit || 0) >= 0 ? "border-emerald-200" : "border-rose-200"}
-          icon={(stats.netProfit || 0) >= 0 ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
+          color={
+            (stats.netProfit || 0) >= 0 ? "text-emerald-700" : "text-rose-700"
+          }
+          bg={
+            (stats.netProfit || 0) >= 0
+              ? "bg-linear-to-br from-emerald-100 to-green-100"
+              : "bg-linear-to-br from-rose-100 to-red-100"
+          }
+          border={
+            (stats.netProfit || 0) >= 0
+              ? "border-emerald-200"
+              : "border-rose-200"
+          }
+          icon={
+            (stats.netProfit || 0) >= 0 ? (
+              <TrendingUp className="w-6 h-6" />
+            ) : (
+              <TrendingDown className="w-6 h-6" />
+            )
+          }
         />
         <StatCard
           label="ROI"
           value={`${stats.roi || 0}%`}
-          color={Number(stats.roi || 0) >= 0 ? "text-emerald-700" : "text-rose-700"}
-          bg={Number(stats.roi || 0) >= 0 ? "bg-linear-to-br from-emerald-100 to-green-100" : "bg-linear-to-br from-rose-100 to-red-100"}
-          border={Number(stats.roi || 0) >= 0 ? "border-emerald-200" : "border-rose-200"}
+          color={
+            Number(stats.roi || 0) >= 0 ? "text-emerald-700" : "text-rose-700"
+          }
+          bg={
+            Number(stats.roi || 0) >= 0
+              ? "bg-linear-to-br from-emerald-100 to-green-100"
+              : "bg-linear-to-br from-rose-100 to-red-100"
+          }
+          border={
+            Number(stats.roi || 0) >= 0
+              ? "border-emerald-200"
+              : "border-rose-200"
+          }
           icon={<Zap className="w-6 h-6" />}
         />
       </Motion.div>
