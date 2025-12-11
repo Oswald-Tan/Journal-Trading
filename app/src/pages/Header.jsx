@@ -40,7 +40,7 @@ export default function Header() {
 
   // Handle navigation to dashboard
   const handleGoToDashboard = () => {
-    window.location.href = "http://localhost:5173/dashboard";
+    window.location.href = "https://app.pipsdiary/dashboard";
   };
 
   const handleLogin = () => {

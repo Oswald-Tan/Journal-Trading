@@ -213,7 +213,7 @@ const Header = ({
                         <Motion.button
                           whileHover={{
                             x: 5,
-                            backgroundColor: "rgba(249, 115, 22, 0.1)",
+                            backgroundColor: "rgba(128, 0, 128, 0.1)",
                           }}
                           className="w-full text-left px-4 py-3 rounded-xl text-sm text-violet-900 hover:text-violet-700 transition-all duration-200 flex items-center space-x-3"
                           onClick={() => {

@@ -75,6 +75,13 @@ body {
     box-sizing: border-box;
 }
 
+img {
+  pointer-events: none;
+  -webkit-user-drag: none; /* Disable drag on Safari */
+  -webkit-user-select: none; /* Prevent text/image selection on Safari */
+  user-select: none; /* For modern browsers */
+}
+
 /* Untuk scroll container */
 *::-webkit-scrollbar {
   width: 0px; /* Lebar scrollbar */
@@ -99,4 +106,21 @@ body {
 
 .clip-dashboard {
   clip-path: inset(0 0 0px 0); 
+}
+
+/* Disable text selection globally */
+* {
+  user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Disable blue tap highlight on mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Remove focus outline on tap */
+*:focus {
+  outline: none !important;
 }

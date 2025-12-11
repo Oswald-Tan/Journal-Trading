@@ -17,22 +17,126 @@ import {
   Lightbulb,
   Mail,
   Phone,
-  Key
+  Key,
+  AlertTriangle,
+  Settings,
+  ShieldCheck,
+  ArrowRight,
+  Globe,
+  Moon,
+  Calendar,
+  Clock,
+  LogIn
 } from 'lucide-react';
 
-// Komponen Input Password dengan Toggle yang dipisahkan
-const PasswordInput = ({ label, name, value, onChange, placeholder, isVisible, onToggle }) => (
+// Helper function untuk memformat tanggal dan waktu
+const formatDateTime = (dateString) => {
+  if (!dateString) return 'Tidak tersedia';
+  
+  try {
+    const date = new Date(dateString);
+    
+    // Validasi apakah date valid
+    if (isNaN(date.getTime())) return 'Format tidak valid';
+    
+    // Format tanggal: YYYY-MM-DD
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    // Format waktu: HH:MM (24 jam format)
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}, ${hours}:${minutes}`;
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Format tidak valid';
+  }
+};
+
+// Helper untuk menghitung waktu sejak login terakhir
+const getTimeSinceLastLogin = (dateString) => {
+  if (!dateString) return '';
+  
+  try {
+    const lastLogin = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - lastLogin;
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffMins < 1) return 'Baru saja';
+    if (diffMins < 60) return `${diffMins} menit yang lalu`;
+    if (diffHours < 24) return `${diffHours} jam yang lalu`;
+    if (diffDays === 1) return 'Kemarin';
+    if (diffDays < 7) return `${diffDays} hari yang lalu`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} minggu yang lalu`;
+    if (diffDays < 365) return `${Math.floor(diffDays / 30)} bulan yang lalu`;
+    return `${Math.floor(diffDays / 365)} tahun yang lalu`;
+  } catch (error) {
+    return '';
+  }
+};
+
+// Komponen Input dengan Icon
+const InputWithIcon = ({ 
+  label, 
+  name, 
+  value, 
+  onChange, 
+  placeholder, 
+  type = "text",
+  icon: Icon,
+  iconColor = "text-violet-600"
+}) => (
   <div>
     <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
       {label}
     </label>
     <div className="relative">
+      <div className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${iconColor}`}>
+        <Icon className="w-5 h-5" />
+      </div>
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="w-full pl-10 pr-4 py-3 border-2 border-violet-200 rounded-xl focus:outline-none focus:border-violet-500 transition-all font-semibold text-violet-900"
+        placeholder={placeholder}
+      />
+    </div>
+  </div>
+);
+
+// Komponen Password Input dengan Toggle
+const PasswordInput = ({ 
+  label, 
+  name, 
+  value, 
+  onChange, 
+  placeholder, 
+  isVisible, 
+  onToggle,
+  icon: Icon,
+  iconColor = "text-violet-600"
+}) => (
+  <div>
+    <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
+      {label}
+    </label>
+    <div className="relative">
+      <div className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${iconColor}`}>
+        <Icon className="w-5 h-5" />
+      </div>
       <input
         type={isVisible ? "text" : "password"}
         name={name}
         value={value}
         onChange={onChange}
-        className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-1 focus:outline-none focus:ring-violet-500 focus:border-violet-500 transition-all bg-white shadow-sm font-medium text-slate-700 pr-12"
+        className="w-full pl-10 pr-4 py-3 border-2 border-violet-200 rounded-xl focus:outline-none focus:border-violet-500 transition-all font-semibold text-violet-900"
         placeholder={placeholder}
       />
       <button
@@ -48,6 +152,77 @@ const PasswordInput = ({ label, name, value, onChange, placeholder, isVisible, o
       </button>
     </div>
   </div>
+);
+
+// Komponen Info Card untuk menampilkan informasi
+const InfoCard = ({ title, value, description, icon: Icon, color = "violet" }) => {
+  const colors = {
+    violet: "bg-violet-50 border-violet-200 text-violet-800",
+    emerald: "bg-emerald-50 border-emerald-200 text-emerald-800",
+    blue: "bg-blue-50 border-blue-200 text-blue-800",
+    amber: "bg-amber-50 border-amber-200 text-amber-800"
+  };
+  
+  const iconColors = {
+    violet: "text-violet-600",
+    emerald: "text-emerald-600",
+    blue: "text-blue-600",
+    amber: "text-amber-600"
+  };
+  
+  return (
+    <Motion.div
+      whileHover={{ y: -2 }}
+      className={`${colors[color]} p-4 rounded-xl border-2 flex items-start gap-3`}
+    >
+      <div className={`p-2 rounded-lg bg-white ${iconColors[color]}`}>
+        <Icon className="w-5 h-5" />
+      </div>
+      <div className="flex-1">
+        <div className="text-sm font-semibold">{title}</div>
+        <div className="text-lg font-bold mt-1">{value}</div>
+        {description && (
+          <div className="text-xs mt-1 opacity-80">{description}</div>
+        )}
+      </div>
+    </Motion.div>
+  );
+};
+
+// Komponen Tab Button
+const TabButton = ({ active, onClick, children, icon: Icon }) => (
+  <Motion.button
+    whileHover={{ scale: 1.02, y: -2 }}
+    whileTap={{ scale: 0.98 }}
+    onClick={onClick}
+    className={`flex items-center gap-3 px-6 py-4 rounded-2xl font-bold transition-all duration-200 ${
+      active
+        ? "bg-linear-to-r from-violet-600 to-purple-600 text-white shadow-md"
+        : "bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200"
+    }`}
+  >
+    <Icon className="w-5 h-5" />
+    {children}
+  </Motion.button>
+);
+
+// Komponen Setting Card
+const SettingCard = ({ title, description, icon: Icon, children }) => (
+  <Motion.div
+    whileHover={{ y: -3 }}
+    className="bg-white/80 backdrop-blur-md p-6 rounded-2xl border-2 border-slate-100 shadow-sm"
+  >
+    <div className="flex items-start gap-4 mb-4">
+      <div className="bg-violet-100 p-3 rounded-xl">
+        <Icon className="w-6 h-6 text-violet-600" />
+      </div>
+      <div className="flex-1">
+        <h3 className="text-lg font-bold text-slate-800">{title}</h3>
+        <p className="text-slate-600 text-sm mt-1">{description}</p>
+      </div>
+    </div>
+    {children}
+  </Motion.div>
 );
 
 const ProfileSettings = () => {
@@ -72,10 +247,14 @@ const ProfileSettings = () => {
     confirmPassword: false,
   });
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
-  const [localError, setLocalError] = useState("");
-  const [localSuccess, setLocalSuccess] = useState("");
+  const [localMessage, setLocalMessage] = useState("");
+  const [messageType, setMessageType] = useState(""); // "success" or "error"
+  const [preferences, setPreferences] = useState({
+    theme: "light",
+    language: "id",
+  });
 
-  // Load user data on component mount
+  // Load user data
   useEffect(() => {
     if (user) {
       setProfileForm({
@@ -86,53 +265,16 @@ const ProfileSettings = () => {
     }
   }, [user]);
 
-  // Handle local alerts
+  // Handle messages
   useEffect(() => {
-    if (localError) {
-      Swal.fire({
-        title: "Error!",
-        text: localError,
-        icon: "error",
-        confirmButtonColor: "#ef4444",
-        background: "#fff",
-        customClass: {
-          popup: "rounded-3xl shadow-sm",
-          title: "text-xl font-bold text-slate-800",
-          confirmButton: "rounded-xl font-semibold px-6 py-3",
-        },
-      }).then(() => {
-        setLocalError("");
-      });
+    if (localMessage) {
+      const timer = setTimeout(() => {
+        setLocalMessage("");
+        setMessageType("");
+      }, 5000);
+      return () => clearTimeout(timer);
     }
-
-    if (localSuccess) {
-      Swal.fire({
-        title: "Berhasil!",
-        text: localSuccess,
-        icon: "success",
-        confirmButtonColor: "#8b5cf6",
-        background: "#fff",
-        customClass: {
-          popup: "rounded-3xl shadow-sm",
-          title: "text-xl font-bold text-slate-800",
-          confirmButton: "rounded-xl font-semibold px-6 py-3",
-        },
-      }).then(() => {
-        setLocalSuccess("");
-      });
-    }
-  }, [localError, localSuccess]);
-
-  // Sync form when user data changes and on profile tab
-  useEffect(() => {
-    if (user && activeTab === "profile") {
-      setProfileForm({
-        name: user.name || "",
-        email: user.email || "",
-        phone_number: user.phone_number || "",
-      });
-    }
-  }, [user, activeTab]);
+  }, [localMessage]);
 
   const handleBackClick = () => {
     navigate(-1);
@@ -163,24 +305,21 @@ const ProfileSettings = () => {
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
 
-    // Validasi data
     if (!profileForm.name.trim()) {
-      setLocalError("Nama tidak boleh kosong");
+      setLocalMessage("Nama tidak boleh kosong");
+      setMessageType("error");
       return;
     }
 
     if (!profileForm.email.trim()) {
-      setLocalError("Email tidak boleh kosong");
+      setLocalMessage("Email tidak boleh kosong");
+      setMessageType("error");
       return;
     }
 
     try {
-      setLocalError("");
-      setLocalSuccess("");
-      
       const result = await dispatch(updateProfile(profileForm)).unwrap();
       
-      // Handle response dari backend
       if (result.message === "Tidak ada perubahan data") {
         Swal.fire({
           title: "Info!",
@@ -189,19 +328,19 @@ const ProfileSettings = () => {
           confirmButtonColor: "#8b5cf6",
           background: "#fff",
           customClass: {
-            popup: "rounded-3xl shadow-sm",
+            popup: "rounded-3xl shadow-2xl",
             title: "text-xl font-bold text-slate-800",
             confirmButton: "rounded-xl font-semibold px-6 py-3",
           },
         });
       } else {
-        setLocalSuccess(result.message);
-        // Refresh user data
+        setLocalMessage(result.message);
+        setMessageType("success");
         dispatch(getMe());
       }
     } catch (error) {
-      console.error("Update profile failed:", error);
-      setLocalError(error || "Terjadi kesalahan saat update profile");
+      setLocalMessage(error || "Terjadi kesalahan saat update profile");
+      setMessageType("error");
     }
   };
 
@@ -209,35 +348,35 @@ const ProfileSettings = () => {
     e.preventDefault();
     setIsPasswordLoading(true);
 
-    // Validasi password
     if (!passwordForm.currentPassword) {
-      setLocalError("Password saat ini harus diisi");
+      setLocalMessage("Password saat ini harus diisi");
+      setMessageType("error");
       setIsPasswordLoading(false);
       return;
     }
 
     if (!passwordForm.newPassword) {
-      setLocalError("Password baru harus diisi");
+      setLocalMessage("Password baru harus diisi");
+      setMessageType("error");
       setIsPasswordLoading(false);
       return;
     }
 
     if (passwordForm.newPassword.length < 6) {
-      setLocalError("Password baru minimal 6 karakter");
+      setLocalMessage("Password baru minimal 6 karakter");
+      setMessageType("error");
       setIsPasswordLoading(false);
       return;
     }
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setLocalError("Konfirmasi password tidak cocok");
+      setLocalMessage("Konfirmasi password tidak cocok");
+      setMessageType("error");
       setIsPasswordLoading(false);
       return;
     }
 
     try {
-      setLocalError("");
-      setLocalSuccess("");
-      
       await dispatch(
         changePassword({
           currentPassword: passwordForm.currentPassword,
@@ -245,88 +384,131 @@ const ProfileSettings = () => {
         })
       ).unwrap();
 
-      setLocalSuccess("Password berhasil diubah");
-      // Reset password form
+      setLocalMessage("Password berhasil diubah");
+      setMessageType("success");
       setPasswordForm({
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
       });
     } catch (error) {
-      console.error("Change password failed:", error);
-      setLocalError(error || "Terjadi kesalahan saat mengubah password");
+      setLocalMessage(error || "Terjadi kesalahan saat mengubah password");
+      setMessageType("error");
     } finally {
       setIsPasswordLoading(false);
     }
   };
 
-  const TabButton = ({ active, onClick, children, icon: Icon }) => (
-    <Motion.button
-      whileHover={{ scale: 1.02, y: -2 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={onClick}
-      className={`flex items-center text-start gap-3 px-6 py-4 rounded-2xl font-bold transition-all duration-200 ${
-        active
-          ? "bg-linear-to-r from-violet-600 to-purple-600 text-white shadow-sm"
-          : "bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200"
-      }`}
-    >
-      <Icon className="w-5 h-5" />
-      {children}
-    </Motion.button>
-  );
+  const handlePreferenceChange = (key, value) => {
+    setPreferences(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-violet-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen py-8 bg-slate-50">
-      <div className="max-w-4xl mx-auto px-4">
-        {/* Header dengan Back Button */}
+    <div className="min-h-screen bg-slate-50 py-6">
+      <div className="max-w-6xl mx-auto px-4">
+        {/* Header */}
         <Motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          {/* Back Button */}
-          <Motion.button
-            whileHover={{ scale: 1.05, x: -5 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleBackClick}
-            className="flex items-center gap-2 text-slate-600 hover:text-slate-800 font-medium mb-6 transition-all duration-200 group"
-          >
-            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-200" />
-            <span>Kembali</span>
-          </Motion.button>
+          <div className="flex items-center justify-between mb-6">
+            <Motion.button
+              whileHover={{ scale: 1.05, x: -5 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleBackClick}
+              className="flex items-center gap-2 px-4 py-2 border-2 border-violet-300 rounded-xl text-violet-700 hover:bg-violet-50 transition-colors font-bold"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              Kembali
+            </Motion.button>
+            
+            <div className="text-right">
+              <div className="text-sm font-semibold text-slate-600">Account Settings</div>
+              <div className="text-xs text-slate-500">Manage your profile and preferences</div>
+            </div>
+          </div>
 
-          {/* Title Section */}
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-center gap-4 mb-6">
             <div className="bg-linear-to-r from-violet-600 to-purple-600 p-3 rounded-2xl shadow-sm">
-              <User className="w-8 h-8 text-white" />
+              <Settings className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 className="text-4xl font-bold text-slate-800">
-                Profile Settings
+              <h1 className="text-3xl font-bold text-slate-800">
+                Profile & Settings
               </h1>
               <p className="text-slate-600 text-lg mt-2 font-light">
-                Kelola informasi profil dan keamanan akun Anda
+                Kelola informasi profil dan preferensi akun Anda
               </p>
             </div>
           </div>
+
+          {/* User Info Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <InfoCard
+              title="Bergabung Sejak"
+              value={user.created_at ? formatDateTime(user.created_at).split(',')[0] : '-'}
+              description="Tanggal pendaftaran akun"
+              icon={Calendar}
+              color="violet"
+            />
+            <InfoCard
+              title="Login Terakhir"
+              value={user.last_login ? formatDateTime(user.last_login) : 'Belum pernah'}
+              description={user.last_login ? getTimeSinceLastLogin(user.last_login) : ''}
+              icon={LogIn}
+              color="emerald"
+            />
+            <InfoCard
+              title="Status Akun"
+              value={user.status === "active" ? "Aktif" : "Non-aktif"}
+              description={user.status === "active" ? "Akun dalam keadaan aktif" : "Akun dinonaktifkan"}
+              icon={ShieldCheck}
+              color="blue"
+            />
+          </div>
         </Motion.div>
 
+        {/* Message Display */}
+        {localMessage && (
+          <Motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`p-4 rounded-2xl text-sm font-semibold mb-6 border-2 ${
+              messageType === "success"
+                ? "bg-emerald-100 text-emerald-700 border-emerald-300"
+                : "bg-rose-100 text-rose-700 border-rose-300"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              {messageType === "success" ? (
+                <CheckCircle className="w-5 h-5" />
+              ) : (
+                <AlertTriangle className="w-5 h-5" />
+              )}
+              {localMessage}
+            </div>
+          </Motion.div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar Navigation */}
+          {/* Sidebar Tabs */}
           <Motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
-            className="lg:col-span-1 space-y-3"
+            className="lg:col-span-1 flex flex-col space-y-3"
           >
             <TabButton
               active={activeTab === "profile"}
@@ -340,14 +522,14 @@ const ProfileSettings = () => {
               onClick={() => setActiveTab("password")}
               icon={Lock}
             >
-              Ubah Password
+              Keamanan
             </TabButton>
             <TabButton
-              active={activeTab === "security"}
-              onClick={() => setActiveTab("security")}
-              icon={Shield}
+              active={activeTab === "preferences"}
+              onClick={() => setActiveTab("preferences")}
+              icon={Settings}
             >
-              Keamanan
+              Preferensi
             </TabButton>
           </Motion.div>
 
@@ -358,235 +540,267 @@ const ProfileSettings = () => {
             transition={{ delay: 0.2 }}
             className="lg:col-span-3"
           >
-            <div className="bg-white/80 backdrop-blur-md rounded-3xl border border-slate-200 shadow-sm p-6">
-              {/* Profile Tab */}
-              {activeTab === "profile" && (
-                <Motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
+            {/* Profile Tab */}
+            {activeTab === "profile" && (
+              <Motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+              >
+                <SettingCard
+                  title="Informasi Profil"
+                  description="Kelola informasi profil dan kontak Anda"
+                  icon={User}
                 >
-                  <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-3">
-                    <User className="w-7 h-7 text-violet-600" />
-                    Informasi Profil
-                  </h2>
-
                   <form onSubmit={handleProfileSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Name Field */}
-                      <div>
-                        <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
-                          <User className="w-4 h-4" />
-                          Nama Lengkap
-                        </label>
-                        <input
-                          type="text"
-                          name="name"
-                          value={profileForm.name}
-                          onChange={handleProfileChange}
-                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-1 focus:outline-none focus:ring-violet-500 focus:border-violet-500 transition-all bg-white shadow-sm font-medium text-slate-700"
-                          placeholder="Masukkan nama lengkap"
-                        />
-                      </div>
-
-                      {/* Email Field */}
-                      <div>
-                        <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
-                          <Mail className="w-4 h-4" />
-                          Email
-                        </label>
-                        <input
-                          type="email"
-                          name="email"
-                          value={profileForm.email}
-                          onChange={handleProfileChange}
-                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-1 focus:outline-none focus:ring-violet-500 focus:border-violet-500 transition-all bg-white shadow-sm font-medium text-slate-700"
-                          placeholder="Masukkan email"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Phone Number Field */}
-                    <div>
-                      <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
-                        <Phone className="w-4 h-4" />
-                        Nomor Telepon
-                      </label>
-                      <input
-                        type="tel"
-                        name="phone_number"
-                        value={profileForm.phone_number}
+                      <InputWithIcon
+                        label="Nama Lengkap"
+                        name="name"
+                        value={profileForm.name}
                         onChange={handleProfileChange}
-                        className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-1 focus:outline-none focus:ring-violet-500 focus:border-violet-500 transition-all bg-white shadow-sm font-medium text-slate-700"
-                        placeholder="Masukkan nomor telepon"
+                        placeholder="Masukkan nama lengkap"
+                        icon={User}
+                      />
+                      <InputWithIcon
+                        label="Email"
+                        name="email"
+                        value={profileForm.email}
+                        onChange={handleProfileChange}
+                        placeholder="Masukkan email"
+                        type="email"
+                        icon={Mail}
                       />
                     </div>
+                    
+                    <InputWithIcon
+                      label="Nomor Telepon"
+                      name="phone_number"
+                      value={profileForm.phone_number}
+                      onChange={handleProfileChange}
+                      placeholder="Masukkan nomor telepon"
+                      type="tel"
+                      icon={Phone}
+                    />
 
-                    <Motion.button
-                      whileHover={{ scale: 1.02, y: -2 }}
-                      whileTap={{ scale: 0.98 }}
-                      type="submit"
-                      disabled={isLoading}
-                      className="w-full bg-linear-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white py-4 rounded-xl transition-all duration-200 font-medium shadow-sm hover:shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader className="w-5 h-5 animate-spin" />
-                          Menyimpan...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-5 h-5" />
-                          Simpan Perubahan
-                        </>
-                      )}
-                    </Motion.button>
+                    <div className="flex justify-end pt-4">
+                      <Motion.button
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        type="submit"
+                        disabled={isLoading}
+                        className="px-6 py-3 bg-linear-to-r from-violet-600 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        {isLoading ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            Menyimpan...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4" />
+                            Simpan Perubahan
+                          </>
+                        )}
+                      </Motion.button>
+                    </div>
                   </form>
-                </Motion.div>
-              )}
+                </SettingCard>
+              </Motion.div>
+            )}
 
-              {/* Password Tab */}
-              {activeTab === "password" && (
-                <Motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
+            {/* Password Tab */}
+            {activeTab === "password" && (
+              <Motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+              >
+                <SettingCard
+                  title="Keamanan Akun"
+                  description="Perbarui password untuk menjaga keamanan akun Anda"
+                  icon={Lock}
                 >
-                  <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-3">
-                    <Lock className="w-7 h-7 text-violet-600" />
-                    Ubah Password
-                  </h2>
-
                   <form onSubmit={handlePasswordSubmit} className="space-y-6">
                     <div className="space-y-4">
-                      {/* Current Password */}
                       <PasswordInput
-                        label={
-                          <span className="flex items-center gap-2">
-                            <Key className="w-4 h-4" />
-                            Password Saat Ini
-                          </span>
-                        }
+                        label="Password Saat Ini"
                         name="currentPassword"
                         value={passwordForm.currentPassword}
                         onChange={handlePasswordChange}
                         placeholder="Masukkan password saat ini"
                         isVisible={passwordVisibility.currentPassword}
                         onToggle={() => togglePasswordVisibility("currentPassword")}
+                        icon={Key}
                       />
-
-                      {/* New Password */}
+                      
                       <PasswordInput
-                        label={
-                          <span className="flex items-center gap-2">
-                            <Lock className="w-4 h-4" />
-                            Password Baru
-                          </span>
-                        }
+                        label="Password Baru"
                         name="newPassword"
                         value={passwordForm.newPassword}
                         onChange={handlePasswordChange}
                         placeholder="Masukkan password baru (min. 6 karakter)"
                         isVisible={passwordVisibility.newPassword}
                         onToggle={() => togglePasswordVisibility("newPassword")}
+                        icon={Lock}
                       />
-
-                      {/* Confirm Password */}
+                      
                       <PasswordInput
-                        label={
-                          <span className="flex items-center gap-2">
-                            <Lock className="w-4 h-4" />
-                            Konfirmasi Password Baru
-                          </span>
-                        }
+                        label="Konfirmasi Password Baru"
                         name="confirmPassword"
                         value={passwordForm.confirmPassword}
                         onChange={handlePasswordChange}
                         placeholder="Konfirmasi password baru"
                         isVisible={passwordVisibility.confirmPassword}
                         onToggle={() => togglePasswordVisibility("confirmPassword")}
+                        icon={Lock}
                       />
                     </div>
 
-                    <Motion.button
-                      whileHover={{ scale: 1.02, y: -2 }}
-                      whileTap={{ scale: 0.98 }}
-                      type="submit"
-                      disabled={isPasswordLoading}
-                      className="w-full bg-linear-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white py-4 rounded-xl transition-all duration-200 font-medium shadow-sm hover:shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {isPasswordLoading ? (
-                        <>
-                          <Loader className="w-5 h-5 animate-spin" />
-                          Mengubah Password...
-                        </>
-                      ) : (
-                        <>
-                          <Lock className="w-5 h-5" />
-                          Ubah Password
-                        </>
-                      )}
-                    </Motion.button>
+                    <div className="bg-violet-50 rounded-xl p-4 border-2 border-violet-200">
+                      <h4 className="font-bold text-violet-800 mb-2 flex items-center gap-2">
+                        <Lightbulb className="w-4 h-4" />
+                        Tips Password Aman
+                      </h4>
+                      <ul className="text-sm text-violet-700 space-y-1">
+                        <li>• Gunakan minimal 8 karakter</li>
+                        <li>• Kombinasikan huruf besar, kecil, angka, dan simbol</li>
+                        <li>• Hindari informasi personal yang mudah ditebak</li>
+                        <li>• Gunakan password yang berbeda dari akun lain</li>
+                      </ul>
+                    </div>
+
+                    <div className="flex justify-end pt-4">
+                      <Motion.button
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        type="submit"
+                        disabled={isPasswordLoading}
+                        className="px-6 py-3 bg-linear-to-r from-violet-600 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        {isPasswordLoading ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            Mengubah Password...
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-4 h-4" />
+                            Ubah Password
+                          </>
+                        )}
+                      </Motion.button>
+                    </div>
                   </form>
-                </Motion.div>
-              )}
+                </SettingCard>
+              </Motion.div>
+            )}
 
-              {/* Security Tab */}
-              {activeTab === "security" && (
-                <Motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
+            {/* Preferences Tab */}
+            {activeTab === "preferences" && (
+              <Motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="space-y-6"
+              >
+                <SettingCard
+                  title="Preferensi Aplikasi"
+                  description="Sesuaikan pengalaman penggunaan aplikasi"
+                  icon={Settings}
                 >
-                  <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-3">
-                    <Shield className="w-7 h-7 text-violet-600" />
-                    Keamanan Akun
-                  </h2>
-
                   <div className="space-y-6">
-                    {/* Account Status */}
-                    <div className="bg-emerald-50 rounded-2xl p-6 border-2 border-emerald-200">
-                      <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-2">
-                        <CheckCircle className="w-5 h-5 text-emerald-600" />
-                        Status Akun
-                      </h3>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-700">
-                          Akun aktif dan terverifikasi
-                        </span>
-                        <span className="bg-emerald-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-                          {user.status === "active" ? "Aktif" : "Non-aktif"}
-                        </span>
+                    <div>
+                      <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
+                        <Moon className="w-4 h-4" />
+                        Tema
+                      </label>
+                      <div className="grid grid-cols-3 gap-3">
+                        {[
+                          { value: "light", label: "Light", icon: "☀️" },
+                          { value: "dark", label: "Dark", icon: "🌙" },
+                          { value: "auto", label: "Auto", icon: "⚙️" }
+                        ].map((theme) => (
+                          <Motion.button
+                            key={theme.value}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            type="button"
+                            onClick={() => handlePreferenceChange("theme", theme.value)}
+                            className={`p-4 rounded-xl border-2 font-medium transition-all ${
+                              preferences.theme === theme.value
+                                ? "border-violet-500 bg-violet-50 text-violet-700"
+                                : "border-slate-200 bg-white text-slate-700 hover:border-violet-300"
+                            }`}
+                          >
+                            <div className="text-2xl mb-2">{theme.icon}</div>
+                            <div>{theme.label}</div>
+                          </Motion.button>
+                        ))}
                       </div>
                     </div>
 
-                    {/* Security Recommendations */}
-                    <div className="bg-blue-50 rounded-2xl p-6 border-2 border-blue-200">
-                      <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-2">
-                        <Lightbulb className="w-5 h-5 text-blue-600" />
-                        Rekomendasi Keamanan
-                      </h3>
-                      <ul className="space-y-3 text-slate-700">
-                        <li className="flex items-center gap-3">
-                          <CheckCircle className="w-4 h-4 text-emerald-500" />
-                          <span>Gunakan password yang kuat dan unik</span>
-                        </li>
-                        <li className="flex items-center gap-3">
-                          <CheckCircle className="w-4 h-4 text-emerald-500" />
-                          <span>Jangan bagikan password dengan siapapun</span>
-                        </li>
-                        <li className="flex items-center gap-3">
-                          <Lightbulb className="w-4 h-4 text-blue-500" />
-                          <span>Update password secara berkala</span>
-                        </li>
-                      </ul>
+                    <div>
+                      <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
+                        <Globe className="w-4 h-4" />
+                        Bahasa
+                      </label>
+                      <select
+                        value={preferences.language}
+                        onChange={(e) => handlePreferenceChange("language", e.target.value)}
+                        className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 transition-all font-semibold text-slate-900"
+                      >
+                        <option value="id">🇮🇩 Bahasa Indonesia</option>
+                        <option value="en">🇺🇸 English</option>
+                      </select>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-200">
+                      <div className="flex justify-end">
+                        <Motion.button
+                          whileHover={{ scale: 1.02, y: -2 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => {
+                            setLocalMessage("Preferensi berhasil disimpan");
+                            setMessageType("success");
+                          }}
+                          className="px-6 py-3 bg-linear-to-r from-violet-600 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-bold flex items-center gap-2"
+                        >
+                          <Save className="w-4 h-4" />
+                          Simpan Preferensi
+                        </Motion.button>
+                      </div>
                     </div>
                   </div>
-                </Motion.div>
-              )}
-            </div>
+                </SettingCard>
+              </Motion.div>
+            )}
           </Motion.div>
         </div>
+
+        {/* Footer Actions */}
+        <Motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="mt-8 bg-white/80 backdrop-blur-md p-6 rounded-2xl border-2 border-slate-100 shadow-sm"
+        >
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="text-sm text-slate-600">
+              <p className="font-semibold">Perlukan bantuan?</p>
+              <p>Hubungi dukungan kami untuk pertanyaan terkait akun.</p>
+            </div>
+            <Motion.button
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => window.open('mailto:support@tradingjournal.com', '_blank')}
+              className="px-6 py-3 border-2 border-violet-300 text-violet-700 rounded-xl hover:bg-violet-50 transition-colors font-bold flex items-center gap-2"
+            >
+              Hubungi Support
+              <ArrowRight className="w-4 h-4" />
+            </Motion.button>
+          </div>
+        </Motion.div>
       </div>
     </div>
   );

@@ -1,9 +1,15 @@
-import { Badge, UserBadge, UserLevel, Achievement } from "../models/gamification.js";
+import { Badge, UserBadge, UserLevel, Achievement, MonthlyLeaderboard } from "../models/gamification.js";
 import Trade from "../models/trade.js";
 import { Op } from "sequelize";
 import User from "../models/user.js";
 
-// Calculate required XP for a level
+// Helper: Get current period (YYYY-MM)
+const getCurrentPeriod = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+};
+
+// Helper: Calculate required XP for a level
 const calculateRequiredXP = (level) => {
   return Math.floor(100 * Math.pow(level, 1.5));
 };
@@ -57,7 +63,7 @@ const updateDailyStreak = async (userId) => {
     const today = new Date().toISOString().split('T')[0];
     const userLevel = await UserLevel.findOne({ where: { userId } });
 
-    if (!userLevel) return;
+    if (!userLevel) return 0;
 
     if (userLevel.lastActiveDate) {
       const lastActive = new Date(userLevel.lastActiveDate);
@@ -96,7 +102,7 @@ const updateDailyStreak = async (userId) => {
 const updateProfitStreak = async (userId, tradeProfit) => {
   try {
     const userLevel = await UserLevel.findOne({ where: { userId } });
-    if (!userLevel) return;
+    if (!userLevel) return 0;
 
     const today = new Date().toISOString().split('T')[0];
 
@@ -152,7 +158,7 @@ const updateProfitStreak = async (userId, tradeProfit) => {
 const updateConsecutiveWins = async (userId, tradeResult) => {
   try {
     const userLevel = await UserLevel.findOne({ where: { userId } });
-    if (!userLevel) return;
+    if (!userLevel) return { consecutiveWins: 0, maxConsecutiveWins: 0 };
 
     let newConsecutiveWins = userLevel.consecutiveWins;
 
@@ -176,81 +182,111 @@ const updateConsecutiveWins = async (userId, tradeResult) => {
   }
 };
 
-// Check and award badges
+// Check and award badges - FIXED VERSION
 const checkAndAwardBadges = async (userId) => {
   try {
     const userLevel = await UserLevel.findOne({ where: { userId } });
+    if (!userLevel) {
+      console.log(`UserLevel not found for userId: ${userId}`);
+      return [];
+    }
+
     const badges = await Badge.findAll();
+    if (!badges || badges.length === 0) {
+      console.log('No badges found in database');
+      return [];
+    }
+
     const awardedBadges = [];
 
     for (const badge of badges) {
-      const userBadge = await UserBadge.findOne({
-        where: { userId, badgeId: badge.id },
-      });
-
-      if (userBadge && userBadge.achievedAt) {
-        continue; // Already awarded
-      }
-
-      let progress = 0;
-      let achieved = false;
-
-      switch (badge.requirement.type) {
-        case 'daily_streak':
-          progress = userLevel.dailyStreak;
-          achieved = progress >= badge.requirement.value;
-          break;
-
-        case 'profit_streak':
-          progress = userLevel.profitStreak;
-          achieved = progress >= badge.requirement.value;
-          break;
-
-        case 'total_trades':
-          progress = userLevel.totalTrades;
-          achieved = progress >= badge.requirement.value;
-          break;
-
-        case 'risk_reward_positive':
-          // This would require additional tracking
-          progress = 0;
-          achieved = false;
-          break;
-
-        case 'stop_loss_used':
-          // This would require additional tracking
-          progress = 0;
-          achieved = false;
-          break;
-      }
-
-      if (userBadge) {
-        await userBadge.update({ progress });
-      } else {
-        await UserBadge.create({
-          userId,
-          badgeId: badge.id,
-          progress,
+      try {
+        const userBadge = await UserBadge.findOne({
+          where: { userId, badgeId: badge.id },
         });
-      }
 
-      if (achieved && !userBadge?.achievedAt) {
-        await UserBadge.update(
-          { achievedAt: new Date() },
-          { where: { userId, badgeId: badge.id } }
-        );
+        // Skip if already achieved
+        if (userBadge && userBadge.achievedAt) {
+          continue;
+        }
 
-        // Award XP
-        await addExperience(userId, badge.xpReward);
+        let progress = 0;
+        let achieved = false;
 
-        awardedBadges.push(badge);
+        // Parse requirement
+        const requirement = badge.requirement;
+        if (!requirement || !requirement.type) {
+          console.warn(`Badge ${badge.id} has invalid requirement:`, requirement);
+          continue;
+        }
+
+        // Calculate progress based on requirement type
+        switch (requirement.type) {
+          case 'daily_streak':
+            progress = userLevel.dailyStreak || 0;
+            achieved = progress >= (requirement.value || 0);
+            break;
+
+          case 'profit_streak':
+            progress = userLevel.profitStreak || 0;
+            achieved = progress >= (requirement.value || 0);
+            break;
+
+          case 'total_trades':
+            progress = userLevel.totalTrades || 0;
+            achieved = progress >= (requirement.value || 0);
+            break;
+
+          // Add more requirement types as needed
+          default:
+            console.warn(`Unknown requirement type: ${requirement.type} for badge ${badge.id}`);
+            continue;
+        }
+
+        // Create or update user badge record
+        if (userBadge) {
+          await userBadge.update({ 
+            progress,
+            ...(achieved && !userBadge.achievedAt ? { achievedAt: new Date() } : {})
+          });
+        } else {
+          await UserBadge.create({
+            userId,
+            badgeId: badge.id,
+            progress,
+            ...(achieved ? { achievedAt: new Date() } : {})
+          });
+        }
+
+        // If achieved now, award XP and add to list
+        if (achieved && (!userBadge || !userBadge.achievedAt)) {
+          // Award XP
+          if (badge.xpReward && badge.xpReward > 0) {
+            await addExperience(userId, badge.xpReward);
+          }
+          
+          awardedBadges.push({
+            id: badge.id,
+            name: badge.name,
+            description: badge.description,
+            type: 'badge',
+            xp: badge.xpReward,
+            icon: badge.icon,
+            color: badge.color,
+            rarity: badge.rarity
+          });
+          
+          console.log(`Badge awarded: ${badge.name} to user ${userId}`);
+        }
+      } catch (badgeError) {
+        console.error(`Error processing badge ${badge.id}:`, badgeError);
       }
     }
 
     return awardedBadges;
   } catch (error) {
-    console.error("Error checking badges:", error);
-    throw error;
+    console.error("Error in checkAndAwardBadges:", error);
+    return [];
   }
 };
 
@@ -308,6 +344,100 @@ const checkSpecialAchievements = async (userId, tradeData) => {
     return achievements;
   } catch (error) {
     console.error("Error checking special achievements:", error);
+    return [];
+  }
+};
+
+// Calculate monthly score
+const calculateMonthlyScore = (userStats) => {
+  let score = 0;
+  
+  // Based on total profit (40% weight)
+  score += Math.min(userStats.totalProfit / 10000, 100) * 40;
+  
+  // Based on win rate (30% weight)
+  score += userStats.winRate * 30;
+  
+  // Based on number of trades (20% weight)
+  score += Math.min(userStats.totalTrades / 50, 100) * 20;
+  
+  // Based on consistency (10% weight)
+  score += Math.min(userStats.dailyActivity / 30, 100) * 10;
+  
+  return Math.round(score);
+};
+
+// Update monthly leaderboard
+const updateMonthlyLeaderboard = async (userId, tradeData = null) => {
+  try {
+    const period = getCurrentPeriod();
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    
+    // Get user's monthly trades
+    const monthlyTrades = await Trade.findAll({
+      where: {
+        userId,
+        date: {
+          [Op.gte]: startOfMonth,
+        },
+      },
+    });
+    
+    // Calculate monthly stats
+    const totalTrades = monthlyTrades.length;
+    const totalProfit = monthlyTrades.reduce((sum, trade) => sum + (parseFloat(trade.profit) || 0), 0);
+    const winTrades = monthlyTrades.filter(trade => trade.result?.toLowerCase().includes('win')).length;
+    const winRate = totalTrades > 0 ? (winTrades / totalTrades) * 100 : 0;
+    
+    // Calculate daily activity (unique days with trades)
+    const tradingDays = new Set(monthlyTrades.map(trade => trade.date)).size;
+    
+    // Calculate score
+    const score = calculateMonthlyScore({
+      totalTrades,
+      totalProfit,
+      winRate,
+      dailyActivity: tradingDays,
+    });
+    
+    // Update or create monthly leaderboard entry
+    await MonthlyLeaderboard.upsert({
+      userId,
+      period,
+      score,
+      totalTrades,
+      totalProfit,
+      winRate,
+    });
+    
+    // Recalculate ranks for current period
+    await recalculateMonthlyRanks(period);
+    
+    return { period, score, rank: null };
+  } catch (error) {
+    console.error("Error updating monthly leaderboard:", error);
+    throw error;
+  }
+};
+
+// Recalculate monthly ranks
+const recalculateMonthlyRanks = async (period) => {
+  try {
+    // Get all entries for period, sorted by score
+    const entries = await MonthlyLeaderboard.findAll({
+      where: { period },
+      order: [['score', 'DESC']],
+      include: [{ model: User }],
+    });
+    
+    // Update ranks
+    for (let i = 0; i < entries.length; i++) {
+      await entries[i].update({ rank: i + 1 });
+    }
+    
+    return entries;
+  } catch (error) {
+    console.error("Error recalculating monthly ranks:", error);
     throw error;
   }
 };
@@ -349,13 +479,20 @@ export const processTradeForGamification = async (userId, tradeData) => {
     // Check for special achievements
     const newAchievements = await checkSpecialAchievements(userId, tradeData);
 
-    // Check and award badges
+    // Check and award badges - FIXED: Now returns awarded badges
     const newBadges = await checkAndAwardBadges(userId);
+
+    // Update monthly leaderboard
+    const monthlyUpdate = await updateMonthlyLeaderboard(userId, tradeData);
+
+    // Get updated user level
+    const updatedUserLevel = await UserLevel.findOne({ where: { userId } });
 
     return {
       newAchievements,
-      newBadges,
-      userLevel: await UserLevel.findOne({ where: { userId } }),
+      newBadges, // This will contain badges that were just awarded
+      userLevel: updatedUserLevel,
+      monthlyUpdate,
     };
   } catch (error) {
     console.error("Error processing trade for gamification:", error);
@@ -447,61 +584,230 @@ export const getAllBadges = async (req, res) => {
   }
 };
 
-// Get leaderboard
+// Get leaderboard with period support
 export const getLeaderboard = async (req, res) => {
   try {
-    const { type = 'level', limit = 20 } = req.query;
-
-    let orderField;
-    switch (type) {
-      case 'level':
-        orderField = [['level', 'DESC'], ['experience', 'DESC']];
-        break;
-      case 'experience':
-        orderField = [['totalExperience', 'DESC']];
-        break;
-      case 'streak':
-        orderField = [['dailyStreak', 'DESC']];
-        break;
-      case 'trades':
-        orderField = [['totalTrades', 'DESC']];
-        break;
-      default:
-        orderField = [['level', 'DESC']];
-    }
-
-    const leaders = await UserLevel.findAll({
-      include: [
-        {
-          model: User,
-          attributes: ['id', 'name', 'email'],
-        },
-      ],
-      order: orderField,
-      limit: parseInt(limit),
-    });
-
-    // Get current user's rank
+    const { type = 'level', limit = 20, period = 'current' } = req.query;
     const userId = req.userId;
-    const allUsers = await UserLevel.findAll({ order: orderField });
-    const userRank = allUsers.findIndex(user => user.userId === userId) + 1;
-
+    
+    let leaders = [];
+    let userRank = null;
+    let totalUsers = 0;
+    let currentPeriod = '';
+    
+    if (period === 'current' || period === getCurrentPeriod()) {
+      // Get current monthly leaderboard
+      currentPeriod = getCurrentPeriod();
+      
+      const leaderEntries = await MonthlyLeaderboard.findAll({
+        where: { period: currentPeriod },
+        include: [
+          {
+            model: User,
+            attributes: ['id', 'name', 'email'],
+          },
+        ],
+        order: [['rank', 'ASC']],
+        limit: parseInt(limit),
+      });
+      
+      // Convert to plain objects
+      leaders = leaderEntries.map(entry => {
+        const entryData = entry.get({ plain: true });
+        return {
+          userId: entryData.userId,
+          User: entryData.User,
+          rank: entryData.rank,
+          score: entryData.score,
+          level: Math.floor(entryData.score / 1000) + 1,
+          experience: entryData.score % 1000,
+          totalExperience: entryData.score,
+          dailyStreak: 0,
+          totalTrades: entryData.totalTrades,
+          profitStreak: 0,
+          totalProfit: entryData.totalProfit,
+          winRate: entryData.winRate,
+        };
+      });
+      
+      // Get user's rank
+      const userEntry = await MonthlyLeaderboard.findOne({
+        where: { userId, period: currentPeriod },
+      });
+      userRank = userEntry?.rank || null;
+      totalUsers = await MonthlyLeaderboard.count({ where: { period: currentPeriod } });
+      
+    } else if (period === 'all') {
+      // Existing all-time leaderboard logic
+      let orderField;
+      switch (type) {
+        case 'level':
+          orderField = [['level', 'DESC'], ['experience', 'DESC']];
+          break;
+        case 'experience':
+          orderField = [['totalExperience', 'DESC']];
+          break;
+        case 'streak':
+          orderField = [['dailyStreak', 'DESC']];
+          break;
+        case 'trades':
+          orderField = [['totalTrades', 'DESC']];
+          break;
+        default:
+          orderField = [['level', 'DESC']];
+      }
+      
+      const leaderEntries = await UserLevel.findAll({
+        include: [
+          {
+            model: User,
+            attributes: ['id', 'name', 'email'],
+          },
+        ],
+        order: orderField,
+        limit: parseInt(limit),
+      });
+      
+      // Convert to plain objects
+      leaders = leaderEntries.map(entry => entry.get({ plain: true }));
+      
+      // Get current user's rank
+      const allUsers = await UserLevel.findAll({ order: orderField });
+      const userIndex = allUsers.findIndex(user => user.userId === userId);
+      userRank = userIndex >= 0 ? userIndex + 1 : null;
+      totalUsers = allUsers.length;
+      currentPeriod = 'all';
+    }
+    
     res.json({
       success: true,
       data: {
-        leaders: leaders.map((leader, index) => ({
-          rank: index + 1,
-          ...leader.toJSON(),
-        })),
-        userRank: userRank > 0 ? userRank : null,
-        totalUsers: allUsers.length,
+        leaders,
+        userRank,
+        totalUsers,
+        period: currentPeriod,
+        type: period === 'all' ? type : 'monthly',
       },
     });
   } catch (error) {
     console.error("Get leaderboard error:", error);
     res.status(500).json({
       success: false,
+      message: "Server error: " + error.message,
+    });
+  }
+};
+
+// Get leaderboard history (previous months)
+export const getLeaderboardHistory = async (req, res) => {
+  try {
+    const { limit = 5 } = req.query;
+    const userId = req.userId;
+    
+    // Get unique periods
+    const periods = await MonthlyLeaderboard.findAll({
+      attributes: ['period'],
+      group: ['period'],
+      order: [['period', 'DESC']],
+      limit: parseInt(limit),
+    });
+    
+    // Get user's history for each period
+    const history = await Promise.all(
+      periods.map(async (period) => {
+        const entry = await MonthlyLeaderboard.findOne({
+          where: {
+            userId,
+            period: period.period,
+          },
+          include: [{ model: User }],
+        });
+        
+        if (entry) {
+          return {
+            period: entry.period,
+            rank: entry.rank,
+            score: entry.score,
+            totalTrades: entry.totalTrades,
+            totalProfit: entry.totalProfit,
+            winRate: entry.winRate,
+          };
+        }
+        return null;
+      })
+    );
+    
+    res.json({
+      success: true,
+      data: history.filter(Boolean),
+    });
+  } catch (error) {
+    console.error("Get leaderboard history error:", error);
+    res.status(500).json({
+      success: false,
       message: "Server error",
     });
+  }
+};
+
+// Reset monthly leaderboard (cron job)
+export const resetMonthlyLeaderboard = async () => {
+  try {
+    const currentPeriod = getCurrentPeriod();
+    
+    // Archive current leaderboard (optional)
+    console.log(`Archiving leaderboard for period: ${currentPeriod}`);
+    
+    // Leaderboard baru akan dibuat otomatis saat user trading di bulan baru
+    return { success: true, message: `Leaderboard ready for new period` };
+  } catch (error) {
+    console.error("Error resetting monthly leaderboard:", error);
+    throw error;
+  }
+};
+
+// Update gamification when trades are deleted
+export const handleTradesDeletion = async (userId, deletedTradesCount, deletedProfit) => {
+  try {
+    const userLevel = await UserLevel.findOne({ where: { userId } });
+    
+    if (userLevel) {
+      // Reduce total trades
+      const newTotalTrades = Math.max(0, userLevel.totalTrades - deletedTradesCount);
+      
+      // Reduce total experience (optional)
+      const experiencePenalty = Math.floor(deletedProfit / 100); // 1 XP per 100 profit lost
+      const newTotalExperience = Math.max(0, userLevel.totalExperience - experiencePenalty);
+      
+      // Recalculate level based on new total experience
+      let currentLevel = 1;
+      let currentXP = newTotalExperience;
+      
+      while (currentXP >= calculateRequiredXP(currentLevel)) {
+        currentXP -= calculateRequiredXP(currentLevel);
+        currentLevel++;
+      }
+      
+      await userLevel.update({
+        level: currentLevel,
+        experience: currentXP,
+        totalExperience: newTotalExperience,
+        totalTrades: newTotalTrades,
+      });
+      
+      // Update monthly leaderboard
+      await updateMonthlyLeaderboard(userId);
+      
+      return {
+        success: true,
+        newLevel: currentLevel,
+        experienceLost: experiencePenalty,
+      };
+    }
+    
+    return { success: false, message: "User level not found" };
+  } catch (error) {
+    console.error("Error handling trades deletion:", error);
+    throw error;
   }
 };

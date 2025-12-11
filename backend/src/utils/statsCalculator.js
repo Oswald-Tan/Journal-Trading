@@ -1,14 +1,17 @@
 import Trade from '../models/trade.js';
 import User from '../models/user.js';
 
-export const calculateStats = async (userId) => {
+export const calculateStats = async (userId, transaction = null) => {
   try {
     const trades = await Trade.findAll({
       where: { userId },
-      order: [['date', 'ASC']]
+      order: [['date', 'ASC']],
+      ...(transaction && { transaction })
     });
 
-    const user = await User.findByPk(userId);
+    const user = await User.findByPk(userId, {
+      ...(transaction && { transaction })
+    });
 
     const totalTrades = trades.length;
     const wins = trades.filter(trade => trade.result === 'Win').length;

@@ -10,8 +10,7 @@ import {
   PieChart,
   AlertTriangle,
   CheckCircle,
-  Info,
-  ChevronDown
+  Info
 } from 'lucide-react';
 
 const Layout = () => {
@@ -24,24 +23,6 @@ const Layout = () => {
     tpPrice: '',
     risk: '3' // default 3%
   });
-
-  // State untuk currency selector
-  const [selectedCurrency, setSelectedCurrency] = useState('USD');
-  const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
-
-  // Daftar currency yang tersedia
-  const availableCurrencies = [
-    { code: 'USD', symbol: '$', name: 'US Dollar' },
-    { code: 'EUR', symbol: '€', name: 'Euro' },
-    { code: 'GBP', symbol: '£', name: 'British Pound' },
-    { code: 'JPY', symbol: '¥', name: 'Japanese Yen' },
-    { code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah' },
-    { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar' },
-    { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
-    { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
-    { code: 'CHF', symbol: 'CHF', name: 'Swiss Franc' },
-    { code: 'CNY', symbol: '¥', name: 'Chinese Yuan' },
-  ];
 
   // Fungsi untuk memformat angka dengan pemisah ribuan yang benar
   const formatNumberWithCommas = (value) => {
@@ -141,18 +122,6 @@ const Layout = () => {
     });
   };
 
-  // Handler untuk memilih currency
-  const handleCurrencySelect = (currencyCode) => {
-    setSelectedCurrency(currencyCode);
-    setIsCurrencyOpen(false);
-  };
-
-  // Dapatkan simbol currency yang dipilih
-  const getCurrencySymbol = () => {
-    const currency = availableCurrencies.find(c => c.code === selectedCurrency);
-    return currency ? currency.symbol : '$';
-  };
-
   return (
     <div className="space-y-6 min-h-screen">
       {/* Header */}
@@ -196,62 +165,26 @@ const Layout = () => {
           </h3>
           
           <div className="space-y-4">
-            {/* Balance dengan Currency Selector */}
+            {/* Balance */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Account Balance
+                Account Balance (USD)
               </label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={calculatorForm.balance}
-                    onChange={(e) => handleInputChange('balance', e.target.value)}
-                    placeholder="1.000.000"
-                    className="w-full p-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 transition-all bg-white font-light"
-                  />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span className="text-slate-500 font-medium">$</span>
                 </div>
-                
-                {/* Currency Selector */}
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setIsCurrencyOpen(!isCurrencyOpen)}
-                    className="flex items-center gap-2 px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 transition-all bg-white hover:bg-slate-50 min-w-[120px] justify-between"
-                  >
-                    <span className="font-medium text-slate-700">{selectedCurrency}</span>
-                    <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${isCurrencyOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  
-                  {/* Currency Dropdown */}
-                  {isCurrencyOpen && (
-                    <div className="absolute top-full right-0 mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-10 max-h-60 overflow-y-auto">
-                      {availableCurrencies.map((currency) => (
-                        <button
-                          key={currency.code}
-                          type="button"
-                          onClick={() => handleCurrencySelect(currency.code)}
-                          className={`w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors flex items-center justify-between ${
-                            selectedCurrency === currency.code ? 'bg-violet-50 text-violet-700' : 'text-slate-700'
-                          } first:rounded-t-xl last:rounded-b-xl`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="font-medium text-slate-600">{currency.symbol}</span>
-                            <span className="font-medium">{currency.code}</span>
-                            <span className="text-slate-500 text-sm">{currency.name}</span>
-                          </div>
-                          {selectedCurrency === currency.code && (
-                            <CheckCircle className="w-4 h-4 text-violet-600" />
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={calculatorForm.balance}
+                  onChange={(e) => handleInputChange('balance', e.target.value)}
+                  placeholder="1.000.000"
+                  className="w-full pl-8 p-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 transition-all bg-white font-light"
+                />
               </div>
               <p className="text-xs text-slate-500 mt-1 font-light">
-                Selected currency: {selectedCurrency} - {getCurrencySymbol()}
+                Enter your account balance in US Dollars
               </p>
             </div>
 
@@ -394,7 +327,7 @@ const Layout = () => {
                 <div className="bg-red-50 p-4 rounded-xl border border-red-200">
                   <div className="text-sm text-red-700 font-medium">Nett SL</div>
                   <div className="text-2xl font-bold text-red-900">
-                    {formatCompactCurrency(calculationResults.nettSL, selectedCurrency)}
+                    {formatCompactCurrency(calculationResults.nettSL, 'USD')}
                   </div>
                   <div className="text-xs text-red-600 mt-1 font-light">Potential Loss</div>
                 </div>
@@ -403,7 +336,7 @@ const Layout = () => {
                 <div className="bg-green-50 p-4 rounded-xl border border-green-200">
                   <div className="text-sm text-green-700 font-medium">Nett TP</div>
                   <div className="text-2xl font-bold text-green-900">
-                    {formatCompactCurrency(calculationResults.nettTP, selectedCurrency)}
+                    {formatCompactCurrency(calculationResults.nettTP, 'USD')}
                   </div>
                   <div className="text-xs text-green-600 mt-1 font-light">Potential Profit</div>
                 </div>
@@ -413,10 +346,10 @@ const Layout = () => {
               <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
                 <div className="text-sm text-blue-700 font-medium">Risk Amount</div>
                 <div className="text-xl font-bold text-blue-900">
-                  {formatCompactCurrency(calculationResults.riskAmount, selectedCurrency)}
+                  {formatCompactCurrency(calculationResults.riskAmount, 'USD')}
                 </div>
                 <div className="text-xs text-blue-600 mt-1 font-light">
-                  {calculatorForm.risk}% of {formatCompactCurrency(parseFloat(removeFormatting(calculatorForm.balance)) || 0, selectedCurrency)} balance
+                  {calculatorForm.risk}% of {formatCompactCurrency(parseFloat(removeFormatting(calculatorForm.balance)) || 0, 'USD')} balance
                 </div>
               </div>
 
@@ -431,7 +364,7 @@ const Layout = () => {
                   <div>• Risk: <span className="font-medium">{calculatorForm.risk}%</span> of account</div>
                   <div>• Lot size: <span className="font-medium">{calculationResults.lotSize.toFixed(2)}</span> lots</div>
                   <div>• Risk/Reward: <span className="font-medium">1:{calculationResults.riskRewardRatio.toFixed(2)}</span></div>
-                  <div>• Currency: <span className="font-medium">{selectedCurrency}</span></div>
+                  <div>• All calculations in <span className="font-medium">USD</span></div>
                 </div>
               </div>
             </div>
@@ -467,7 +400,7 @@ const Layout = () => {
               <li>• Examples: <strong>1000000</strong> → <strong>1.000.000</strong></li>
               <li>• For prices: use <strong>dot (.)</strong> as decimal separator</li>
               <li>• For risk: <strong>1</strong> or <strong>1.5</strong></li>
-              <li>• Select your preferred currency for calculations</li>
+              <li>• All calculations in <strong>USD</strong> only</li>
             </ul>
           </div>
           <div>
@@ -480,7 +413,7 @@ const Layout = () => {
               <li>• SL Pips = |Open - SL| × 100</li>
               <li>• TP Pips = |Open - TP| × 100</li>
               <li>• Lot Size = Risk Amount ÷ (SL Pips × 1)</li>
-              <li>• All calculations in selected currency: <strong>{selectedCurrency}</strong></li>
+              <li>• All calculations in <strong>USD</strong></li>
               <li>• Lot size rounded to <strong>2 decimal places</strong></li>
             </ul>
           </div>
@@ -501,7 +434,7 @@ const Layout = () => {
             <p className="text-amber-800 text-sm font-light">
               This calculator provides estimates for educational purposes only. Trading forex and CFDs carries a high level of risk and may not be suitable for all investors. 
               Past performance is not indicative of future results. Always practice proper risk management and consider seeking advice from a qualified financial advisor.
-              Currency selection is for display purposes only and does not affect the underlying calculations.
+              All calculations are in USD. This calculator is specifically designed for XAUUSD (Gold) trading.
             </p>
           </div>
         </div>
@@ -511,3 +444,4 @@ const Layout = () => {
 };
 
 export default Layout;
+

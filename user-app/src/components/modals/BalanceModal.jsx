@@ -13,13 +13,12 @@ import {
   getCurrencySymbol,
 } from "../../utils/currencyFormatter";
 import { exportTradesToCSV, downloadCSV } from "../../utils/exportTrades";
-import { Wallet } from "lucide-react";
+import { Wallet, AlertTriangle } from "lucide-react";
 import Swal from "sweetalert2";
 
 const BalanceModal = ({ setShowBalanceModal }) => {
   const dispatch = useDispatch();
 
-  // State untuk balance
   const {
     initialBalance,
     currentBalance,
@@ -30,12 +29,10 @@ const BalanceModal = ({ setShowBalanceModal }) => {
     message,
   } = useSelector((state) => state.balance);
 
-  // State untuk trades (untuk cek apakah ada data)
   const { trades = [], isLoading: tradesLoading } = useSelector(
     (state) => state.trades
   );
 
-  // State untuk target (untuk cek apakah ada target aktif)
   const { target } = useSelector((state) => state.target);
 
   const [tempBalance, setTempBalance] = useState(initialBalance);
@@ -43,17 +40,17 @@ const BalanceModal = ({ setShowBalanceModal }) => {
   const [localMessage, setLocalMessage] = useState("");
   const [hasUserAction, setHasUserAction] = useState(false);
   const [deletingTrades, setDeletingTrades] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     setTempBalance(initialBalance);
     setTempCurrency(currentCurrency);
   }, [initialBalance, currentCurrency]);
 
-  // Load trades dan reset state ketika modal dibuka
   useEffect(() => {
     dispatch(resetBalance());
     dispatch(getTrades());
-    dispatch(getTarget()); // Load target data
+    dispatch(getTarget());
     setHasUserAction(false);
     setLocalMessage("");
   }, [dispatch]);
@@ -73,101 +70,29 @@ const BalanceModal = ({ setShowBalanceModal }) => {
         setLocalMessage(message);
       }
     }
-  }, [
-    isSuccess,
-    isError,
-    message,
-    setShowBalanceModal,
-    dispatch,
-    hasUserAction,
-  ]);
+  }, [isSuccess, isError, message, setShowBalanceModal, dispatch, hasUserAction]);
 
-  // Fungsi untuk menampilkan warning jika ada trades
-  const showTradesWarning = () => {
-    const hasActiveTarget = target && target.enabled;
-
-    Swal.fire({
-      title: "Tidak Dapat Mengubah Currency!",
-      html: `
-        <div class="text-left">
-          <p class="text-slate-700 mb-4">
-            Anda memiliki <strong>${
-              trades.length
-            } data trading</strong> yang masih tersimpan.
-          </p>
-          ${
-            hasActiveTarget
-              ? `
-            <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
-              <div class="flex items-start gap-3">
-                <svg class="w-6 h-6 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.698-.833-2.464 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-                <div>
-                  <p class="font-semibold text-amber-800">Target Juga Akan Terpengaruh</p>
-                  <p class="text-sm text-amber-700 mt-1">
-                    Anda memiliki target yang aktif. Mengubah currency akan menghapus semua data trading dan menonaktifkan target.
-                  </p>
-                </div>
-              </div>
-            </div>
-          `
-              : ""
-          }
-          <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
-            <div class="flex items-start gap-3">
-              <svg class="w-6 h-6 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.698-.833-2.464 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-              <div>
-                <p class="font-semibold text-amber-800">Mengapa tidak bisa mengubah currency?</p>
-                <p class="text-sm text-amber-700 mt-1">
-                  Data trading dan target Anda memiliki nilai yang dihitung berdasarkan currency saat ini. 
-                  Mengubah currency akan menyebabkan konflik perhitungan data yang sudah ada.
-                </p>
-              </div>
-            </div>
-          </div>
-          <p class="text-slate-700">
-            Untuk mengubah currency, Anda harus:
-          </p>
-          <ol class="list-decimal pl-5 text-slate-700 mt-2 space-y-1">
-            <li>Export data trading terlebih dahulu (opsional)</li>
-            <li>Hapus semua data trading yang ada</li>
-            <li>Target akan dinonaktifkan secara otomatis</li>
-            <li>Setelah kosong, Anda bisa mengubah currency dengan aman</li>
-          </ol>
-        </div>
-      `,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#8b5cf6",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Hapus Semua Data Trading",
-      cancelButtonText: "Batal",
-      showDenyButton: true,
-      denyButtonColor: "#3b82f6",
-      denyButtonText: "Export Data Dulu",
-      background: "#fff",
-      color: "#1f2937",
-      customClass: {
-        popup: "rounded-3xl shadow-2xl max-w-2xl",
-        title: "text-xl font-bold text-amber-900 mb-2",
-        htmlContainer: "!text-left",
-        confirmButton: "rounded-xl font-semibold px-6 py-3",
-        cancelButton: "rounded-xl font-semibold px-6 py-3",
-        denyButton: "rounded-xl font-semibold px-6 py-3 mr-2",
-      },
-    }).then((result) => {
-      if (result.isConfirmed) {
-        showDeleteAllTradesConfirmation();
-      } else if (result.isDenied) {
-        exportTradesData();
+  // Fungsi untuk menghapus semua trades tanpa konfirmasi (sudah dikonfirmasi sebelumnya)
+  const performDeleteAllTrades = async () => {
+    try {
+      setDeletingTrades(true);
+      const result = await dispatch(deleteAllTrades()).unwrap();
+      
+      // Reset target di Redux state jika ada target aktif
+      if (target && target.enabled) {
+        dispatch(clearTarget());
       }
-    });
+
+      // Refresh target data
+      await dispatch(getTarget());
+
+      return result;
+    } finally {
+      setDeletingTrades(false);
+    }
   };
 
-  // Fungsi untuk export data trades
+  // Fungsi untuk mengekspor data trades
   const exportTradesData = () => {
     if (trades.length === 0) {
       Swal.fire({
@@ -196,18 +121,37 @@ const BalanceModal = ({ setShowBalanceModal }) => {
     }
   };
 
-  // Fungsi untuk konfirmasi hapus semua trades
-  const showDeleteAllTradesConfirmation = () => {
+  // Fungsi untuk menampilkan warning berdasarkan jenis perubahan
+  const showUpdateWarning = (changeType) => {
+    let title = '';
+    let message = '';
+    let confirmButtonText = '';
+
+    if (changeType === 'currency') {
+      title = 'Mengubah Currency';
+      message = `Anda akan mengubah currency dari ${currentCurrency} ke ${tempCurrency}.`;
+      confirmButtonText = 'Hapus Data & Ubah Currency';
+    } else if (changeType === 'balance') {
+      title = 'Mengubah Initial Deposit';
+      message = `Anda akan mengubah initial deposit dari ${formatCurrency(initialBalance, currentCurrency)} menjadi ${formatCurrency(tempBalance, currentCurrency)}.`;
+      confirmButtonText = 'Hapus Data & Ubah Deposit';
+    } else if (changeType === 'both') {
+      title = 'Mengubah Currency dan Deposit';
+      message = `Anda akan mengubah currency dari ${currentCurrency} ke ${tempCurrency} dan mengubah deposit dari ${formatCurrency(initialBalance, currentCurrency)} menjadi ${formatCurrency(tempBalance, tempCurrency)}.`;
+      confirmButtonText = 'Hapus Data & Ubah Semua';
+    }
+
     const hasActiveTarget = target && target.enabled;
 
     Swal.fire({
-      title: "Hapus Semua Data Trading?",
+      title: title,
       html: `
         <div class="text-left">
           <p class="text-slate-700 mb-4">
-            Anda akan menghapus <strong>${
-              trades.length
-            } data trading</strong> secara permanen.
+            ${message}
+          </p>
+          <p class="text-slate-700 mb-4">
+            Anda memiliki <strong>${trades.length} data trading</strong> yang masih tersimpan.
           </p>
           ${
             hasActiveTarget
@@ -218,9 +162,9 @@ const BalanceModal = ({ setShowBalanceModal }) => {
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.698-.833-2.464 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
                 <div>
-                  <p class="font-semibold text-amber-800">Target Akan Dinonaktifkan!</p>
+                  <p class="font-semibold text-amber-800">Target Juga Akan Terpengaruh</p>
                   <p class="text-sm text-amber-700 mt-1">
-                    Anda memiliki target yang aktif. Semua target akan dinonaktifkan secara otomatis karena bergantung pada data trading.
+                    Anda memiliki target yang aktif. Mengubah balance/currency akan menghapus semua data trading dan menonaktifkan target.
                   </p>
                 </div>
               </div>
@@ -234,29 +178,35 @@ const BalanceModal = ({ setShowBalanceModal }) => {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.698-.833-2.464 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
               <div>
-                <p class="font-semibold text-rose-800">Tindakan ini tidak dapat dibatalkan!</p>
-                <ul class="text-sm text-rose-700 mt-1 space-y-1">
-                  <li>• Semua data trading akan dihapus permanen</li>
-                  ${
-                    hasActiveTarget
-                      ? "<li>• Target yang aktif akan dinonaktifkan</li>"
-                      : ""
-                  }
-                  <li>• Balance akan tetap menggunakan currency lama</li>
-                  <li>• Setelah kosong, Anda bisa mengubah currency baru</li>
-                  <li>• Pastikan Anda sudah export data jika diperlukan</li>
+                <p class="font-semibold text-rose-800">Apa yang akan terjadi?</p>
+                <ul class="text-sm text-rose-700 mt-2 space-y-1">
+                  <li>• <strong>Semua ${trades.length} data trading akan dihapus permanen</strong></li>
+                  <li>• Balance akan direset ke deposit baru (${formatCurrency(tempBalance, tempCurrency)})</li>
+                  ${hasActiveTarget ? '<li>• Target yang aktif akan dinonaktifkan</li>' : ''}
+                  <li>• Anda akan memulai trading journey yang baru</li>
                 </ul>
               </div>
             </div>
           </div>
+          <p class="text-slate-700 mt-4">
+            Untuk melanjutkan, Anda harus:
+          </p>
+          <ol class="list-decimal pl-5 text-slate-700 mt-2 space-y-1">
+            <li>Export data trading terlebih dahulu (opsional)</li>
+            <li>Hapus semua data trading yang ada</li>
+            <li>Target akan dinonaktifkan secara otomatis</li>
+          </ol>
         </div>
       `,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#ef4444",
       cancelButtonColor: "#6b7280",
-      confirmButtonText: "Ya, Hapus Semua",
+      confirmButtonText: confirmButtonText,
       cancelButtonText: "Batal",
+      showDenyButton: true,
+      denyButtonColor: "#3b82f6",
+      denyButtonText: "Export Data Dulu",
       background: "#fff",
       color: "#1f2937",
       customClass: {
@@ -265,103 +215,47 @@ const BalanceModal = ({ setShowBalanceModal }) => {
         htmlContainer: "!text-left",
         confirmButton: "rounded-xl font-semibold px-6 py-3",
         cancelButton: "rounded-xl font-semibold px-6 py-3",
+        denyButton: "rounded-xl font-semibold px-6 py-3 mr-2",
       },
-    }).then((result) => {
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        handleDeleteAllTrades();
+        // Hapus semua trades dan lanjutkan update
+        await handleResetAndUpdate(changeType);
+      } else if (result.isDenied) {
+        exportTradesData();
       }
     });
   };
 
-  // Fungsi untuk menghapus semua trades menggunakan Axios
-  const handleDeleteAllTrades = async () => {
+  // Fungsi untuk menghapus trades dan melanjutkan update
+  const handleResetAndUpdate = async () => {
     try {
-      setDeletingTrades(true);
-
-      // Gunakan Redux thunk untuk menghapus semua trades
-      const result = await dispatch(deleteAllTrades()).unwrap();
-
-      // Reset target di Redux state jika ada target aktif
-      if (target && target.enabled) {
-        dispatch(clearTarget());
-      }
-
-      // Refresh target data
-      await dispatch(getTarget());
-
-      let successMessage =
-        result.message || "Semua data trading telah dihapus.";
-      let targetMessage = "";
-
-      if (result.targetAction === "disabled") {
-        targetMessage = " Target telah dinonaktifkan dan balance direset ke 0.";
-      } else if (result.targetAction === "balance_reset") {
-        targetMessage = " Target balance telah direset ke 0.";
-      }
-
-      Swal.fire({
-        title: "Berhasil!",
-        html: `
-        <div class="text-left">
-          <p class="text-slate-700 mb-3">${successMessage}${targetMessage}</p>
-          ${
-            result.targetAction === "disabled" ||
-            result.targetAction === "balance_reset"
-              ? `
-            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
-              <p class="text-sm text-emerald-700 flex items-start gap-2">
-                <svg class="w-4 h-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>
-                  ${
-                    result.targetAction === "disabled"
-                      ? "Target berhasil dinonaktifkan dan balance direset ke 0 karena bergantung pada data trading."
-                      : "Target balance berhasil direset ke 0 karena semua data trading dihapus."
-                  }
-                </span>
-              </p>
-            </div>
-          `
-              : ""
-          }
-        </div>
-      `,
-        icon: "success",
-        confirmButtonColor: "#8b5cf6",
-        background: "#fff",
-        color: "#1f2937",
-        customClass: {
-          popup: "rounded-3xl shadow-2xl max-w-2xl",
-          title: "text-xl font-bold text-emerald-900 mb-2",
-          htmlContainer: "!text-left",
-          confirmButton: "rounded-xl font-semibold px-6 py-3",
-        },
-      }).then(() => {
-        setShowBalanceModal(false);
-      });
+      setIsResetting(true);
+      
+      // Hapus semua trades
+      await performDeleteAllTrades();
+      
+      // Tunggu sebentar untuk memastikan state terupdate
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Setelah berhasil menghapus, update balance
+      setHasUserAction(true);
+      dispatch(
+        updateInitialBalance({
+          initialBalance: tempBalance,
+          currency: tempCurrency,
+        })
+      );
+      
     } catch (error) {
-      console.error("Error deleting trades:", error);
-
-      Swal.fire({
-        title: "Error!",
-        text: error.message || "Gagal menghapus data trading.",
-        icon: "error",
-        confirmButtonColor: "#ef4444",
-        background: "#fff",
-        color: "#1f2937",
-        customClass: {
-          popup: "rounded-3xl shadow-2xl",
-          title: "text-xl font-bold text-rose-900",
-          confirmButton: "rounded-xl font-semibold px-6 py-3",
-        },
-      });
+      console.error('Reset and update error:', error);
+      setLocalMessage('Gagal menghapus data trading. Silakan coba lagi.');
     } finally {
-      setDeletingTrades(false);
+      setIsResetting(false);
     }
   };
 
-  const handleUpdateBalance = () => {
+  const handleUpdateBalance = async () => {
     // Validasi balance
     if (tempBalance <= 0) {
       setLocalMessage("Balance must be greater than 0");
@@ -373,13 +267,35 @@ const BalanceModal = ({ setShowBalanceModal }) => {
       return;
     }
 
-    // Cek apakah currency berubah DAN ada data trades
-    if (tempCurrency !== currentCurrency && trades.length > 0) {
-      showTradesWarning();
+    // Deteksi jenis perubahan
+    const balanceChanged = tempBalance !== initialBalance;
+    const currencyChanged = tempCurrency !== currentCurrency;
+    
+    // Cek apakah ada perubahan
+    if (!balanceChanged && !currencyChanged) {
+      setLocalMessage("Tidak ada perubahan yang dilakukan");
+      setTimeout(() => setLocalMessage(""), 3000);
       return;
     }
 
-    // Jika tidak ada trades atau currency tidak berubah, lanjutkan update
+    // Jika ada trades dan ada perubahan (balance atau currency)
+    if (trades.length > 0 && (balanceChanged || currencyChanged)) {
+      // Tentukan jenis perubahan untuk menampilkan pesan yang tepat
+      let changeType = '';
+      if (balanceChanged && currencyChanged) {
+        changeType = 'both';
+      } else if (currencyChanged) {
+        changeType = 'currency';
+      } else {
+        changeType = 'balance';
+      }
+      
+      // Tampilkan warning
+      showUpdateWarning(changeType);
+      return;
+    }
+
+    // Jika tidak ada trades, langsung update
     setHasUserAction(true);
     dispatch(
       updateInitialBalance({
@@ -394,6 +310,10 @@ const BalanceModal = ({ setShowBalanceModal }) => {
     setShowBalanceModal(false);
   };
 
+  // Deteksi apakah ada perubahan
+  const hasChanges = tempBalance !== initialBalance || tempCurrency !== currentCurrency;
+  const willDeleteTrades = hasChanges && trades.length > 0;
+
   return (
     <Motion.div
       initial={{ opacity: 0 }}
@@ -406,7 +326,7 @@ const BalanceModal = ({ setShowBalanceModal }) => {
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-white rounded-3xl shadow-2xl max-w-md w-full border-2 border-violet-200"
+        className="bg-white rounded-3xl shadow-2xl max-w-md w-full border-2 border-violet-200 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6">
@@ -420,7 +340,7 @@ const BalanceModal = ({ setShowBalanceModal }) => {
               whileTap={{ scale: 0.9 }}
               onClick={handleClose}
               className="text-violet-500 hover:text-violet-700 p-2 rounded-xl hover:bg-violet-100 transition-colors"
-              disabled={isLoading || deletingTrades}
+              disabled={isLoading || deletingTrades || isResetting}
             >
               <svg
                 className="w-6 h-6"
@@ -462,6 +382,24 @@ const BalanceModal = ({ setShowBalanceModal }) => {
               </div>
             </div>
 
+            {/* Warning jika akan menghapus data */}
+            {willDeleteTrades && (
+              <div className="p-4 bg-rose-50 border-2 border-rose-200 rounded-xl">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-6 h-6 text-rose-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-bold text-rose-800 mb-1">
+                      Perhatian: Data Trading Akan Dihapus
+                    </p>
+                    <p className="text-sm text-rose-700">
+                      Mengubah {tempCurrency !== currentCurrency ? 'currency' : 'initial deposit'} dengan data trading yang ada akan menghapus <strong>{trades.length} entri trading</strong> permanen.
+                      {target && target.enabled && ' Target aktif juga akan dinonaktifkan.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Currency Selection */}
             <div>
               <label className="block text-sm font-bold text-violet-800 mb-2">
@@ -471,7 +409,7 @@ const BalanceModal = ({ setShowBalanceModal }) => {
                 value={tempCurrency}
                 onChange={(e) => setTempCurrency(e.target.value)}
                 className="w-full px-4 py-3 border-2 border-violet-200 rounded-xl focus:outline-none focus:border-violet-500 transition-all font-semibold text-violet-900"
-                disabled={deletingTrades || tradesLoading}
+                disabled={deletingTrades || tradesLoading || isResetting}
               >
                 <option value="IDR">Indonesian Rupiah (Rp)</option>
                 <option value="USD">US Dollar ($)</option>
@@ -494,12 +432,7 @@ const BalanceModal = ({ setShowBalanceModal }) => {
                       />
                     </svg>
                     <span>
-                      <strong>Warning:</strong> Mengubah currency akan terkunci
-                      karena ada {trades.length} data trading.
-                      {target &&
-                        target.enabled &&
-                        " Target yang aktif juga akan dinonaktifkan."}
-                      Hapus semua data trading terlebih dahulu.
+                      <strong>Warning:</strong> Mengubah currency akan menghapus semua data trading.
                     </span>
                   </p>
                 </div>
@@ -523,12 +456,16 @@ const BalanceModal = ({ setShowBalanceModal }) => {
                   placeholder="Enter initial deposit amount"
                   min="0"
                   step="0.01"
-                  disabled={deletingTrades}
+                  disabled={deletingTrades || isResetting}
                 />
               </div>
               <div className="text-xs text-violet-600 mt-2">
-                Note: This will reset your current balance to the new initial
-                amount
+                Note: This will reset your current balance to the new initial amount
+                {trades.length > 0 && tempBalance !== initialBalance && (
+                  <span className="text-amber-600 font-semibold ml-1">
+                    • All {trades.length} trades will be deleted
+                  </span>
+                )}
               </div>
             </div>
 
@@ -543,6 +480,12 @@ const BalanceModal = ({ setShowBalanceModal }) => {
               {tempCurrency !== currentCurrency && (
                 <div className="text-xs text-blue-600 mt-1">
                   Currency changed from {currentCurrency} to {tempCurrency}
+                </div>
+              )}
+              {tempBalance !== initialBalance && (
+                <div className="text-xs text-blue-600 mt-1">
+                  Deposit changed from {formatCurrency(initialBalance, currentCurrency)} 
+                  {tempCurrency === currentCurrency ? '' : ` (${currentCurrency})`}
                 </div>
               )}
             </div>
@@ -569,7 +512,7 @@ const BalanceModal = ({ setShowBalanceModal }) => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleClose}
-                disabled={isLoading || deletingTrades}
+                disabled={isLoading || deletingTrades || isResetting}
                 className="px-6 py-3 border-2 border-violet-300 rounded-xl text-violet-700 hover:bg-violet-50 transition-colors font-bold disabled:opacity-50"
               >
                 Cancel
@@ -578,16 +521,25 @@ const BalanceModal = ({ setShowBalanceModal }) => {
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleUpdateBalance}
-                disabled={isLoading || deletingTrades}
+                disabled={isLoading || deletingTrades || isResetting || !hasChanges}
                 className="px-6 py-3 bg-linear-to-r from-violet-500 to-purple-500 text-white rounded-xl hover:shadow-lg transition-all duration-200 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                {isLoading || deletingTrades ? (
+                {(isLoading || deletingTrades || isResetting) ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    {deletingTrades ? "Deleting Trades..." : "Updating..."}
+                    {isResetting ? "Resetting Data..." : "Processing..."}
                   </>
                 ) : (
-                  "Update Deposit"
+                  <>
+                    {willDeleteTrades ? (
+                      <>
+                        <AlertTriangle className="w-4 h-4" />
+                        Update & Delete Trades
+                      </>
+                    ) : (
+                      "Update Deposit"
+                    )}
+                  </>
                 )}
               </Motion.button>
             </div>

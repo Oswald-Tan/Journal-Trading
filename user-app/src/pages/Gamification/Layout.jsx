@@ -24,14 +24,30 @@ import {
 
 const Layout = () => {
   const dispatch = useDispatch();
-  const { profile, badges, leaderboard, isLoading, isError, message } =
-    useSelector((state) => state.gamification);
+  const { 
+    profile, 
+    badges, 
+    leaderboard, 
+    isLoading, 
+    isError, 
+    message,
+    isLoadingLeaderboard 
+  } = useSelector((state) => state.gamification);
 
   const [activeTab, setActiveTab] = useState("overview");
   const [leaderboardType, setLeaderboardType] = useState("level");
 
-  // Get data from layout context jika diperlukan
+  // Get data from layout context
   const context = useOutletContext();
+  const currentUserId = context?.user?.id || null;
+
+  // Debug log untuk melihat struktur data
+  useEffect(() => {
+    console.log('Profile data:', profile);
+    console.log('Leaderboard data:', leaderboard);
+    console.log('Badges data:', badges);
+    console.log('Current user ID:', currentUserId);
+  }, [profile, leaderboard, badges, currentUserId]);
 
   useEffect(() => {
     // Load initial data
@@ -42,6 +58,7 @@ const Layout = () => {
   useEffect(() => {
     // Load leaderboard when tab changes
     if (activeTab === "leaderboard") {
+      console.log('Loading leaderboard with type:', leaderboardType);
       dispatch(getLeaderboard({ type: leaderboardType, limit: 50 }));
     }
   }, [activeTab, leaderboardType, dispatch]);
@@ -85,6 +102,68 @@ const Layout = () => {
     return rank;
   };
 
+  // Helper function untuk mendapatkan data level dengan aman
+  const getLevelData = () => {
+    if (!profile || !profile.level) {
+      return {
+        level: 1,
+        experience: 0,
+        totalExperience: 0,
+        dailyStreak: 0,
+        totalTrades: 0,
+        consecutiveWins: 0,
+        maxConsecutiveWins: 0,
+        profitStreak: 0,
+      };
+    }
+    
+    // Jika profile.level adalah object langsung
+    if (profile.level && typeof profile.level === 'object') {
+      return {
+        level: profile.level.level || 1,
+        experience: profile.level.experience || 0,
+        totalExperience: profile.level.totalExperience || 0,
+        dailyStreak: profile.level.dailyStreak || 0,
+        totalTrades: profile.level.totalTrades || 0,
+        consecutiveWins: profile.level.consecutiveWins || 0,
+        maxConsecutiveWins: profile.level.maxConsecutiveWins || 0,
+        profitStreak: profile.level.profitStreak || 0,
+      };
+    }
+    
+    // Fallback default
+    return {
+      level: 1,
+      experience: 0,
+      totalExperience: 0,
+      dailyStreak: 0,
+      totalTrades: 0,
+      consecutiveWins: 0,
+      maxConsecutiveWins: 0,
+      profitStreak: 0,
+    };
+  };
+
+  // Helper function untuk mendapatkan leaderboard data dengan aman
+  const getLeaderData = (leader) => {
+    // Cek apakah data ada di properti langsung atau nested
+    const level = leader.level || leader.Level?.level || 1;
+    const totalExperience = leader.totalExperience || leader.Level?.totalExperience || 0;
+    const dailyStreak = leader.dailyStreak || leader.Level?.dailyStreak || 0;
+    const totalTrades = leader.totalTrades || leader.Level?.totalTrades || 0;
+    
+    return {
+      level,
+      totalExperience,
+      dailyStreak,
+      totalTrades,
+      profitStreak: leader.profitStreak || leader.Level?.profitStreak || 0,
+      winRate: leader.winRate || 0,
+      totalProfit: leader.totalProfit || 0,
+      score: leader.score || 0,
+    };
+  };
+
   if (isLoading && !profile) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -97,6 +176,8 @@ const Layout = () => {
       </div>
     );
   }
+
+  const levelData = getLevelData();
 
   return (
     <div className="min-h-screen">
@@ -188,19 +269,19 @@ const Layout = () => {
                   </h3>
 
                   <div className="space-y-4">
-                    {profile?.level && (
+                    {profile ? (
                       <>
                         <div className="flex justify-between items-center py-2 border-b border-slate-100">
                           <span className="text-slate-600">Total XP</span>
                           <span className="font-bold text-slate-800">
-                            {profile.level.totalExperience?.toLocaleString()}
+                            {levelData.totalExperience?.toLocaleString()}
                           </span>
                         </div>
 
                         <div className="flex justify-between items-center py-2 border-b border-slate-100">
                           <span className="text-slate-600">Total Trades</span>
                           <span className="font-bold text-slate-800">
-                            {profile.level.totalTrades?.toLocaleString()}
+                            {levelData.totalTrades?.toLocaleString()}
                           </span>
                         </div>
 
@@ -209,18 +290,22 @@ const Layout = () => {
                             Best Win Streak
                           </span>
                           <span className="font-bold text-slate-800">
-                            {profile.level.maxConsecutiveWins}
+                            {levelData.maxConsecutiveWins}
                           </span>
                         </div>
 
                         <div className="flex justify-between items-center py-2">
                           <span className="text-slate-600">Badges Earned</span>
                           <span className="font-bold text-slate-800">
-                            {badges.filter((b) => b.achieved).length} /{" "}
-                            {badges.length}
+                            {badges?.filter((b) => b.achieved).length || 0} /{" "}
+                            {badges?.length || 0}
                           </span>
                         </div>
                       </>
+                    ) : (
+                      <div className="text-center py-4 text-slate-500">
+                        No profile data available
+                      </div>
                     )}
                   </div>
                 </div>
@@ -240,7 +325,7 @@ const Layout = () => {
                       .slice(0, 6)
                       .map((achievement, index) => (
                         <Motion.div
-                          key={achievement.id}
+                          key={achievement.id || index}
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.1 }}
@@ -252,15 +337,15 @@ const Layout = () => {
                             </div>
                             <div>
                               <h4 className="font-bold text-slate-800 text-sm">
-                                {achievement.title}
+                                {achievement.title || 'Achievement'}
                               </h4>
                               <p className="text-slate-600 text-xs mt-1">
-                                {achievement.description}
+                                {achievement.description || 'No description available'}
                               </p>
                               <div className="text-xs text-slate-500 mt-2">
-                                {new Date(
-                                  achievement.achievedAt
-                                ).toLocaleDateString()}
+                                {achievement.achievedAt 
+                                  ? new Date(achievement.achievedAt).toLocaleDateString()
+                                  : 'Date not available'}
                               </div>
                             </div>
                           </div>
@@ -327,7 +412,12 @@ const Layout = () => {
 
               {/* Leaderboard Content */}
               <div className="bg-white/80 backdrop-blur-md rounded-3xl border border-slate-200 overflow-hidden">
-                {leaderboard ? (
+                {isLoadingLeaderboard ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
+                    <p className="text-slate-600">Loading leaderboard...</p>
+                  </div>
+                ) : leaderboard && leaderboard.leaders && leaderboard.leaders.length > 0 ? (
                   <>
                     {/* Top 3 Leaders */}
                     {leaderboard.leaders.slice(0, 3).length > 0 && (
@@ -338,57 +428,61 @@ const Layout = () => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           {leaderboard.leaders
                             .slice(0, 3)
-                            .map((leader, index) => (
-                              <Motion.div
-                                key={leader.userId}
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ delay: index * 0.1 }}
-                                className={`bg-linear-to-br ${getRankColor(
-                                  index + 1
-                                )} rounded-2xl p-6 text-white text-center relative`}
-                              >
-                                {/* Rank Badge */}
-                                <div className="absolute -top-3 -left-3 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg">
-                                  <span className="text-lg font-bold text-slate-800">
-                                    {getRankIcon(index + 1)}
-                                  </span>
-                                </div>
+                            .map((leader, index) => {
+                              const leaderData = getLeaderData(leader);
+                              return (
+                                <Motion.div
+                                  key={leader.userId || leader.id || index}
+                                  initial={{ opacity: 0, scale: 0.9 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  transition={{ delay: index * 0.1 }}
+                                  className={`bg-linear-to-br ${getRankColor(
+                                    index + 1
+                                  )} rounded-2xl p-6 text-white text-center relative`}
+                                >
+                                  {/* Rank Badge */}
+                                  <div className="absolute -top-3 -left-3 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg">
+                                    <span className="text-lg font-bold text-slate-800">
+                                      {getRankIcon(index + 1)}
+                                    </span>
+                                  </div>
 
-                                {/* User Info */}
-                                <div className="mb-3">
-                                  <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                                    <Users className="w-8 h-8" />
+                                  {/* User Info */}
+                                  <div className="mb-3">
+                                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                                      <Users className="w-8 h-8" />
+                                    </div>
+                                    <h5 className="font-bold text-lg truncate">
+                                      {leader.User?.name ||
+                                        leader.user?.name ||
+                                        `Trader ${leader.userId || leader.id}`}
+                                    </h5>
                                   </div>
-                                  <h5 className="font-bold text-lg truncate">
-                                    {leader.User?.name ||
-                                      `Trader ${leader.userId}`}
-                                  </h5>
-                                </div>
 
-                                {/* Stats */}
-                                <div className="space-y-1 text-sm">
-                                  <div className="flex justify-between">
-                                    <span>Level</span>
-                                    <span className="font-bold">
-                                      {leader.level}
-                                    </span>
+                                  {/* Stats */}
+                                  <div className="space-y-1 text-sm">
+                                    <div className="flex justify-between">
+                                      <span>Level</span>
+                                      <span className="font-bold">
+                                        {leaderData.level}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>XP</span>
+                                      <span className="font-bold">
+                                        {leaderData.totalExperience?.toLocaleString()}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Streak</span>
+                                      <span className="font-bold">
+                                        {leaderData.dailyStreak}d
+                                      </span>
+                                    </div>
                                   </div>
-                                  <div className="flex justify-between">
-                                    <span>XP</span>
-                                    <span className="font-bold">
-                                      {leader.totalExperience?.toLocaleString()}
-                                    </span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span>Streak</span>
-                                    <span className="font-bold">
-                                      {leader.dailyStreak}d
-                                    </span>
-                                  </div>
-                                </div>
-                              </Motion.div>
-                            ))}
+                                </Motion.div>
+                              );
+                            })}
                         </div>
                       </div>
                     )}
@@ -399,55 +493,66 @@ const Layout = () => {
                         Global Ranking
                       </h4>
                       <div className="space-y-3">
-                        {leaderboard.leaders.slice(3).map((leader, index) => (
-                          <Motion.div
-                            key={leader.userId}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: (index + 3) * 0.05 }}
-                            className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
-                              leader.userId === context?.user?.id
-                                ? "bg-violet-50 border-violet-200 shadow-sm"
-                                : "bg-slate-50 border-slate-200 hover:bg-white"
-                            }`}
-                          >
-                            <div className="flex items-center gap-4">
-                              <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center">
-                                <span className="text-sm font-bold text-slate-700">
-                                  {index + 4}
-                                </span>
-                              </div>
-
-                              <div>
-                                <h5 className="font-bold text-slate-800">
-                                  {leader.User?.name ||
-                                    `Trader ${leader.userId}`}
-                                </h5>
-                                <div className="flex items-center gap-4 text-xs text-slate-600">
-                                  <span>Level {leader.level}</span>
-                                  <span>
-                                    {leader.totalExperience?.toLocaleString()}{" "}
-                                    XP
+                        {leaderboard.leaders.slice(3).map((leader, index) => {
+                          const leaderData = getLeaderData(leader);
+                          const isCurrentUser = leader.userId === currentUserId;
+                          
+                          return (
+                            <Motion.div
+                              key={leader.userId || leader.id || index + 3}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: (index + 3) * 0.05 }}
+                              className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
+                                isCurrentUser
+                                  ? "bg-violet-50 border-violet-200 shadow-sm"
+                                  : "bg-slate-50 border-slate-200 hover:bg-white"
+                              }`}
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center">
+                                  <span className="text-sm font-bold text-slate-700">
+                                    {index + 4}
                                   </span>
-                                  <span>Streak: {leader.dailyStreak}d</span>
+                                </div>
+
+                                <div>
+                                  <h5 className="font-bold text-slate-800">
+                                    {leader.User?.name ||
+                                      leader.user?.name ||
+                                      `Trader ${leader.userId || leader.id}`}
+                                  </h5>
+                                  <div className="flex items-center gap-4 text-xs text-slate-600">
+                                    <span>Level {leaderData.level}</span>
+                                    <span>
+                                      {leaderData.totalExperience?.toLocaleString()}{" "}
+                                      XP
+                                    </span>
+                                    <span>Streak: {leaderData.dailyStreak}d</span>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
 
-                            <div className="text-right">
-                              <div className="text-sm font-bold text-slate-800">
-                                {leaderboardType === "level" &&
-                                  `Level ${leader.level}`}
-                                {leaderboardType === "experience" &&
-                                  `${leader.totalExperience?.toLocaleString()} XP`}
-                                {leaderboardType === "streak" &&
-                                  `${leader.dailyStreak} days`}
-                                {leaderboardType === "trades" &&
-                                  `${leader.totalTrades} trades`}
+                              <div className="text-right">
+                                <div className="text-sm font-bold text-slate-800">
+                                  {leaderboardType === "level" &&
+                                    `Level ${leaderData.level}`}
+                                  {leaderboardType === "experience" &&
+                                    `${leaderData.totalExperience?.toLocaleString()} XP`}
+                                  {leaderboardType === "streak" &&
+                                    `${leaderData.dailyStreak} days`}
+                                  {leaderboardType === "trades" &&
+                                    `${leaderData.totalTrades} trades`}
+                                </div>
+                                {isCurrentUser && (
+                                  <div className="text-xs text-violet-600 font-medium mt-1">
+                                    (You)
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                          </Motion.div>
-                        ))}
+                            </Motion.div>
+                          );
+                        })}
                       </div>
 
                       {/* User Rank */}
@@ -482,7 +587,9 @@ const Layout = () => {
                 ) : (
                   <div className="text-center py-12">
                     <Trophy className="w-16 h-16 mx-auto text-slate-400 mb-4" />
-                    <p className="text-slate-600">Loading leaderboard...</p>
+                    <p className="text-slate-600">
+                      {leaderboard ? 'No leaderboard data available' : 'Failed to load leaderboard'}
+                    </p>
                   </div>
                 )}
               </div>

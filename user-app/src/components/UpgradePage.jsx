@@ -174,12 +174,12 @@ const UpgradePage = () => {
           {/* Pro Plan - Highlighted */}
           <Motion.div
             whileHover={{ y: -10, scale: 1.02 }}
-            className="relative bg-linear-to-br from-violet-50 to-purple-50 rounded-3xl p-8 shadow-sm border-2 border-violet-500 transition-all duration-300 transform h-full flex flex-col"
+            className="relative bg-linear-to-br from-violet-50 to-purple-50 rounded-3xl p-8 shadow-sm border-2 border-violet-400 transition-all duration-300 transform h-full flex flex-col"
           >
             <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-              <span className="bg-linear-to-r from-violet-600 to-purple-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-sm flex items-center gap-2">
+              <span className="bg-linear-to-r from-violet-500 to-purple-500 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-sm flex items-center gap-2">
                 <Star className="w-4 h-4" />
-                MOST POPULAR
+                Most Popular
               </span>
             </div>
 
@@ -189,8 +189,8 @@ const UpgradePage = () => {
               </div>
               <h3 className="text-3xl font-bold text-slate-800 mb-3">Pro</h3>
               <div className="flex items-baseline justify-center mb-6">
-                <span className="text-5xl font-bold text-violet-700">Rp 29k</span>
-                <span className="text-slate-600 ml-2 text-xl font-semibold">/bulan</span>
+                <span className="text-5xl font-bold text-slate-800">Rp 29k</span>
+                <span className="text-slate-600 ml-2 text-xl font-semibold">/month</span>
               </div>
               
               <ul className="space-y-4 text-left">
@@ -225,12 +225,12 @@ const UpgradePage = () => {
           {/* Lifetime Plan */}
           <Motion.div
             whileHover={{ y: -10, scale: 1.02 }}
-            className="relative bg-linear-to-br from-slate-50 to-slate-100 rounded-3xl p-8 shadow-sm border-2 border-amber-500 transition-all duration-300 h-full flex flex-col"
+            className="relative bg-linear-to-br from-slate-50 to-slate-100 rounded-3xl p-8 shadow-sm border-2 border-amber-400 transition-all duration-300 h-full flex flex-col"
           >
             <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-              <span className="bg-linear-to-r from-amber-500 to-yellow-500 text-white px-6 py-2 rounded-full text-sm font-bold shadow-sm flex items-center gap-2">
+              <span className="bg-linear-to-r from-amber-500 to-yellow-500 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-sm flex items-center gap-2">
                 <Crown className="w-4 h-4" />
-                BEST VALUE
+                Best Value
               </span>
             </div>
 
@@ -240,8 +240,7 @@ const UpgradePage = () => {
               </div>
               <h3 className="text-3xl font-bold text-slate-800 mb-3">Lifetime</h3>
               <div className="flex items-baseline justify-center mb-6">
-                <span className="text-5xl font-bold text-amber-600">Rp 399k</span>
-                <span className="text-slate-600 ml-2 text-xl font-semibold">/selamanya</span>
+                <span className="text-5xl font-bold text-slate-800">Rp 399k</span>
               </div>
               
               <ul className="space-y-4 text-left">

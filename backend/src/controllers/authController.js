@@ -180,7 +180,7 @@ export const resendVerificationEmail = async (req, res) => {
     });
 
     // Kirim email verifikasi
-    const verificationUrl = `${process.env.CLIENT_URL || 'https://pipsdiary.com''}/verify-email?token=${emailVerificationToken}`;
+    const verificationUrl = `${process.env.CLIENT_URL || 'https://pipsdiary.com'}/verify-email?token=${emailVerificationToken}`;
     
     const mailOptions = {
       from: process.env.EMAIL_USER,
@@ -297,7 +297,7 @@ export const Me = async (req, res) => {
 
     // Ambil data user berdasarkan session userId
     const user = await User.findOne({
-      attributes: ["id", "name", "email", "phone_number", "status", "role_id"],
+      attributes: ["id", "name", "email", "phone_number", "status", "role_id", "last_login", "created_at"],
       include: [
         {
           model: Role,
@@ -320,6 +320,8 @@ export const Me = async (req, res) => {
       role: user.userRole.role_name,
       phone_number: user.phone_number,
       status: user.status,
+      last_login: user.last_login,
+      created_at: user.created_at
     });
   } catch (error) {
     console.error("Me error:", error);

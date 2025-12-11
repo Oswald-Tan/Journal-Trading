@@ -10,6 +10,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import crypto from "crypto";
 import fs from "fs";
+import cron from "node-cron";
+import helmet from 'helmet';
+import compression from 'compression';
 
 // Mendapatkan direktori saat ini
 const __filename = fileURLToPath(import.meta.url);
@@ -23,13 +26,15 @@ import Trade from "./routes/tradeRoute.js";
 import Target from "./routes/targetRoute.js";
 import Subscription from "./routes/subscriptionRoute.js";
 import Gamification from "./routes/gamificationRoute.js";
+import { resetMonthlyLeaderboard } from "./controllers/gamificationController.js";
+import { initializeDefaultBadges, Badge } from "./models/gamification.js";
 
 const app = express();
 
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: ["http://localhost:5173", "http://192.168.105.53:8080"],
+    origin: process.env.ALLOWED_ORIGINS?.split(",") || [],
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -41,48 +46,111 @@ const store = new sessionStore({
   db: db,
 });
 
+const initializeDatabase = async () => {
+  try {
+    await db.authenticate();
+    console.log('✅ Database connected');
+    
+    // Development only
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🛠️  Running in DEVELOPMENT mode');
+      await db.sync({ alter: true });
+      await initializeDefaultBadges();
+      console.log('🛠️  Development database synced');
+    } else {
+      console.log('🚀 Running in PRODUCTION mode');
+      
+      // Di production, cek apakah badges sudah ada
+      try {
+        const count = await Badge.count();
+        console.log(`📊 Found ${count} badges in database`);
+        
+        if (count === 0) {
+          console.warn('⚠️  WARNING: No badges found! Please run seeding script');
+          console.log('   Command: npm run db:seed');
+        }
+      } catch (error) {
+        console.warn('⚠️  Could not check badges table. If first run, create tables manually');
+      }
+    }
+  } catch (error) {
+    console.error('❌ Database error:', error.message);
+    if (process.env.NODE_ENV === 'production') {
+      console.error('💥 CRITICAL: Cannot connect to database in production');
+      process.exit(1);
+    }
+  }
+};
+
+initializeDatabase();
+
 // store.sync(); //untuk buat table sessions nya
 
-// app.use(
-//   session({
-//     secret: process.env.SESS_SECRET,
-//     resave: false,
-//     saveUninitialized: true,
-//     store: store, //simpan session ke database
-//     cookie: {
-//       secure: "auto",
-//     },
-//   })
-// );
-
+// Settingan Development
 const sessionMiddleware = session({
-  secret: process.env.SESS_SECRET,
+  secret: process.env.SESS_SECRET || "dev-secret",
   resave: false,
   saveUninitialized: true,
-  store: store, // Simpan session ke database
+  store: store,
   cookie: {
-    secure: "auto",
+    secure: false,
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000,
+    sameSite: "lax",
   },
 });
 
+// Settingan Production
+// const sessionMiddleware = session({
+//   secret: process.env.SESS_SECRET,
+//   resave: false,
+//   saveUninitialized: false,
+//   store: store,
+//   cookie: {
+//     secure: process.env.NODE_ENV === "production",
+//     httpOnly: true,
+//     maxAge: 24 * 60 * 60 * 1000,
+//     sameSite: "lax",
+//   },
+// });
+
 app.use(express.json());
 // app.use(express.urlencoded({ extended: true }));
+
+// Security middleware untuk production
+if (process.env.NODE_ENV === 'production') {
+  app.use(helmet());
+  app.use(compression());
+  app.set('trust proxy', 1); // Trust first proxy
+  console.log('🔒 Security middleware enabled for production');
+}
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || [];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg = `CORS policy: Origin ${origin} not allowed`;
+        console.warn(`🚫 CORS blocked: ${origin}`);
+        return callback(new Error(msg), false);
       }
+      return callback(null, true);
     },
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
   })
 );
+
+// Logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+  next();
+});
 
 app.use(
   "/uploads",
@@ -103,6 +171,16 @@ app.use(
   })
 );
 
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.status(200).json({ 
+    status: "healthy",
+    environment: process.env.NODE_ENV,
+    timestamp: new Date().toISOString(),
+    service: "pipsdiary-api"
+  });
+});
+
 app.get("/api/v1/hello-world", (req, res) => {
   res.status(200).json({ message: "Hello, World!" });
 });
@@ -110,11 +188,45 @@ app.get("/api/v1/hello-world", (req, res) => {
 app.use("/api/v1/auth", sessionMiddleware, Auth);
 app.use("/api/v1/balance", sessionMiddleware, Balance);
 app.use("/api/v1/trades", sessionMiddleware, Trade);
-app.use('/api/v1/target', sessionMiddleware, Target);
-app.use('/api/v1/subscription', sessionMiddleware, Subscription);
-app.use('/api/v1/gamification', sessionMiddleware, Gamification);
+app.use("/api/v1/target", sessionMiddleware, Target);
+app.use("/api/v1/subscription", sessionMiddleware, Subscription);
+app.use("/api/v1/gamification", sessionMiddleware, Gamification);
 
-const PORT = process.env.PORT;
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Endpoint not found"
+  });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('🔥 Server Error:', err.stack);
+  res.status(500).json({
+    success: false,
+    message: process.env.NODE_ENV === 'development' 
+      ? err.message 
+      : 'Internal server error',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
+});
+
+// Jalankan tiap tanggal 1 jam 00:00
+cron.schedule('0 0 1 * *', async () => {
+  console.log('🔄 Running monthly leaderboard reset...');
+  try {
+    await resetMonthlyLeaderboard();
+    console.log('✅ Monthly leaderboard reset completed');
+  } catch (error) {
+    console.error('❌ Error resetting leaderboard:', error);
+  }
+});
+
+console.log('⏰ Leaderboard reset cron job scheduled');
+
+const PORT = process.env.PORT || 8082;
 httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
+  console.log(`🌐 Allowed origins: ${allowedOrigins.join(', ')}`);
 });

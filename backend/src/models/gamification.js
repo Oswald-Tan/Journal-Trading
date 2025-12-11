@@ -220,6 +220,66 @@ const Achievement = db.define(
   }
 );
 
+const MonthlyLeaderboard = db.define(
+  "MonthlyLeaderboard",
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "users",
+        key: "id",
+      },
+    },
+    period: {
+      type: DataTypes.STRING, // Format: 'YYYY-MM'
+      allowNull: false,
+    },
+    rank: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    score: {
+      type: DataTypes.INTEGER, // Total poin bulan ini
+      defaultValue: 0,
+    },
+    totalTrades: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    totalProfit: {
+      type: DataTypes.DECIMAL(15, 2),
+      defaultValue: 0,
+    },
+    totalExperience: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    winRate: {
+      type: DataTypes.DECIMAL(5, 2),
+      defaultValue: 0,
+    },
+  },
+  {
+    timestamps: true,
+    tableName: "monthly_leaderboards",
+    indexes: [
+      {
+        fields: ["period", "rank"],
+      },
+      {
+        fields: ["userId", "period"],
+        unique: true,
+      },
+    ],
+  }
+);
+
 // Relationships
 User.hasMany(UserBadge, { foreignKey: "userId", onDelete: "CASCADE" });
 UserBadge.belongsTo(User, { foreignKey: "userId" });
@@ -230,6 +290,9 @@ UserLevel.belongsTo(User, { foreignKey: "userId" });
 
 User.hasMany(Achievement, { foreignKey: "userId", onDelete: "CASCADE" });
 Achievement.belongsTo(User, { foreignKey: "userId" });
+
+User.hasMany(MonthlyLeaderboard, { foreignKey: "userId", onDelete: "CASCADE" });
+MonthlyLeaderboard.belongsTo(User, { foreignKey: "userId" });
 
 // Initialize default badges
 export const initializeDefaultBadges = async () => {
@@ -406,4 +469,4 @@ export const initializeDefaultBadges = async () => {
   }
 };
 
-export { Badge, UserBadge, UserLevel, Achievement };
+export { Badge, UserBadge, UserLevel, Achievement, MonthlyLeaderboard };
