@@ -25,15 +25,10 @@ export default function FAQ() {
         "Kami menerima berbagai metode pembayaran: transfer bank, e-wallet (Gopay, OVO, Dana), dan kartu kredit.",
     },
     {
-      question: "Apakah bisa trial plan Pro?",
+      question: "Apakah tersedia trial plan Pro?",
       answer:
-        "Ya! Kami menawarkan trial 14 hari untuk plan Pro. Anda bisa mencoba semua fitur premium tanpa biaya.",
+        "Saat ini kami belum menyediakan trial plan Pro. Namun Anda bisa berlangganan kapan saja dan langsung mendapatkan akses penuh ke semua fitur premium tanpa batasan.",
     },
-    // {
-    //   question: "Fitur apa saja yang akan datang?",
-    //   answer:
-    //     "Kami terus mengembangkan fitur baru seperti copy trading, AI analysis, mobile app, dan integration dengan broker.",
-    // },
   ];
 
   return (
@@ -45,8 +40,8 @@ export default function FAQ() {
             Frequently Asked <br /> Questions
           </h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto font-light">
-            Find answers to common questions about Pips Diary and how it can help 
-            improve your trading performance.
+            Find answers to common questions about Pips Diary and how it can
+            help improve your trading performance.
           </p>
         </div>
 
@@ -72,7 +67,7 @@ export default function FAQ() {
                   )}
                 </div>
               </button>
-              
+
               {openIndex === index && (
                 <div className="px-6 pb-5">
                   <div className="border-t border-slate-100 pt-4">
@@ -89,7 +84,13 @@ export default function FAQ() {
         {/* Bottom CTA */}
         <div className="text-center mt-12">
           <p className="text-slate-600 mb-6 font-light">
-            Still have questions? We're here to help. <br /><span onClick={() => {}} className="font-semibold underline cursor-pointer">Contact support</span>
+            Still have questions? We're here to help. <br />
+            <span
+              onClick={() => {}}
+              className="font-semibold underline cursor-pointer"
+            >
+              Contact support
+            </span>
           </p>
         </div>
       </div>

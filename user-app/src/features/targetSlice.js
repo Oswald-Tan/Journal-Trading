@@ -85,7 +85,6 @@ export const targetSlice = createSlice({
       state.target = initialState.target;
       state.targetProgress = null;
     },
-    // PERBAIKAN: Tambahkan reset loading state
     resetLoading: (state) => {
       state.isLoading = false;
     }
@@ -115,6 +114,9 @@ export const targetSlice = createSlice({
         state.isSuccess = true;
         state.target = action.payload.data;
         state.message = action.payload.message;
+
+        // RESET TARGET PROGRESS SAAT TARGET DIUBAH
+        state.targetProgress = null;
       })
       .addCase(updateTarget.rejected, (state, action) => {
         state.isLoading = false;

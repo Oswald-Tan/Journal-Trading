@@ -19,7 +19,7 @@ export default function Pricing() {
     },
     {
       name: "Pro",
-      price: "Rp 29k",
+      price: "Rp 69k",
       period: "/month",
       description: "Advanced features for serious traders",
       features: [
@@ -30,6 +30,7 @@ export default function Pricing() {
         "Win/Loss Distribution Charts",
         "Time of Day Analysis",
         "Trade Type Performance",
+        "Unlimited Calendar Events",
         "Priority Support",
         "Update Fitur Gratis",
         "Data Export Lengkap",
@@ -40,7 +41,7 @@ export default function Pricing() {
     },
     {
       name: "Lifetime",
-      price: "Rp 399k",
+      price: "Rp 799k",
       description: "One-time payment for lifetime access",
       features: [
         "Semua Fitur Pro",

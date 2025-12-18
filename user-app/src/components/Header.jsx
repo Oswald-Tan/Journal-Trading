@@ -1,7 +1,7 @@
 import { motion as Motion, AnimatePresence } from "framer-motion";
 import { useSelector, useDispatch } from "react-redux";
 import { HiMenuAlt2 } from "react-icons/hi";
-import { formatCompactCurrency } from "../utils/currencyFormatter";
+import { formatBalance } from "../utils/currencyFormatter";
 import GradientLogo from "../assets/gradient_logo.png";
 import { LogOut, reset } from "../features/authSlice";
 import Swal from "sweetalert2";
@@ -9,6 +9,9 @@ import { useSubscription } from "../hooks/useSubscription";
 import { useSidebar } from "../context/useSidebar";
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+
+// Icon untuk plan
+import { Crown, Rocket, Target, Star, Zap } from "lucide-react";
 
 const Header = ({
   stats,
@@ -22,7 +25,7 @@ const Header = ({
   subscription: propsSubscription,
   currentPlan: propsCurrentPlan,
   showUserMenu,
-  setShowUserMenu, // Tambahkan props ini
+  setShowUserMenu,
 }) => {
   const { currency } = useSelector((state) => state.balance);
   const dispatch = useDispatch();
@@ -35,7 +38,10 @@ const Header = ({
     useSubscription(true);
 
   // Gabungkan subscription dari props dan Redux store
-  const actualSubscription = reduxSubscription || { plan: "free" };
+  const actualSubscription = reduxSubscription || {
+    plan: "free",
+    isActive: true,
+  };
 
   // Tentukan currentPlan berdasarkan subscription
   const currentPlan = propsCurrentPlan || {
@@ -44,6 +50,31 @@ const Header = ({
         actualSubscription.plan.slice(1)
       : "Free",
   };
+
+  // Plan badges configuration
+  const planBadges = {
+    free: {
+      text: "Free",
+      color: "bg-gray-100 text-gray-800",
+      icon: Target,
+      iconColor: "text-gray-600",
+    },
+    pro: {
+      text: "Pro",
+      color: "bg-violet-100 text-violet-800",
+      icon: Rocket,
+      iconColor: "text-violet-600",
+    },
+    lifetime: {
+      text: "Lifetime",
+      color: "bg-amber-100 text-amber-800",
+      icon: Crown,
+      iconColor: "text-amber-600",
+    },
+  };
+
+  const planBadge = planBadges[actualSubscription.plan] || planBadges.free;
+  const PlanIcon = planBadge.icon;
 
   // Handle click outside untuk menutup dropdown
   useEffect(() => {
@@ -78,6 +109,49 @@ const Header = ({
     });
   };
 
+  // Get button text berdasarkan plan
+  const getUpgradeButtonText = () => {
+    if (actualSubscription.plan === "free") {
+      return "Upgrade";
+    } else if (actualSubscription.plan === "pro") {
+      return "Change Plan";
+    } else {
+      return "View Plan"; // Untuk lifetime, hanya view
+    }
+  };
+
+  // Get button class berdasarkan plan
+  const getUpgradeButtonClass = () => {
+    const baseClass =
+      "hidden md:block cursor-pointer px-5 py-2 rounded-xl hover:shadow-lg transition-all duration-200 font-bold border-2";
+
+    if (actualSubscription.plan === "free") {
+      return `${baseClass} bg-linear-to-r from-violet-500 to-purple-500 text-white border-violet-400/50`;
+    } else if (actualSubscription.plan === "pro") {
+      return `${baseClass} bg-linear-to-r from-emerald-500 to-green-500 text-white border-emerald-400/50`;
+    } else {
+      return `${baseClass} bg-linear-to-r from-amber-500 to-yellow-500 text-white border-amber-400/50`;
+    }
+  };
+
+  // FIX: Safe check untuk targetProgress
+  const safeTargetProgress = targetProgress || {
+    progress: 0,
+    daysLeft: 0,
+    neededDaily: 0,
+    achieved: 0,
+    daysPassed: 0,
+    onTrack: false
+  };
+
+  // FIX: Format progress dengan safe check
+  const displayProgress = () => {
+    if (!targetProgress || targetProgress.progress === undefined || targetProgress.progress === null) {
+      return "0.0";
+    }
+    return targetProgress.progress.toFixed(1);
+  };
+
   // Tampilkan loading jika subscription masih loading
   if (subscriptionLoading && !propsSubscription) {
     return (
@@ -107,12 +181,12 @@ const Header = ({
           <div className="flex justify-between items-center h-16">
             {/* Toggle Sidebar */}
             <button
-                className="cursor-pointer text-violet-900"
-                onClick={toggleSidebar}
-                aria-label="Toggle Sidebar"
-              >
-                <HiMenuAlt2 size={26} />
-              </button>
+              className="cursor-pointer text-violet-900"
+              onClick={toggleSidebar}
+              aria-label="Toggle Sidebar"
+            >
+              <HiMenuAlt2 size={26} />
+            </button>
 
             {/* Desktop Quick Stats & Actions */}
             <div className="flex items-center space-x-6">
@@ -120,41 +194,24 @@ const Header = ({
               <Motion.div
                 whileHover={{ scale: 1.05, y: -2 }}
                 onClick={onShowBalanceModal}
-                className="cursor-pointer text-center"
+                className="cursor-pointer text-right"
               >
                 <div className="text-xs text-violet-700 font-bold">Balance</div>
                 <div className="font-bold text-violet-900 md:text-lg text-md">
-                  {formatCompactCurrency(stats.currentBalance, currency)}
+                  {formatBalance(stats.currentBalance, currency)}
                 </div>
               </Motion.div>
 
-              {/* Target Progress */}
-              {target.enabled && targetProgress && (
-                <Motion.div
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  onClick={onShowTargetModal}
-                  className="cursor-pointer text-center"
-                >
-                  <div className="text-xs text-emerald-700 font-bold">
-                    Target Progress
-                  </div>
-                  <div className="font-bold text-emerald-900 md:text-lg text-md">
-                    {targetProgress.progress.toFixed(1)}%
-                  </div>
-                </Motion.div>
-              )}
-
-              {/* Subscription Status - Hanya tampilkan upgrade button untuk plan free */}
-              {actualSubscription.plan === "free" && (
-                <Motion.button
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={onShowUpgradeModal}
-                  className="hidden md:block cursor-pointer bg-linear-to-r from-violet-500 to-purple-500 text-white px-5 py-2 rounded-xl hover:shadow-lg transition-all duration-200 font-bold border-2 border-violet-400/50"
-                >
-                  🚀 Upgrade
-                </Motion.button>
-              )}
+              {/* Upgrade/Change Plan Button */}
+              {/* Tampilkan untuk semua plan kecuali lifetime (tapi lifetime bisa view) */}
+              <Motion.button
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={onShowUpgradeModal}
+                className={getUpgradeButtonClass()}
+              >
+                {getUpgradeButtonText()}
+              </Motion.button>
 
               {/* User Profile Dropdown */}
               <div className="relative user-menu-container" ref={dropdownRef}>
@@ -179,7 +236,7 @@ const Header = ({
                   </svg>
                 </Motion.button>
 
-                {/* User Menu Popup - PERBAIKAN: Gunakan showUserMenu untuk kontrol tampilan */}
+                {/* User Menu Popup */}
                 <AnimatePresence>
                   {showUserMenu && (
                     <Motion.div
@@ -244,7 +301,7 @@ const Header = ({
                               Current Balance
                             </span>
                             <span className="text-xs font-bold text-violet-900 bg-violet-200 px-2 py-1 rounded-full">
-                              {formatCompactCurrency(
+                              {formatBalance(
                                 stats.currentBalance,
                                 currency
                               )}
@@ -252,47 +309,99 @@ const Header = ({
                           </div>
                           <div className="text-xs text-violet-600">
                             Initial:{" "}
-                            {formatCompactCurrency(stats.initialBalance, currency)}
+                            {formatBalance(
+                              stats.initialBalance,
+                              currency
+                            )}
                           </div>
                         </div>
 
-                        {/* Plan Info */}
+                        {/* Plan Info Detail */}
                         <div className="px-4 py-3 rounded-xl bg-linear-to-r from-gray-50 to-gray-100 border border-gray-200">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-bold text-gray-700">
-                              Current Plan
-                            </span>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={`w-6 h-6 rounded-full ${planBadge.color} flex items-center justify-center`}
+                              >
+                                <PlanIcon
+                                  className={`w-3 h-3 ${planBadge.iconColor}`}
+                                />
+                              </div>
+                              <span className="text-sm font-bold text-gray-700">
+                                {currentPlan.name} Plan
+                              </span>
+                            </div>
                             <span
-                              className={`text-xs font-bold px-2 py-1 rounded-full ${
-                                actualSubscription.plan === "free"
-                                  ? "bg-gray-200 text-gray-700"
-                                  : "bg-emerald-200 text-emerald-700"
-                              }`}
+                              className={`text-xs font-bold px-2 py-1 rounded-full ${planBadge.color}`}
                             >
-                              {currentPlan.name}
+                              {actualSubscription.isActive
+                                ? "AKTIF"
+                                : "NON-AKTIF"}
                             </span>
                           </div>
-                          <div className="text-xs text-gray-600">
-                            {actualSubscription.plan === "free"
-                              ? "Upgrade for advanced features"
-                              : "Premium features active"}
-                          </div>
+
+                          {actualSubscription.plan === "pro" &&
+                          actualSubscription.expiresAt ? (
+                            <div className="text-xs text-gray-600">
+                              Expires:{" "}
+                              {new Date(
+                                actualSubscription.expiresAt
+                              ).toLocaleDateString("id-ID", {
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                              })}
+                            </div>
+                          ) : actualSubscription.plan === "lifetime" ? (
+                            <div className="text-xs text-amber-600 font-semibold">
+                              ⭐ Lifetime Access
+                            </div>
+                          ) : (
+                            <div className="text-xs text-gray-600">
+                              Upgrade untuk fitur premium
+                            </div>
+                          )}
                         </div>
 
-                        {/* Upgrade Button in Menu - Hanya untuk plan free */}
-                        {actualSubscription.plan === "free" && (
-                          <Motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            className="w-full px-4 py-3 rounded-xl bg-linear-to-r from-violet-500 to-purple-500 text-white text-sm font-bold hover:shadow-lg transition-all duration-200 flex items-center justify-center space-x-2"
-                            onClick={() => {
-                              onShowUpgradeModal();
-                              setShowUserMenu(false);
-                            }}
-                          >
-                            <span>🚀 Upgrade Plan</span>
-                          </Motion.button>
-                        )}
+                        {/* Upgrade/Change Plan Button in Menu */}
+                        <Motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="w-full px-4 py-3 rounded-xl bg-linear-to-r from-violet-500 to-purple-500 text-white text-sm font-bold hover:shadow-lg transition-all duration-200 flex items-center justify-center space-x-2"
+                          onClick={() => {
+                            onShowUpgradeModal();
+                            setShowUserMenu(false);
+                          }}
+                        >
+                          {actualSubscription.plan === "free" ? (
+                            <>
+                              <Zap className="w-4 h-4" />
+                              <span>Upgrade Plan</span>
+                            </>
+                          ) : actualSubscription.plan === "pro" ? (
+                            <>
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+                                />
+                              </svg>
+                              <span>Change Plan</span>
+                            </>
+                          ) : (
+                            <>
+                              <Star className="w-4 h-4" />
+                              <span>View Plan Details</span>
+                            </>
+                          )}
+                        </Motion.button>
 
                         {/* Update Balance Button */}
                         <Motion.button
@@ -320,6 +429,92 @@ const Header = ({
                             />
                           </svg>
                           <span>Update Balance</span>
+                        </Motion.button>
+
+                        {/* Update Target Button */}
+                        {target?.enabled && (
+                          <Motion.button
+                            whileHover={{
+                              x: 5,
+                              backgroundColor: "rgba(59, 130, 246, 0.1)",
+                            }}
+                            className="w-full text-left px-4 py-3 rounded-xl text-sm text-blue-600 hover:text-blue-700 transition-all duration-200 flex items-center space-x-3"
+                            onClick={() => {
+                              onShowTargetModal();
+                              setShowUserMenu(false);
+                            }}
+                          >
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M13 10V3L4 14h7v7l9-11h-7z"
+                              />
+                            </svg>
+                            <span>Update Target</span>
+                          </Motion.button>
+                        )}
+
+                        {/* Transaction History Button */}
+                        <Motion.button
+                          whileHover={{
+                            x: 5,
+                            backgroundColor: "rgba(128, 0, 128, 0.1)",
+                          }}
+                          className="w-full text-left px-4 py-3 rounded-xl text-sm text-violet-900 hover:text-violet-700 transition-all duration-200 flex items-center space-x-3"
+                          onClick={() => {
+                            navigate("/transactions");
+                            setShowUserMenu(false);
+                          }}
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                            />
+                          </svg>
+                          <span>Transaction History</span>
+                        </Motion.button>
+
+                        {/* Subscription Details Button */}
+                        <Motion.button
+                          whileHover={{
+                            x: 5,
+                            backgroundColor: "rgba(34, 197, 94, 0.1)",
+                          }}
+                          className="w-full text-left px-4 py-3 rounded-xl text-sm text-emerald-600 hover:text-emerald-700 transition-all duration-200 flex items-center space-x-3"
+                          onClick={() => {
+                            navigate("/subscription/details");
+                            setShowUserMenu(false);
+                          }}
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                          </svg>
+                          <span>Subscription Details</span>
                         </Motion.button>
 
                         {/* Divider */}

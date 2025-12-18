@@ -191,42 +191,49 @@ const Layout = () => {
         >
           <div className="flex items-center gap-4 mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-2">
+              <h1 className="text-2xl md:text-3xl lg:text-3xl font-bold text-slate-800 flex items-center gap-2">
                 <Crown className="w-8 h-8 text-violet-600" />
                 Gamification
               </h1>
-              <p className="text-slate-600 mt-1 font-light">
+              <p className="text-sm sm:text-sm md:text-base text-slate-600 mt-1 font-light">
                 Track your progress, earn badges, and compete with other traders
               </p>
             </div>
           </div>
         </Motion.div>
 
-        {/* Navigation Tabs */}
+        {/* Navigation Tabs - PERBAIKAN DISINI */}
         <Motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className="mb-6 sm:mb-8"
         >
-          <div className="relative">
-            {/* Scrollable container */}
-            <div className="flex overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100 pb-3 -mx-4 sm:mx-0 px-4 sm:px-0">
-              <div className="flex space-x-2 bg-slate-100 p-1.5 rounded-2xl min-w-max sm:min-w-0 sm:w-fit mx-auto sm:mx-0">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap shrink-0 ${
-                      activeTab === tab.id
-                        ? "bg-white text-violet-700 shadow-sm"
-                        : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
-                    }`}
-                  >
-                    {tab.icon}
-                    <span>{tab.label}</span>
-                  </button>
-                ))}
+          <div className="relative w-full">
+            {/* Background yang tetap */}
+            <div className="absolute inset-0 bg-slate-100 rounded-2xl"></div>
+            
+            {/* Container scroll dengan overflow */}
+            <div className="relative overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+              {/* Inner container dengan min-width untuk scroll */}
+              <div className="inline-flex min-w-full p-1.5">
+                {/* Tabs container dengan background yang sama */}
+                <div className="flex space-x-2 rounded-2xl min-w-max mx-auto">
+                  {tabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap shrink-0 ${
+                        activeTab === tab.id
+                          ? "bg-white text-violet-700 shadow-sm"
+                          : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
+                      }`}
+                    >
+                      {tab.icon}
+                      <span>{tab.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

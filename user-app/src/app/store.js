@@ -5,6 +5,7 @@ import tradeReducer from "../features/tradeSlice";
 import targetReducer from '../features/targetSlice';
 import subscriptionReducer from '../features/subscriptionSlice';
 import gamificationReducer from '../features/gamificationSlice';
+import calendarReducer from '../features/calendarSlice';
 
 export const store = configureStore({
   reducer: {
@@ -13,6 +14,7 @@ export const store = configureStore({
     trades: tradeReducer,
     target: targetReducer,
     subscription: subscriptionReducer,
-    gamification: gamificationReducer
+    gamification: gamificationReducer,
+    calendar: calendarReducer
   },
 });

@@ -66,3 +66,25 @@ export const formatCompactCurrency = (value, currency) => {
       return `Rp${Math.round(numValue)}`;
   }
 };
+
+// utils/currencyFormatter.js - Tambahkan fungsi baru
+export const formatBalance = (value, currency) => {
+  if (!value && value !== 0) return `0 ${getCurrencySymbol(currency)}`;
+  
+  const numValue = parseFloat(value);
+  if (isNaN(numValue)) return `0 ${getCurrencySymbol(currency)}`;
+
+  switch (currency) {
+    case 'USD':
+      return `$${numValue.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })}`;
+    case 'IDR':
+      return `Rp ${Math.round(numValue).toLocaleString('id-ID')}`;
+    case 'CENT':
+      return `${numValue.toLocaleString('en-US')}¢`;
+    default:
+      return `Rp ${Math.round(numValue).toLocaleString('id-ID')}`;
+  }
+};

@@ -21,6 +21,7 @@ import TargetModal from "../components/modals/TargetModal";
 // Custom hooks and utilities
 import { useLayoutData } from "../hooks/useLayoutData";
 import { initializeStorage } from "../utils/storageUtils";
+import { getTrades } from "../features/tradeSlice";
 
 const currentYear = new Date().getFullYear();
 
@@ -70,6 +71,7 @@ const LayoutUser = () => {
     if (location.pathname.includes("/performance")) return "performance";
     if (location.pathname.includes("/targets")) return "targets";
     if (location.pathname.includes("/calculator")) return "calculator";
+    if (location.pathname.includes("/calendar")) return "calendar";
     if (location.pathname.includes("/upgrade")) return "upgrade";
     if (location.pathname.includes("/education")) return "education";
     if (location.pathname.includes("/gamification")) return "gamification";
@@ -85,6 +87,7 @@ const LayoutUser = () => {
           await Promise.all([
             dispatch(getBalance()).unwrap(),
             dispatch(getTarget()).unwrap(),
+            dispatch(getTrades()).unwrap(),
           ]);
           setDataLoaded(true);
         } catch (error) {
@@ -291,7 +294,7 @@ const LayoutUser = () => {
       {/* Main Content Area */}
       <div
         className={`flex-1 flex flex-col overflow-y-auto transition-all duration-500 ${
-          open ? "md:ml-[280px]" : "md:ml-[68px]"
+          open ? "lg:ml-[280px]" : "lg:ml-[68px]" // Ubah md menjadi lg
         }`}
       >
         {/* Header dengan props lengkap */}

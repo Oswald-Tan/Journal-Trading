@@ -22,6 +22,7 @@ import {
   ChevronDown,
   Award,
   Trophy,
+  Calendar,
 } from "lucide-react";
 
 const SidebarUser = () => {
@@ -68,6 +69,11 @@ const SidebarUser = () => {
         name: "Calculator",
         link: "/calculator",
         icon: Calculator,
+      },
+      {
+        name: "Calendar",
+        link: "/calendar",
+        icon: Calendar,
       },
       {
         name: "Education",
@@ -214,8 +220,8 @@ const SidebarUser = () => {
       setActiveSubMenuItem(subItemName);
       navigate(link);
 
-      // Jika sidebar dalam keadaan tertutup (mobile), tutup setelah memilih submenu
-      if (window.innerWidth < 768) {
+      // Jika sidebar dalam keadaan tertutup (mobile/tablet), tutup setelah memilih submenu
+      if (window.innerWidth < 1024) {
         toggleSidebar();
       }
     },
@@ -342,7 +348,7 @@ const SidebarUser = () => {
       {open && (
         <div
           onClick={toggleSidebar}
-          className="fixed inset-0 bg-black opacity-50 z-10 md:hidden"
+          className="fixed inset-0 bg-black opacity-50 z-10 lg:hidden" // Ubah md:hidden menjadi lg:hidden
         />
       )}
 
@@ -351,7 +357,7 @@ const SidebarUser = () => {
           className={`bg-white border-r border-gray-200 min-h-screen ${
             open
               ? "w-[280px]"
-              : "md:w-[68px] md:translate-x-0 -translate-x-[280px]"
+              : "lg:w-[68px] lg:translate-x-0 -translate-x-[280px]" // Ubah md menjadi lg
           } fixed top-0 left-0 z-20 duration-500 text-gray-800 px-4 overflow-y-auto flex flex-col`}
           style={{ height: "100vh" }}
         >

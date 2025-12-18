@@ -26,8 +26,15 @@ import Trade from "./routes/tradeRoute.js";
 import Target from "./routes/targetRoute.js";
 import Subscription from "./routes/subscriptionRoute.js";
 import Gamification from "./routes/gamificationRoute.js";
+import CalenderEvent from "./routes/calendarRoutes.js"
+import Transaction from "./routes/transactionRoutes.js";
+
 import { resetMonthlyLeaderboard } from "./controllers/gamificationController.js";
 import { initializeDefaultBadges, Badge } from "./models/gamification.js";
+import { 
+  checkAndSendExpirationReminders, 
+  checkAndDowngradeExpiredSubscriptions 
+} from './controllers/subscriptionController.js';
 
 const app = express();
 
@@ -54,7 +61,7 @@ const initializeDatabase = async () => {
     // Development only
     if (process.env.NODE_ENV === 'development') {
       console.log('🛠️  Running in DEVELOPMENT mode');
-      await db.sync({ alter: true });
+      // await db.sync({ alter: true });
       await initializeDefaultBadges();
       console.log('🛠️  Development database synced');
     } else {
@@ -191,6 +198,8 @@ app.use("/api/v1/trades", sessionMiddleware, Trade);
 app.use("/api/v1/target", sessionMiddleware, Target);
 app.use("/api/v1/subscription", sessionMiddleware, Subscription);
 app.use("/api/v1/gamification", sessionMiddleware, Gamification);
+app.use("/api/v1/calendar", sessionMiddleware, CalenderEvent);
+app.use("/api/v1/transactions", sessionMiddleware, Transaction);
 
 // 404 handler
 app.use((req, res) => {
@@ -220,6 +229,28 @@ cron.schedule('0 0 1 * *', async () => {
     console.log('✅ Monthly leaderboard reset completed');
   } catch (error) {
     console.error('❌ Error resetting leaderboard:', error);
+  }
+});
+
+// Cron job untuk mengecek subscription yang akan expired (jalankan setiap hari jam 09:00)
+cron.schedule('0 9 * * *', async () => {
+  console.log('⏰ Running subscription expiration reminder check...');
+  try {
+    const result = await checkAndSendExpirationReminders();
+    console.log('✅ Subscription reminder check completed:', result.message);
+  } catch (error) {
+    console.error('❌ Error in subscription reminder cron job:', error);
+  }
+});
+
+// Cron job untuk mengecek dan downgrade subscription yang sudah expired (jalankan setiap hari jam 00:01)
+cron.schedule('1 0 * * *', async () => {
+  console.log('⏰ Running expired subscription check and downgrade...');
+  try {
+    const result = await checkAndDowngradeExpiredSubscriptions();
+    console.log('✅ Expired subscription check completed:', result.message);
+  } catch (error) {
+    console.error('❌ Error in expired subscription cron job:', error);
   }
 });
 

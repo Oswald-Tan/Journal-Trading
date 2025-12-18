@@ -1,6 +1,6 @@
 import Target from '../models/target.js';
-import Trade from '../models/trade.js';
 import User from '../models/user.js';
+import Subscription from '../models/subscription.js';
 
 // Get user target
 export const getTarget = async (req, res) => {
@@ -9,41 +9,12 @@ export const getTarget = async (req, res) => {
       where: { userId: req.userId }
     });
 
-    // Cek apakah user memiliki trades
-    const tradeCount = await Trade.count({
-      where: { userId: req.userId }
-    });
-
-    // Jika tidak ada trades, nonaktifkan target yang aktif dan set balance ke 0
-    if (tradeCount === 0 && target && target.enabled) {
-      await target.update({
-        enabled: false,
-        targetBalance: 0, // Set targetBalance ke 0
-        description: target.description || ''
-      });
-      
-      return res.json({
-        success: true,
-        data: {
-          enabled: false,
-          targetBalance: 0, // Pastikan 0
-          targetDate: '',
-          description: target.description || '',
-          startDate: new Date().toISOString().split('T')[0],
-          useDailyTarget: false,
-          dailyTargetPercentage: 0,
-          dailyTargetAmount: 0
-        },
-        message: 'Target auto-disabled and balance reset to 0 because no trades data'
-      });
-    }
-
     if (!target) {
       return res.json({
         success: true,
         data: {
           enabled: false,
-          targetBalance: 0, // Default 0
+          targetBalance: 0,
           targetDate: '',
           description: '',
           startDate: new Date().toISOString().split('T')[0],
@@ -54,16 +25,9 @@ export const getTarget = async (req, res) => {
       });
     }
 
-    // Pastikan targetBalance tidak null/undefined
-    const targetData = target.get({ plain: true });
-    if (!targetData.enabled) {
-      targetData.targetBalance = 0; // Set ke 0 jika target dinonaktifkan
-      targetData.targetDate = ''; // Reset tanggal
-    }
-
     res.json({
       success: true,
-      data: targetData
+      data: target.get({ plain: true })
     });
   } catch (error) {
     console.error('Get target error:', error);
@@ -74,7 +38,23 @@ export const getTarget = async (req, res) => {
   }
 };
 
-// Create or update target dengan validasi trades
+// Helper function untuk cek subscription user
+const checkUserSubscription = async (userId) => {
+  const subscription = await Subscription.findOne({
+    where: { userId }
+  });
+  
+  const userPlan = subscription?.plan || 'free';
+  const allowedPlans = ['pro', 'lifetime'];
+  
+  return {
+    canSetTarget: allowedPlans.includes(userPlan),
+    plan: userPlan,
+    subscription
+  };
+};
+
+// Create or update target - HAPUS VALIDASI TRADE
 export const updateTarget = async (req, res) => {
   try {
     const { 
@@ -95,17 +75,15 @@ export const updateTarget = async (req, res) => {
       dailyTargetPercentage 
     });
 
-    // Validasi: Cek apakah user memiliki trades
-    const tradeCount = await Trade.count({
-      where: { userId: req.userId }
-    });
-
-    // Jika ingin mengaktifkan target tetapi tidak ada trades
-    if (enabled && tradeCount === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Tidak dapat mengaktifkan target karena belum ada data trading. Silakan buat entri trading terlebih dahulu.'
-      });
+    // **PERBAIKAN: Validasi subscription sebelum mengaktifkan target**
+    if (enabled) {
+      const subscriptionCheck = await checkUserSubscription(req.userId);
+      if (!subscriptionCheck.canSetTarget) {
+        return res.status(403).json({
+          success: false,
+          message: 'Upgrade to Pro or Lifetime plan to enable trading targets'
+        });
+      }
     }
 
     // Cari atau buat target
@@ -114,8 +92,9 @@ export const updateTarget = async (req, res) => {
     });
 
     if (enabled) {
-      // Validasi untuk target dengan tanggal
+      // Validasi berdasarkan jenis target
       if (!useDailyTarget) {
+        // Validasi untuk target dengan tanggal
         if (!targetBalance || !targetDate) {
           return res.status(400).json({
             success: false,
@@ -138,10 +117,8 @@ export const updateTarget = async (req, res) => {
             message: 'Target date must be in the future'
           });
         }
-      }
-
-      // Validasi untuk target harian
-      if (useDailyTarget) {
+      } else {
+        // Validasi untuk target harian
         if (!dailyTargetPercentage || dailyTargetPercentage <= 0) {
           return res.status(400).json({
             success: false,
@@ -168,25 +145,25 @@ export const updateTarget = async (req, res) => {
       if (target) {
         await target.update({
           enabled,
-          targetBalance: enabled && !useDailyTarget ? targetBalance : 0,
+          targetBalance: enabled && !useDailyTarget ? parseFloat(targetBalance).toFixed(2) : 0.00,
           targetDate: enabled && !useDailyTarget ? targetDate : null,
           description: enabled ? description : '',
           startDate: enabled ? (target.startDate || new Date()) : target.startDate,
           useDailyTarget: enabled ? useDailyTarget : false,
-          dailyTargetPercentage: enabled && useDailyTarget ? dailyTargetPercentage : 0,
-          dailyTargetAmount: enabled && useDailyTarget ? dailyTargetAmount : 0
+          dailyTargetPercentage: enabled && useDailyTarget ? parseFloat(dailyTargetPercentage).toFixed(2) : 0,
+          dailyTargetAmount: enabled && useDailyTarget ? parseFloat(dailyTargetAmount).toFixed(2) : 0
         });
       } else {
         target = await Target.create({
           userId: req.userId,
           enabled,
-          targetBalance: enabled && !useDailyTarget ? targetBalance : 0,
+          targetBalance: enabled && !useDailyTarget ? parseFloat(targetBalance).toFixed(2) : 0.00,
           targetDate: enabled && !useDailyTarget ? targetDate : null,
           description: enabled ? description : '',
           startDate: enabled ? new Date() : null,
           useDailyTarget: enabled ? useDailyTarget : false,
-          dailyTargetPercentage: enabled && useDailyTarget ? dailyTargetPercentage : 0,
-          dailyTargetAmount: enabled && useDailyTarget ? dailyTargetAmount : 0
+          dailyTargetPercentage: enabled && useDailyTarget ? parseFloat(dailyTargetPercentage).toFixed(2) : 0,
+          dailyTargetAmount: enabled && useDailyTarget ? parseFloat(dailyTargetAmount).toFixed(2) : 0
         });
       }
     } else {
@@ -194,8 +171,8 @@ export const updateTarget = async (req, res) => {
       if (target) {
         await target.update({
           enabled: false,
-          targetBalance: 0, // Reset ke 0
-          targetDate: null, // Reset tanggal
+          targetBalance: 0.00,
+          targetDate: null,
           description: description || target.description,
           useDailyTarget: false,
           dailyTargetPercentage: 0,
@@ -206,7 +183,7 @@ export const updateTarget = async (req, res) => {
         target = await Target.create({
           userId: req.userId,
           enabled: false,
-          targetBalance: 0,
+          targetBalance: 0.00,
           targetDate: null,
           description: description || '',
           startDate: new Date(),
@@ -219,7 +196,7 @@ export const updateTarget = async (req, res) => {
 
     return res.json({
       success: true,
-      message: enabled ? 'Target updated successfully' : 'Target disabled and balance reset to 0',
+      message: enabled ? 'Target updated successfully' : 'Target disabled',
       data: target.get({ plain: true })
     });
 
@@ -232,7 +209,7 @@ export const updateTarget = async (req, res) => {
   }
 };
 
-// Calculate target progress
+// Calculate target progress - PERBAIKI LOGIKA UNTUK TANPA TRADE
 export const getTargetProgress = async (req, res) => {
   try {
     const target = await Target.findOne({
@@ -275,19 +252,20 @@ export const getTargetProgress = async (req, res) => {
       const onTrack = achieved >= expectedAmount;
 
       progressData = {
+        initialBalance,
         currentBalance,
         progress,
         achieved,
         totalNeeded: expectedAmount,
         daysPassed,
-        totalDays: null, // Tidak ada total days untuk target harian
-        daysLeft: null, // Tidak ada days left untuk target harian
+        totalDays: null,
+        daysLeft: null,
         onTrack,
         neededDaily: target.dailyTargetAmount,
         dailyTarget: target.dailyTargetAmount,
         dailyAchieved,
-        isCompleted: false, // Target harian tidak pernah completed
-        isExpired: false, // Target harian tidak pernah expired
+        isCompleted: false,
+        isExpired: false,
         startDate: target.startDate,
         targetDate: null,
         useDailyTarget: true,
@@ -296,7 +274,7 @@ export const getTargetProgress = async (req, res) => {
         performanceStatus: achieved >= expectedAmount ? 'On Track' : 'Behind'
       };
     } else {
-      // PERHITUNGAN UNTUK TARGET DENGAN TANGGAL (sebelumnya)
+      // PERHITUNGAN UNTUK TARGET DENGAN TANGGAL
       const targetBalance = parseFloat(target.targetBalance);
       const targetDate = new Date(target.targetDate);
 
@@ -317,6 +295,7 @@ export const getTargetProgress = async (req, res) => {
       const onTrack = dailyAchieved >= dailyTarget;
 
       progressData = {
+        initialBalance,
         currentBalance,
         progress,
         achieved,

@@ -37,6 +37,18 @@ const Target = db.define(
       type: DataTypes.DATEONLY,
       defaultValue: DataTypes.NOW,
     },
+     useDailyTarget: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    dailyTargetPercentage: {
+      type: DataTypes.DECIMAL(5, 2),
+      defaultValue: 0,
+    },
+    dailyTargetAmount: {
+      type: DataTypes.DECIMAL(15, 2),
+      defaultValue: 0,
+    },
   },
   {
     timestamps: true,

@@ -131,11 +131,11 @@ const Layout = () => {
         className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4"
       >
         <div>
-          <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-2">
+          <h1 className="text-2xl md:text-3xl lg:text-3xl font-bold text-slate-800 flex items-center gap-2">
             <Calculator className="w-8 h-8 text-violet-600" />
             XAUUSD Calculator
           </h1>
-          <p className="text-slate-600 mt-1 font-light">
+          <p className="text-sm sm:text-sm md:text-base text-slate-600 mt-1 font-light">
             Calculate position size and risk management for Gold
           </p>
         </div>

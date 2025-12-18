@@ -63,11 +63,11 @@ export const handleRegister = async (req, res) => {
       subject: 'Verify Your Email - PipsDiary',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #FF6B35;">Welcome to PipsDiary!</h2>
+          <h2 style="color: #7C3AED;">Welcome to PipsDiary!</h2>
           <p>Hi ${user.name},</p>
           <p>Thank you for registering with PipsDiary. Please verify your email address to activate your account and start using your trading journal.</p>
           <p>Click the button below to verify your email:</p>
-          <a href="${verificationUrl}" style="background-color: #FF6B35; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block; margin: 16px 0;">Verify Email</a>
+          <a href="${verificationUrl}" style="background-color: #7C3AED; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block; margin: 16px 0;">Verify Email</a>
           <p>If the button doesn't work, copy and paste the following link into your browser:</p>
           <p>${verificationUrl}</p>
           <p>This link will expire in 24 hours.</p>
@@ -188,11 +188,11 @@ export const resendVerificationEmail = async (req, res) => {
       subject: 'Verify Your Email - PipsDiary',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #FF6B35;">Verify Your Email</h2>
+          <h2 style="color: #7C3AED;">Verify Your Email</h2>
           <p>Hi ${user.name},</p>
           <p>Please verify your email address to activate your PipsDiary account.</p>
           <p>Click the button below to verify your email:</p>
-          <a href="${verificationUrl}" style="background-color: #FF6B35; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block; margin: 16px 0;">Verify Email</a>
+          <a href="${verificationUrl}" style="background-color: #7C3AED; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block; margin: 16px 0;">Verify Email</a>
           <p>If the button doesn't work, copy and paste the following link into your browser:</p>
           <p>${verificationUrl}</p>
           <p>This link will expire in 24 hours.</p>

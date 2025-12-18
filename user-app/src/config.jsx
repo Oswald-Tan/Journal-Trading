@@ -1,7 +1,6 @@
-const API_URL = "https://api.pipsdiary.com/api/v1";
-const API_URL_STATIC = "https://api.pipsdiary.com/uploads";
+const API_URL = import.meta.env.VITE_API_URL;
+const API_URL_STATIC = import.meta.env.VITE_API_URL_STATIC;
 
-// const API_URL = "http://localhost:8082/api/v1";
-// const API_URL_STATIC = "http://localhost:8082/uploads";
+const MIDTRANS_CLIENT_KEY = import.meta.env.VITE_MIDTRANS_CLIENT_KEY;
 
-export { API_URL, API_URL_STATIC };
+export { API_URL, API_URL_STATIC, MIDTRANS_CLIENT_KEY };

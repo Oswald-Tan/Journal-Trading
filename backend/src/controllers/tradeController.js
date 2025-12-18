@@ -3,6 +3,7 @@ import db from "../config/database.js";
 import Target from "../models/target.js";
 import Trade from "../models/trade.js";
 import User from "../models/user.js";
+import Subscription from "../models/subscription.js";
 import {
   Badge,
   UserBadge,
@@ -704,15 +705,62 @@ const handleTradesDeletion = async (
 // Get all trades for user
 export const getTrades = async (req, res) => {
   try {
+    const userId = req.userId;
+
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 0;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || "";
+    const type = req.query.type; // 'Buy' or 'Sell'
+    const result = req.query.result; // 'Win', 'Lose', 'Break Even', 'Pending'
+
+    const offset = limit * page;
+
+    // Build where clause
+    let whereClause = { userId };
+
+    // Search across multiple fields - FIXED: menggunakan Op.like untuk MySQL
+    if (search) {
+      const searchPattern = `%${search}%`;
+      whereClause[Op.or] = [
+        { instrument: { [Op.like]: searchPattern } },
+        { strategy: { [Op.like]: searchPattern } },
+        { market: { [Op.like]: searchPattern } },
+        { notes: { [Op.like]: searchPattern } },
+      ];
+
+      // Search by date if it matches date format
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (dateRegex.test(search)) {
+        whereClause[Op.or].push({ date: { [Op.eq]: search } });
+      }
+    }
+
+    // Filter by type
+    if (type && (type === "Buy" || type === "Sell")) {
+      whereClause.type = type;
+    }
+
+    // Filter by result
+    if (result && ["Win", "Lose", "Break Even", "Pending"].includes(result)) {
+      whereClause.result = result;
+    }
+
+    // Get total count for pagination
+    const totalCount = await Trade.count({ where: whereClause });
+
+    // Get paginated data
     const trades = await Trade.findAll({
-      where: { userId: req.userId },
+      where: whereClause,
       order: [
         ["date", "DESC"],
         ["created_at", "DESC"],
       ],
+      limit,
+      offset,
     });
 
-    // Format data untuk memastikan konsistensi number
+    // Format data
     const formattedTrades = trades.map((trade) => ({
       ...trade.toJSON(),
       entry: parseFloat(trade.entry),
@@ -726,10 +774,21 @@ export const getTrades = async (req, res) => {
       riskReward: trade.riskReward ? parseFloat(trade.riskReward) : 0,
     }));
 
+    // Calculate stats (you might want to adjust calculateStats to accept filters)
+    const stats = await calculateStats(userId);
+
     res.json({
       success: true,
       data: formattedTrades,
-      count: trades.length,
+      stats: stats,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalCount / limit),
+        totalItems: totalCount,
+        itemsPerPage: limit,
+        hasNextPage: (page + 1) * limit < totalCount,
+        hasPrevPage: page > 0,
+      },
       message: "Trades retrieved successfully",
     });
   } catch (error) {
@@ -772,6 +831,21 @@ export const getTrade = async (req, res) => {
   }
 };
 
+// Helper functions untuk parse number
+const parseNumberWithComma = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  const strValue = String(value).replace(",", ".");
+  const numValue = parseFloat(strValue);
+  return isNaN(numValue) ? null : numValue;
+};
+
+const parseIntegerWithComma = (value) => {
+  const num = parseNumberWithComma(value);
+  return num !== null ? Math.round(num) : null;
+};
+
 // Create new trade
 export const createTrade = async (req, res) => {
   const transaction = await db.transaction();
@@ -798,13 +872,104 @@ export const createTrade = async (req, res) => {
       notes,
     } = req.body;
 
-    // Validate required fields
-    if (!date || !instrument || !type || !lot || !entry) {
+    // Validasi semua field wajib (semua field kecuali screenshot dan notes)
+    const requiredFields = {
+      date: 'Date',
+      instrument: 'Instrument',
+      type: 'Type',
+      lot: 'Lot',
+      entry: 'Entry Price',
+      exit: 'Exit Price',
+      stop: 'Stop Loss',
+      take: 'Take Profit',
+      pips: 'Pips',
+      profit: 'Profit/Loss',
+      result: 'Result',
+      riskReward: 'Risk/Reward Ratio',
+      strategy: 'Strategy',
+      market: 'Market Condition',
+      emotionBefore: 'Emotion Before',
+      emotionAfter: 'Emotion After',
+    };
+
+    const missingFields = [];
+    
+    for (const [field, label] of Object.entries(requiredFields)) {
+      if (!req.body[field] || req.body[field].toString().trim() === '') {
+        missingFields.push(label);
+      }
+    }
+
+    if (missingFields.length > 0) {
       await transaction.rollback();
       return res.status(400).json({
         success: false,
-        message: "Date, instrument, type, lot, and entry are required",
+        message: `Field berikut wajib diisi: ${missingFields.join(', ')}`,
+        missingFields,
       });
+    }
+
+    // Validasi numerik untuk field yang harus berupa angka
+    const numericFields = {
+      lot: 'Lot Size',
+      entry: 'Entry Price',
+      exit: 'Exit Price',
+      stop: 'Stop Loss',
+      take: 'Take Profit',
+      pips: 'Pips',
+      profit: 'Profit/Loss',
+      riskReward: 'Risk/Reward Ratio',
+    };
+
+    const invalidNumericFields = [];
+    
+    for (const [field, label] of Object.entries(numericFields)) {
+      const value = req.body[field];
+      const num = parseFloat(String(value).replace(',', '.'));
+      if (isNaN(num)) {
+        invalidNumericFields.push(label);
+      }
+    }
+
+    if (invalidNumericFields.length > 0) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: `Field berikut harus berupa angka yang valid: ${invalidNumericFields.join(', ')}`,
+        invalidNumericFields,
+      });
+    }
+
+    // Validasi plan free - maksimal 30 entri
+    const userSubscription = await Subscription.findOne({
+      where: { userId: req.userId },
+      transaction,
+    });
+
+    const userPlan = userSubscription?.plan || "free";
+
+    if (userPlan === "free") {
+      const existingTradesCount = await Trade.count({
+        where: { userId: req.userId },
+        transaction,
+      });
+
+      console.log(
+        `User ${req.userId} (${userPlan}) has ${existingTradesCount} trades`
+      );
+
+      if (existingTradesCount >= 30) {
+        await transaction.rollback();
+        return res.status(403).json({
+          success: false,
+          message:
+            "Anda telah mencapai batas maksimal 30 entri untuk plan Free. Silakan upgrade ke Pro untuk entri tak terbatas.",
+          requiresUpgrade: true,
+          currentPlan: "free",
+          maxEntries: 30,
+          currentEntries: existingTradesCount,
+        });
+      }
     }
 
     // Get user's current balance
@@ -818,57 +983,145 @@ export const createTrade = async (req, res) => {
     }
 
     // Parse semua nilai numerik
-    const parsedLot = parseFloat(lot);
-    const parsedEntry = parseFloat(entry);
-    const parsedExit = exit ? parseFloat(exit) : null;
-    const parsedStop = stop ? parseFloat(stop) : null;
-    const parsedTake = take ? parseFloat(take) : null;
+    const parseNumber = (val) => {
+      if (val === null || val === undefined || val === "") return null;
+      const str = String(val).replace(",", ".");
+      const num = parseFloat(str);
+      return isNaN(num) ? null : num;
+    };
 
-    // Handle profit
-    let finalProfit = profit ? parseFloat(profit) : 0;
+    const parsedLot = parseNumber(lot);
+    const parsedEntry = parseNumber(entry);
+    const parsedExit = parseNumber(exit);
+    const parsedStop = parseNumber(stop);
+    const parsedTake = parseNumber(take);
+    const parsedProfit = parseNumber(profit);
+    const parsedRiskReward = parseNumber(riskReward);
 
-    // Jika result adalah "Lose" dan profit positif, ubah menjadi negatif
-    if (result && result.toLowerCase().includes("lose") && finalProfit > 0) {
+    // Validasi nilai numerik tidak boleh null setelah parsing
+    const numericValidation = [];
+    if (parsedLot === null) numericValidation.push('Lot Size');
+    if (parsedEntry === null) numericValidation.push('Entry Price');
+    if (parsedExit === null) numericValidation.push('Exit Price');
+    if (parsedStop === null) numericValidation.push('Stop Loss');
+    if (parsedTake === null) numericValidation.push('Take Profit');
+    if (parsedProfit === null) numericValidation.push('Profit/Loss');
+    if (parsedRiskReward === null) numericValidation.push('Risk/Reward Ratio');
+
+    if (numericValidation.length > 0) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: `Format angka tidak valid untuk: ${numericValidation.join(', ')}`,
+        invalidFields: numericValidation,
+      });
+    }
+
+    // Validasi nilai minimal
+    if (parsedLot <= 0) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Lot Size harus lebih besar dari 0",
+      });
+    }
+
+    if (parsedEntry <= 0) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Entry Price harus lebih besar dari 0",
+      });
+    }
+
+    if (parsedExit <= 0) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Exit Price harus lebih besar dari 0",
+      });
+    }
+
+    if (parsedStop <= 0) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Stop Loss harus lebih besar dari 0",
+      });
+    }
+
+    if (parsedTake <= 0) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Take Profit harus lebih besar dari 0",
+      });
+    }
+
+    // Handle profit dan result consistency
+    let finalProfit = parsedProfit;
+    
+    if (result.toLowerCase().includes("lose") && finalProfit > 0) {
       finalProfit = -finalProfit;
-    }
-
-    // Jika result adalah "Win" dan profit negatif, ubah menjadi positif
-    if (result && result.toLowerCase().includes("win") && finalProfit < 0) {
+    } else if (result.toLowerCase().includes("win") && finalProfit < 0) {
       finalProfit = Math.abs(finalProfit);
+    } else if (result.toLowerCase().includes("break even")) {
+      finalProfit = 0;
     }
 
-    // Hitung pips jika tidak disediakan
+    // Hitung pips jika valid
     let finalPips = pips ? parseInt(pips) : 0;
-    if (!pips && parsedExit && parsedEntry) {
-      finalPips = Math.abs(Math.round((parsedExit - parsedEntry) * 10000));
-    }
+    if (finalPips === null || isNaN(finalPips)) finalPips = 0;
 
-    // Hitung balanceAfter dengan benar
-    const newBalance = parseFloat(user.currentBalance) + finalProfit;
+    // Hitung balanceAfter
+    const newBalance = parseFloat(user.currentBalance) + (finalProfit || 0);
 
-    // Tentukan result
+    // Validasi result konsisten dengan profit
     let finalResult = result;
-    if (!result || result === "Pending") {
-      finalResult =
-        finalProfit > 0 ? "Win" : finalProfit < 0 ? "Lose" : "Break Even";
+    const profitValue = parseFloat(finalProfit);
+    
+    if (result.toLowerCase().includes("win") && profitValue <= 0) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Result 'Win' harus memiliki Profit yang positif",
+      });
+    }
+    
+    if (result.toLowerCase().includes("lose") && profitValue >= 0) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Result 'Lose' harus memiliki Profit yang negatif",
+      });
+    }
+    
+    if (result.toLowerCase().includes("break even") && profitValue !== 0) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Result 'Break Even' harus memiliki Profit = 0",
+      });
     }
 
-    // Hitung riskReward
-    let finalRiskReward = riskReward ? parseFloat(riskReward) : 0;
-    if (!riskReward && parsedStop && parsedTake && parsedEntry) {
-      const risk = Math.abs(parsedEntry - parsedStop);
-      const reward = Math.abs(parsedTake - parsedEntry);
-      if (risk > 0) {
-        finalRiskReward = parseFloat((reward / risk).toFixed(2));
-      }
-    }
+    // Debug log
+    console.log("🔧 Parsed values:", {
+      lot: parsedLot,
+      entry: parsedEntry,
+      exit: parsedExit,
+      stop: parsedStop,
+      take: parsedTake,
+      profit: finalProfit,
+      pips: finalPips,
+      riskReward: parsedRiskReward,
+    });
 
     // Create trade
     const trade = await Trade.create(
       {
         userId: req.userId,
         date,
-        instrument,
+        instrument: instrument.trim(),
         type,
         lot: parsedLot,
         entry: parsedEntry,
@@ -879,11 +1132,11 @@ export const createTrade = async (req, res) => {
         profit: finalProfit,
         balanceAfter: newBalance,
         result: finalResult,
-        riskReward: finalRiskReward,
-        strategy: strategy || "",
-        market: market || "",
-        emotionBefore: emotionBefore || "",
-        emotionAfter: emotionAfter || "",
+        riskReward: parsedRiskReward,
+        strategy: (strategy || "").trim(),
+        market: (market || "").trim(),
+        emotionBefore: (emotionBefore || "").trim(),
+        emotionAfter: (emotionAfter || "").trim(),
         screenshot: screenshot || "",
         notes: notes || "",
       },
@@ -902,7 +1155,7 @@ export const createTrade = async (req, res) => {
         profit: finalProfit,
         result: finalResult,
       },
-      transaction // Pass the transaction here
+      transaction
     );
 
     // Get updated stats
@@ -911,7 +1164,6 @@ export const createTrade = async (req, res) => {
     // Commit transaction
     await transaction.commit();
 
-    // Kirim response dengan data badges yang baru di-unlock
     res.status(201).json({
       success: true,
       message: "Trade created successfully",
@@ -920,7 +1172,7 @@ export const createTrade = async (req, res) => {
       newBalance: newBalance,
       gamification: {
         newAchievements: gamificationResult.newAchievements,
-        newBadges: gamificationResult.newBadges, // Badges yang baru di-unlock
+        newBadges: gamificationResult.newBadges,
         levelUps:
           gamificationResult.userLevel.level >
           gamificationResult.userLevel.previousLevel,
@@ -928,7 +1180,6 @@ export const createTrade = async (req, res) => {
       },
     });
   } catch (error) {
-    // Rollback transaction jika ada error
     await transaction.rollback();
     console.error("Create trade error:", error);
     res.status(500).json({
@@ -948,6 +1199,14 @@ export const updateTrade = async (req, res) => {
 
     console.log("Update request for trade:", id);
     console.log("Update data:", updateData);
+
+    // Helper function untuk parse number
+    const parseNumber = (val) => {
+      if (val === null || val === undefined || val === "") return null;
+      const str = String(val).replace(",", ".");
+      const num = parseFloat(str);
+      return isNaN(num) ? null : num;
+    };
 
     // Cari trade yang akan diupdate
     const trade = await Trade.findOne({
@@ -996,7 +1255,8 @@ export const updateTrade = async (req, res) => {
 
     // Handle profit khusus
     if (updateData.profit !== undefined) {
-      let profitValue = parseFloat(updateData.profit);
+      let profitValue = parseNumber(updateData.profit);
+      if (profitValue === null) profitValue = 0;
 
       // Sesuaikan tanda profit berdasarkan result
       if (
@@ -1031,11 +1291,11 @@ export const updateTrade = async (req, res) => {
         if (
           ["lot", "entry", "stop", "take", "exit", "riskReward"].includes(field)
         ) {
-          newValue =
-            newValue !== null && newValue !== "" ? parseFloat(newValue) : null;
+          newValue = parseNumber(newValue);
         } else if (field === "pips") {
-          newValue =
-            newValue !== null && newValue !== "" ? parseInt(newValue) : 0;
+          // Parse pips sebagai integer
+          const parsed = parseNumber(newValue);
+          newValue = parsed !== null ? Math.round(parsed) : 0;
         }
 
         // Handle perbandingan null/undefined

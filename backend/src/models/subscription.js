@@ -15,12 +15,12 @@ const Subscription = db.define(
       allowNull: false,
       unique: true,
       references: {
-        model: "users",
+        model: User,
         key: "id",
       },
     },
     plan: {
-      type: DataTypes.ENUM("free", "pro", "elite", "lifetime"),
+      type: DataTypes.ENUM("free", "pro", "lifetime"),
       defaultValue: "free",
     },
     expiresAt: {

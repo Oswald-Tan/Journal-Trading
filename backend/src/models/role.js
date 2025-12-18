@@ -19,12 +19,17 @@ const Role = db.define(
         "viewer"
       ),
       allowNull: false,
-      unique: true,
     },
   },
   {
     timestamps: false,
     tableName: "roles",
+    indexes: [
+      {
+        unique: true,
+        fields: ["role_name"],
+      },
+    ],
   }
 );
 

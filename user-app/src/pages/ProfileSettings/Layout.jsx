@@ -208,8 +208,7 @@ const TabButton = ({ active, onClick, children, icon: Icon }) => (
 
 // Komponen Setting Card
 const SettingCard = ({ title, description, icon: Icon, children }) => (
-  <Motion.div
-    whileHover={{ y: -3 }}
+  <div
     className="bg-white/80 backdrop-blur-md p-6 rounded-2xl border-2 border-slate-100 shadow-sm"
   >
     <div className="flex items-start gap-4 mb-4">
@@ -222,7 +221,7 @@ const SettingCard = ({ title, description, icon: Icon, children }) => (
       </div>
     </div>
     {children}
-  </Motion.div>
+  </div>
 );
 
 const ProfileSettings = () => {
@@ -424,15 +423,13 @@ const ProfileSettings = () => {
           className="mb-8"
         >
           <div className="flex items-center justify-between mb-6">
-            <Motion.button
-              whileHover={{ scale: 1.05, x: -5 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={handleBackClick}
-              className="flex items-center gap-2 px-4 py-2 border-2 border-violet-300 rounded-xl text-violet-700 hover:bg-violet-50 transition-colors font-bold"
+              className="w-full sm:w-auto px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 font-medium flex items-center justify-center gap-2 text-sm sm:text-base"
             >
               <ArrowLeft className="w-5 h-5" />
               Kembali
-            </Motion.button>
+            </button>
             
             <div className="text-right">
               <div className="text-sm font-semibold text-slate-600">Account Settings</div>
@@ -710,36 +707,6 @@ const ProfileSettings = () => {
                   icon={Settings}
                 >
                   <div className="space-y-6">
-                    <div>
-                      <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
-                        <Moon className="w-4 h-4" />
-                        Tema
-                      </label>
-                      <div className="grid grid-cols-3 gap-3">
-                        {[
-                          { value: "light", label: "Light", icon: "☀️" },
-                          { value: "dark", label: "Dark", icon: "🌙" },
-                          { value: "auto", label: "Auto", icon: "⚙️" }
-                        ].map((theme) => (
-                          <Motion.button
-                            key={theme.value}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            type="button"
-                            onClick={() => handlePreferenceChange("theme", theme.value)}
-                            className={`p-4 rounded-xl border-2 font-medium transition-all ${
-                              preferences.theme === theme.value
-                                ? "border-violet-500 bg-violet-50 text-violet-700"
-                                : "border-slate-200 bg-white text-slate-700 hover:border-violet-300"
-                            }`}
-                          >
-                            <div className="text-2xl mb-2">{theme.icon}</div>
-                            <div>{theme.label}</div>
-                          </Motion.button>
-                        ))}
-                      </div>
-                    </div>
-
                     <div>
                       <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
                         <Globe className="w-4 h-4" />

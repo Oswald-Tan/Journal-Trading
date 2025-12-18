@@ -15,7 +15,8 @@ import {
   History,
   Award,
   ChevronRight,
-  DollarSign,
+  ChevronLeft,
+  ChevronRight as ChevronRightIcon,
 } from "lucide-react";
 
 const Layout = () => {
@@ -26,12 +27,47 @@ const Layout = () => {
   const balance = useSelector((state) => state.balance);
   const context = useOutletContext();
 
-  const [leaderboardType, setLeaderboardType] = useState("level");
-  const [timeRange, setTimeRange] = useState("all");
+  const [leaderboardType, setLeaderboardType] = useState("score");
+  const [timeRange, setTimeRange] = useState("current");
   const [showHistory, setShowHistory] = useState(false);
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [contentWidth, setContentWidth] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
 
   // Get user currency from balance state
   const userCurrency = balance?.currency || "USD";
+
+  // Detect screen size
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const width = window.innerWidth;
+      setIsMobile(width < 768);
+      setIsTablet(width >= 768 && width < 1024);
+    };
+
+    checkScreenSize();
+    window.addEventListener("resize", checkScreenSize);
+
+    return () => window.removeEventListener("resize", checkScreenSize);
+  }, []);
+
+  // Calculate scrollable container width
+  useEffect(() => {
+    const updateContainerWidth = () => {
+      const container = document.getElementById("leaderboard-types-container");
+      if (container) {
+        setContainerWidth(container.clientWidth);
+        setContentWidth(container.scrollWidth);
+      }
+    };
+
+    updateContainerWidth();
+    window.addEventListener("resize", updateContainerWidth);
+
+    return () => window.removeEventListener("resize", updateContainerWidth);
+  }, [leaderboardType, timeRange]);
 
   useEffect(() => {
     if (showHistory) {
@@ -70,10 +106,49 @@ const Layout = () => {
     },
   ];
 
+  const allTimeTypes = [
+    ...leaderboardTypes,
+    {
+      id: "level",
+      label: "Level",
+      icon: <Crown className="w-4 h-4" />,
+      description: "Based on user level",
+    },
+    {
+      id: "experience",
+      label: "Experience",
+      icon: <Star className="w-4 h-4" />,
+      description: "Total XP earned",
+    },
+    {
+      id: "streak",
+      label: "Daily Streak",
+      icon: <Zap className="w-4 h-4" />,
+      description: "Current trading streak",
+    },
+  ];
+
   const timeRanges = [
     { id: "current", label: "Current Month", icon: <Calendar className="w-4 h-4" /> },
     { id: "all", label: "All Time", icon: <History className="w-4 h-4" /> },
   ];
+
+  // Scroll handlers for tablet and mobile
+  const handleScrollLeft = () => {
+    const container = document.getElementById("leaderboard-types-container");
+    if (container) {
+      container.scrollBy({ left: -200, behavior: "smooth" });
+      setTimeout(() => setScrollPosition(container.scrollLeft), 300);
+    }
+  };
+
+  const handleScrollRight = () => {
+    const container = document.getElementById("leaderboard-types-container");
+    if (container) {
+      container.scrollBy({ left: 200, behavior: "smooth" });
+      setTimeout(() => setScrollPosition(container.scrollLeft), 300);
+    }
+  };
 
   const getRankColor = (rank) => {
     if (rank === 1) return "from-yellow-400 to-yellow-600";
@@ -224,11 +299,11 @@ const Layout = () => {
           <Motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-2">
+                <h1 className="text-2xl md:text-3xl lg:text-3xl font-bold text-slate-800 flex items-center gap-2">
                   <History className="w-6 h-6 sm:w-8 sm:h-8 text-violet-600" />
                   Leaderboard History
                 </h1>
-                <p className="text-slate-600 mt-1 font-light">
+                <p className="text-sm sm:text-sm md:text-base text-slate-600 mt-1 font-light">
                   Your past monthly rankings and performance
                 </p>
               </div>
@@ -340,7 +415,7 @@ const Layout = () => {
                 </Motion.div>
               ))
             ) : (
-              <div className="text-center py-8 sm:py-12">
+              <div className="bg-white/80 backdrop-blur-md rounded-3xl p-4 sm:p-6 border border-slate-200 text-center py-8 sm:py-12">
                 <History className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-slate-400 mb-4" />
                 <h4 className="text-base sm:text-lg font-bold text-slate-700 mb-2">
                   No History Available
@@ -363,11 +438,11 @@ const Layout = () => {
         <Motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
-              <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-2">
+              <h1 className="text-2xl md:text-3xl lg:text-3xl font-bold text-slate-800 flex items-center gap-2">
                 <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-violet-600" />
                 {timeRange === "all" ? "Global Leaderboard" : "Monthly Leaderboard"}
               </h1>
-              <p className="text-slate-600 mt-1 font-light">
+              <p className="text-sm sm:text-sm md:text-base text-slate-600 mt-1 font-light">
                 {timeRange === "all"
                   ? "All-time rankings based on lifetime achievements"
                   : `Current month rankings - ${formatPeriod(leaderboard?.period)}`}
@@ -384,7 +459,7 @@ const Layout = () => {
           </div>
         </Motion.div>
 
-        {/* Controls */}
+        {/* Controls - UPDATED for better tablet and mobile responsiveness */}
         <Motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -392,7 +467,7 @@ const Layout = () => {
           className="mb-8"
         >
           <div className="bg-white/80 backdrop-blur-md rounded-3xl p-4 sm:p-6 border border-slate-200">
-            {/* Title Section - Atas */}
+            {/* Title Section */}
             <div className="mb-6">
               <h3 className="text-lg font-bold text-slate-800 mb-2">
                 {timeRange === "all" ? "Global Rankings" : "Monthly Rankings"}
@@ -400,29 +475,24 @@ const Layout = () => {
               <p className="text-slate-600 text-sm">
                 {
                   (timeRange === "all" 
-                    ? [
-                        ...leaderboardTypes,
-                        { id: "level", description: "Based on user level" },
-                        { id: "experience", description: "Total XP earned" },
-                        { id: "streak", description: "Current trading streak" }
-                      ].find((t) => t.id === leaderboardType)?.description
+                    ? allTimeTypes.find((t) => t.id === leaderboardType)?.description
                     : leaderboardTypes.find((t) => t.id === leaderboardType)?.description
                   )
                 }
               </p>
             </div>
 
-            {/* Tabs Section - Bawah */}
-            <div className="flex flex-col gap-4">
+            {/* Tabs Section */}
+            <div className="flex flex-col gap-6">
               {/* Time Range Selector - Responsive Layout */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="relative w-full sm:w-auto">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div className="w-full">
                   <div className="flex bg-slate-100 p-1 rounded-xl">
                     {timeRanges.map((range) => (
                       <button
                         key={range.id}
                         onClick={() => setTimeRange(range.id)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1 sm:flex-none ${
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all w-full lg:w-auto ${
                           timeRange === range.id
                             ? "bg-white text-violet-700 shadow-sm"
                             : "text-slate-600 hover:text-slate-800"
@@ -435,61 +505,53 @@ const Layout = () => {
                   </div>
                 </div>
 
-                {/* Leaderboard Type Selector */}
-                <div className="relative w-full sm:w-auto">
-                  <div 
-                    id="leaderboard-types-container"
-                    className="flex bg-slate-100 p-1 rounded-xl overflow-x-auto scrollbar-hide scroll-smooth"
-                  >
-                    {timeRange === "all"
-                      ? [
-                          ...leaderboardTypes,
-                          {
-                            id: "level",
-                            label: "Level",
-                            icon: <Crown className="w-4 h-4" />,
-                            description: "Based on user level",
-                          },
-                          {
-                            id: "experience",
-                            label: "Experience",
-                            icon: <Star className="w-4 h-4" />,
-                            description: "Total XP earned",
-                          },
-                          {
-                            id: "streak",
-                            label: "Daily Streak",
-                            icon: <Zap className="w-4 h-4" />,
-                            description: "Current trading streak",
-                          },
-                        ].map((type) => (
-                          <button
-                            key={type.id}
-                            onClick={() => setLeaderboardType(type.id)}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all shrink-0 ${
-                              leaderboardType === type.id
-                                ? "bg-white text-violet-700 shadow-sm"
-                                : "text-slate-600 hover:text-slate-800"
-                            }`}
-                          >
-                            {type.icon}
-                            <span className="whitespace-nowrap">{type.label}</span>
-                          </button>
-                        ))
-                      : leaderboardTypes.map((type) => (
-                          <button
-                            key={type.id}
-                            onClick={() => setLeaderboardType(type.id)}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all shrink-0 ${
-                              leaderboardType === type.id
-                                ? "bg-white text-violet-700 shadow-sm"
-                                : "text-slate-600 hover:text-slate-800"
-                            }`}
-                          >
-                            {type.icon}
-                            <span className="whitespace-nowrap">{type.label}</span>
-                          </button>
-                        ))}
+                {/* Leaderboard Type Selector with scroll controls for mobile and tablet */}
+                <div className="w-full lg:w-auto">
+                  <div className="relative">
+
+                    <div className="relative">
+                      <div 
+                        id="leaderboard-types-container"
+                        className="flex bg-slate-100 p-1 rounded-xl overflow-x-auto scrollbar-hide scroll-smooth w-full"
+                        style={{ 
+                          scrollbarWidth: 'none',
+                          msOverflowStyle: 'none',
+                          WebkitOverflowScrolling: 'touch',
+                          touchAction: 'pan-x'
+                        }}
+                        onScroll={(e) => setScrollPosition(e.target.scrollLeft)}
+                      >
+                        {timeRange === "all"
+                          ? allTimeTypes.map((type) => (
+                              <button
+                                key={type.id}
+                                onClick={() => setLeaderboardType(type.id)}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all shrink-0 whitespace-nowrap ${
+                                  leaderboardType === type.id
+                                    ? "bg-white text-violet-700 shadow-sm"
+                                    : "text-slate-600 hover:text-slate-800"
+                                }`}
+                              >
+                                {type.icon}
+                                <span>{type.label}</span>
+                              </button>
+                            ))
+                          : leaderboardTypes.map((type) => (
+                              <button
+                                key={type.id}
+                                onClick={() => setLeaderboardType(type.id)}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all shrink-0 whitespace-nowrap ${
+                                  leaderboardType === type.id
+                                    ? "bg-white text-violet-700 shadow-sm"
+                                    : "text-slate-600 hover:text-slate-800"
+                                }`}
+                              >
+                                {type.icon}
+                                <span>{type.label}</span>
+                              </button>
+                            ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -605,7 +667,7 @@ const Layout = () => {
             <div className="p-4 sm:p-6 border-b border-slate-200">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <h3 className="text-3xl font-bold text-slate-800">
+                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-800">
                     {timeRange === "all" ? "Global Leaderboard" : "Monthly Leaderboard"}
                   </h3>
                   <p className="text-slate-600 text-xs sm:text-sm mt-1">

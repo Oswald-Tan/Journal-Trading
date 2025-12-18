@@ -18,7 +18,6 @@ export const getBalance = createAsyncThunk(
   async (_, thunkAPI) => {
     try {
       const res = await axios.get(`${API_URL}/balance`);
-      console.log("Get Balance response:", res.data);
       return res.data;
     } catch (error) {
       if (error.response) {
