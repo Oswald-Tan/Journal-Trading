@@ -9,10 +9,11 @@ import {
   UserBadge,
   UserLevel,
   Achievement,
-  MonthlyLeaderboard,
+  PeriodLeaderboard,
 } from "../models/gamification.js";
 import { generateTradingReportPDF } from "../utils/pdfGenerator.js";
 import { calculateStats } from "../utils/statsCalculator.js";
+import currencyService from "../services/currencyService.js";
 
 // ==================== TRANSACTION HELPER ====================
 const createOptions = (transaction) => {
@@ -25,51 +26,217 @@ const createOptions = (transaction) => {
 
 // ==================== GAMIFICATION HELPER FUNCTIONS ====================
 
-// Helper: Get current period (YYYY-MM)
-const getCurrentPeriod = () => {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-};
-
-// Helper: Calculate monthly score
-const calculateMonthlyScore = (userStats) => {
-  let score = 0;
-
-  // Berdasarkan total profit (40% bobot)
-  score += Math.min(userStats.totalProfit / 10000, 100) * 40;
-
-  // Berdasarkan win rate (30% bobot)
-  score += userStats.winRate * 30;
-
-  // Berdasarkan jumlah trades (20% bobot)
-  score += Math.min(userStats.totalTrades / 50, 100) * 20;
-
-  // Berdasarkan consistency (10% bobot)
-  score += Math.min(userStats.dailyActivity / 30, 100) * 10;
-
-  return Math.round(score);
-};
-
 // Calculate required XP for a level
 const calculateRequiredXP = (level) => {
   return Math.floor(100 * Math.pow(level, 1.5));
 };
 
-// Calculate XP from trade
-const calculateXpFromTrade = (trade) => {
-  let xp = 10; // Base XP untuk menyelesaikan trade
+// Helper untuk mendapatkan periode
+const getPeriodValue = (date, periodType) => {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const week = getWeekNumber(d);
 
-  // Bonus XP untuk profitable trade
-  if (trade.profit > 0) {
-    xp += Math.min(50, Math.floor(trade.profit / 10));
+  switch (periodType) {
+    case "daily":
+      return `${year}-${month}-${day}`;
+    case "weekly":
+      return `${year}-W${week}`;
+    case "monthly":
+      return `${year}-${month}`;
+    default:
+      return `${year}-${month}`;
   }
+};
 
-  // Bonus untuk win streak (jika ada data)
-  if (trade.result && trade.result.toLowerCase().includes("win")) {
-    xp += 5;
+const getWeekNumber = (date) => {
+  const d = new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+  );
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+};
+
+// Update leaderboard untuk semua periode
+const updatePeriodLeaderboards = async (
+  userId,
+  tradeDate,
+  tradeData = null,
+  transaction = null
+) => {
+  try {
+    const user = await User.findByPk(userId, createOptions(transaction));
+    if (!user) return;
+
+    // GET USER LEVEL DATA
+    const userLevel = await UserLevel.findOne({
+      where: { userId },
+      ...createOptions(transaction),
+    });
+
+    const periods = ["daily", "weekly", "monthly"];
+
+    for (const periodType of periods) {
+      const periodValue = getPeriodValue(new Date(tradeDate), periodType);
+
+      // Hitung start date berdasarkan periode
+      let startDate;
+      const now = new Date(tradeDate);
+
+      if (periodType === "daily") {
+        startDate = new Date(now.setHours(0, 0, 0, 0));
+      } else if (periodType === "weekly") {
+        const day = now.getDay();
+        const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+        startDate = new Date(now.setDate(diff));
+        startDate.setHours(0, 0, 0, 0);
+      } else {
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      }
+
+      // Ambil semua trades dalam periode
+      const periodTrades = await Trade.findAll({
+        where: {
+          userId,
+          date: {
+            [Op.gte]: startDate,
+            [Op.lte]: new Date(tradeDate),
+          },
+        },
+        ...createOptions(transaction),
+      });
+
+      // Hitung stats
+      const totalTrades = periodTrades.length;
+      const totalProfitOriginal = periodTrades.reduce(
+        (sum, trade) => sum + (parseFloat(trade.profit) || 0),
+        0
+      );
+
+      // KONVERSI KE USD - DIPERBAIKI DENGAN DEBUG
+      console.log(
+        `[Leaderboard] Converting ${totalProfitOriginal} ${user.currency} to USD for user ${userId}`
+      );
+
+      const totalProfitUSD = await currencyService.convertToUSD(
+        totalProfitOriginal,
+        user.currency,
+        true // debug mode
+      );
+
+      console.log(
+        `[Leaderboard] Conversion result: ${totalProfitOriginal} ${user.currency} = ${totalProfitUSD} USD`
+      );
+
+      const winTrades = periodTrades.filter((trade) =>
+        trade.result?.toLowerCase().includes("win")
+      ).length;
+      const winRate = totalTrades > 0 ? (winTrades / totalTrades) * 100 : 0;
+
+      // Hitung daily activity
+      const tradingDays = new Set(periodTrades.map((trade) => trade.date)).size;
+
+      // Hitung consistency score
+      let consistencyScore = 0;
+      if (periodType === "monthly") {
+        consistencyScore = Math.min((tradingDays / 30) * 100, 100);
+      } else if (periodType === "weekly") {
+        consistencyScore = Math.min((tradingDays / 7) * 100, 100);
+      }
+
+      // Hitung score berdasarkan profit USD, win rate, dan konsistensi
+      let score = calculateLeaderboardScore({
+        totalProfitUSD,
+        winRate,
+        totalTrades,
+        consistencyScore,
+        periodType,
+      });
+
+      // Update atau create leaderboard entry
+      await PeriodLeaderboard.upsert(
+        {
+          userId,
+          periodType,
+          periodValue,
+          score,
+          totalProfitUSD,
+          totalProfitOriginal,
+          originalCurrency: user.currency,
+          totalTrades,
+          winRate,
+          dailyActivity: tradingDays,
+          consistencyScore,
+          userLevel: userLevel ? userLevel.level : 1,
+          totalExperience: userLevel ? userLevel.totalExperience : 0,
+          dailyStreak: userLevel ? userLevel.dailyStreak : 0,
+          totalTradesUser: userLevel ? userLevel.totalTrades : 0,
+          profitStreak: userLevel ? userLevel.profitStreak : 0,
+          maxConsecutiveWins: userLevel ? userLevel.maxConsecutiveWins : 0,
+        },
+        {
+          ...createOptions(transaction),
+        }
+      );
+
+      // Recalculate ranks untuk periode ini
+      await recalculatePeriodRanks(periodType, periodValue, transaction);
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error updating period leaderboards:", error);
+    throw error;
   }
+};
 
-  return xp;
+// Hitung score leaderboard dengan bobot
+const calculateLeaderboardScore = (stats) => {
+  let score = 0;
+
+  // Profit USD: 40% (dibagi 100 untuk skala)
+  score += Math.min(Math.abs(stats.totalProfitUSD) / 100, 100) * 40;
+
+  // Win Rate: 30%
+  score += stats.winRate * 30;
+
+  // Total Trades: 20%
+  const maxTrades =
+    stats.periodType === "daily" ? 10 : stats.periodType === "weekly" ? 30 : 50;
+  score += Math.min((stats.totalTrades / maxTrades) * 100, 100) * 20;
+
+  // Consistency: 10%
+  score += stats.consistencyScore * 10;
+
+  return Math.round(score);
+};
+
+// Recalculate ranks untuk periode tertentu
+const recalculatePeriodRanks = async (
+  periodType,
+  periodValue,
+  transaction = null
+) => {
+  try {
+    const entries = await PeriodLeaderboard.findAll({
+      where: { periodType, periodValue },
+      order: [["score", "DESC"]],
+      ...createOptions(transaction),
+    });
+
+    for (let i = 0; i < entries.length; i++) {
+      await entries[i].update({ rank: i + 1 }, createOptions(transaction));
+    }
+
+    return entries;
+  } catch (error) {
+    console.error("Error recalculating period ranks:", error);
+    throw error;
+  }
 };
 
 // Add experience to user
@@ -463,99 +630,6 @@ const checkSpecialAchievements = async (
   }
 };
 
-// Update monthly leaderboard
-const updateMonthlyLeaderboard = async (
-  userId,
-  tradeData = null,
-  transaction = null
-) => {
-  try {
-    const period = getCurrentPeriod();
-    const startOfMonth = new Date(
-      new Date().getFullYear(),
-      new Date().getMonth(),
-      1
-    );
-
-    // Get user's monthly trades
-    const monthlyTrades = await Trade.findAll({
-      where: {
-        userId,
-        date: {
-          [Op.gte]: startOfMonth,
-        },
-      },
-      ...createOptions(transaction),
-    });
-
-    // Calculate monthly stats
-    const totalTrades = monthlyTrades.length;
-    const totalProfit = monthlyTrades.reduce(
-      (sum, trade) => sum + (parseFloat(trade.profit) || 0),
-      0
-    );
-    const winTrades = monthlyTrades.filter(
-      (trade) => trade.result && trade.result.toLowerCase().includes("win")
-    ).length;
-    const winRate = totalTrades > 0 ? (winTrades / totalTrades) * 100 : 0;
-
-    // Calculate daily activity (unique days with trades)
-    const tradingDays = new Set(monthlyTrades.map((trade) => trade.date)).size;
-
-    // Calculate score
-    const score = calculateMonthlyScore({
-      totalTrades,
-      totalProfit,
-      winRate,
-      dailyActivity: tradingDays,
-    });
-
-    // Update or create monthly leaderboard entry
-    await MonthlyLeaderboard.upsert(
-      {
-        userId,
-        period,
-        score,
-        totalTrades,
-        totalProfit,
-        winRate,
-      },
-      { ...createOptions(transaction) }
-    );
-
-    // Recalculate ranks for current period
-    await recalculateMonthlyRanks(period, transaction);
-
-    return { period, score, rank: null };
-  } catch (error) {
-    console.error("Error updating monthly leaderboard:", error);
-    throw error;
-  }
-};
-
-// Recalculate monthly ranks
-const recalculateMonthlyRanks = async (period, transaction = null) => {
-  try {
-    // Get all entries for period, sorted by score
-    const entries = await MonthlyLeaderboard.findAll({
-      where: { period },
-      order: [["score", "DESC"]],
-      include: [{ model: User }],
-      ...createOptions(transaction),
-    });
-
-    // Update ranks
-    for (let i = 0; i < entries.length; i++) {
-      await entries[i].update({ rank: i + 1 }, createOptions(transaction));
-    }
-
-    return entries;
-  } catch (error) {
-    console.error("Error recalculating monthly ranks:", error);
-    throw error;
-  }
-};
-
 // Process trade for gamification
 export const processTradeForGamification = async (
   userId,
@@ -615,87 +689,24 @@ export const processTradeForGamification = async (
     // Check and award badges
     const newBadges = await checkAndAwardBadges(userId, transaction);
 
-    // Update monthly leaderboard
-    const monthlyUpdate = await updateMonthlyLeaderboard(
+    // Update semua period leaderboards
+    await updatePeriodLeaderboards(
       userId,
+      tradeData.date || new Date(),
       tradeData,
       transaction
     );
 
+    // Get updated user level
+    const updatedUserLevel = await UserLevel.findOne({ where: { userId } });
+
     return {
       newAchievements,
       newBadges,
-      userLevel: await UserLevel.findOne({
-        where: { userId },
-        ...createOptions(transaction),
-      }),
-      monthlyUpdate,
+      userLevel: updatedUserLevel,
     };
   } catch (error) {
     console.error("Error processing trade for gamification:", error);
-    throw error;
-  }
-};
-
-// Handle trades deletion
-const handleTradesDeletion = async (
-  userId,
-  deletedTradesCount,
-  deletedXp,
-  transaction = null
-) => {
-  try {
-    const userLevel = await UserLevel.findOne({
-      where: { userId },
-      ...createOptions(transaction),
-    });
-
-    if (userLevel) {
-      // Reduce total trades
-      const newTotalTrades = Math.max(
-        0,
-        userLevel.totalTrades - deletedTradesCount
-      );
-
-      // Reduce total experience
-      const newTotalExperience = Math.max(
-        0,
-        userLevel.totalExperience - deletedXp
-      );
-
-      // Recalculate level based on new total experience
-      let currentLevel = 1;
-      let currentXP = newTotalExperience;
-
-      while (currentXP >= calculateRequiredXP(currentLevel)) {
-        currentXP -= calculateRequiredXP(currentLevel);
-        currentLevel++;
-      }
-
-      await userLevel.update(
-        {
-          level: currentLevel,
-          experience: currentXP,
-          totalExperience: newTotalExperience,
-          totalTrades: newTotalTrades,
-        },
-        createOptions(transaction)
-      );
-
-      // Update monthly leaderboard
-      await updateMonthlyLeaderboard(userId, null, transaction);
-
-      return {
-        success: true,
-        newLevel: currentLevel,
-        experienceLost: deletedXp,
-        newTotalTrades: newTotalTrades,
-      };
-    }
-
-    return { success: false, message: "User level not found" };
-  } catch (error) {
-    console.error("Error handling trades deletion:", error);
     throw error;
   }
 };
@@ -848,9 +859,11 @@ const parseIntegerWithComma = (value) => {
 
 // Create new trade
 export const createTrade = async (req, res) => {
-  const transaction = await db.transaction();
+  let transaction;
 
   try {
+    transaction = await db.transaction();
+
     const {
       date,
       instrument,
@@ -872,70 +885,70 @@ export const createTrade = async (req, res) => {
       notes,
     } = req.body;
 
-    // Validasi semua field wajib (semua field kecuali screenshot dan notes)
+    // Validasi semua field wajib
     const requiredFields = {
-      date: 'Date',
-      instrument: 'Instrument',
-      type: 'Type',
-      lot: 'Lot',
-      entry: 'Entry Price',
-      exit: 'Exit Price',
-      stop: 'Stop Loss',
-      take: 'Take Profit',
-      pips: 'Pips',
-      profit: 'Profit/Loss',
-      result: 'Result',
-      riskReward: 'Risk/Reward Ratio',
-      strategy: 'Strategy',
-      market: 'Market Condition',
-      emotionBefore: 'Emotion Before',
-      emotionAfter: 'Emotion After',
+      date: "Date",
+      instrument: "Instrument",
+      type: "Type",
+      lot: "Lot",
+      entry: "Entry Price",
+      exit: "Exit Price",
+      stop: "Stop Loss",
+      take: "Take Profit",
+      pips: "Pips",
+      profit: "Profit/Loss",
+      result: "Result",
+      riskReward: "Risk/Reward Ratio",
+      strategy: "Strategy",
+      market: "Market Condition",
+      emotionBefore: "Emotion Before",
+      emotionAfter: "Emotion After",
     };
 
     const missingFields = [];
-    
+
     for (const [field, label] of Object.entries(requiredFields)) {
-      if (!req.body[field] || req.body[field].toString().trim() === '') {
+      if (!req.body[field] || req.body[field].toString().trim() === "") {
         missingFields.push(label);
       }
     }
 
     if (missingFields.length > 0) {
-      await transaction.rollback();
       return res.status(400).json({
         success: false,
-        message: `Field berikut wajib diisi: ${missingFields.join(', ')}`,
+        message: `Field berikut wajib diisi: ${missingFields.join(", ")}`,
         missingFields,
       });
     }
 
     // Validasi numerik untuk field yang harus berupa angka
     const numericFields = {
-      lot: 'Lot Size',
-      entry: 'Entry Price',
-      exit: 'Exit Price',
-      stop: 'Stop Loss',
-      take: 'Take Profit',
-      pips: 'Pips',
-      profit: 'Profit/Loss',
-      riskReward: 'Risk/Reward Ratio',
+      lot: "Lot Size",
+      entry: "Entry Price",
+      exit: "Exit Price",
+      stop: "Stop Loss",
+      take: "Take Profit",
+      pips: "Pips",
+      profit: "Profit/Loss",
+      riskReward: "Risk/Reward Ratio",
     };
 
     const invalidNumericFields = [];
-    
+
     for (const [field, label] of Object.entries(numericFields)) {
       const value = req.body[field];
-      const num = parseFloat(String(value).replace(',', '.'));
+      const num = parseFloat(String(value).replace(",", "."));
       if (isNaN(num)) {
         invalidNumericFields.push(label);
       }
     }
 
     if (invalidNumericFields.length > 0) {
-      await transaction.rollback();
       return res.status(400).json({
         success: false,
-        message: `Field berikut harus berupa angka yang valid: ${invalidNumericFields.join(', ')}`,
+        message: `Field berikut harus berupa angka yang valid: ${invalidNumericFields.join(
+          ", "
+        )}`,
         invalidNumericFields,
       });
     }
@@ -1000,19 +1013,21 @@ export const createTrade = async (req, res) => {
 
     // Validasi nilai numerik tidak boleh null setelah parsing
     const numericValidation = [];
-    if (parsedLot === null) numericValidation.push('Lot Size');
-    if (parsedEntry === null) numericValidation.push('Entry Price');
-    if (parsedExit === null) numericValidation.push('Exit Price');
-    if (parsedStop === null) numericValidation.push('Stop Loss');
-    if (parsedTake === null) numericValidation.push('Take Profit');
-    if (parsedProfit === null) numericValidation.push('Profit/Loss');
-    if (parsedRiskReward === null) numericValidation.push('Risk/Reward Ratio');
+    if (parsedLot === null) numericValidation.push("Lot Size");
+    if (parsedEntry === null) numericValidation.push("Entry Price");
+    if (parsedExit === null) numericValidation.push("Exit Price");
+    if (parsedStop === null) numericValidation.push("Stop Loss");
+    if (parsedTake === null) numericValidation.push("Take Profit");
+    if (parsedProfit === null) numericValidation.push("Profit/Loss");
+    if (parsedRiskReward === null) numericValidation.push("Risk/Reward Ratio");
 
     if (numericValidation.length > 0) {
       await transaction.rollback();
       return res.status(400).json({
         success: false,
-        message: `Format angka tidak valid untuk: ${numericValidation.join(', ')}`,
+        message: `Format angka tidak valid untuk: ${numericValidation.join(
+          ", "
+        )}`,
         invalidFields: numericValidation,
       });
     }
@@ -1060,7 +1075,7 @@ export const createTrade = async (req, res) => {
 
     // Handle profit dan result consistency
     let finalProfit = parsedProfit;
-    
+
     if (result.toLowerCase().includes("lose") && finalProfit > 0) {
       finalProfit = -finalProfit;
     } else if (result.toLowerCase().includes("win") && finalProfit < 0) {
@@ -1079,7 +1094,7 @@ export const createTrade = async (req, res) => {
     // Validasi result konsisten dengan profit
     let finalResult = result;
     const profitValue = parseFloat(finalProfit);
-    
+
     if (result.toLowerCase().includes("win") && profitValue <= 0) {
       await transaction.rollback();
       return res.status(400).json({
@@ -1087,7 +1102,7 @@ export const createTrade = async (req, res) => {
         message: "Result 'Win' harus memiliki Profit yang positif",
       });
     }
-    
+
     if (result.toLowerCase().includes("lose") && profitValue >= 0) {
       await transaction.rollback();
       return res.status(400).json({
@@ -1095,7 +1110,7 @@ export const createTrade = async (req, res) => {
         message: "Result 'Lose' harus memiliki Profit yang negatif",
       });
     }
-    
+
     if (result.toLowerCase().includes("break even") && profitValue !== 0) {
       await transaction.rollback();
       return res.status(400).json({
@@ -1103,18 +1118,6 @@ export const createTrade = async (req, res) => {
         message: "Result 'Break Even' harus memiliki Profit = 0",
       });
     }
-
-    // Debug log
-    console.log("🔧 Parsed values:", {
-      lot: parsedLot,
-      entry: parsedEntry,
-      exit: parsedExit,
-      stop: parsedStop,
-      take: parsedTake,
-      profit: finalProfit,
-      pips: finalPips,
-      riskReward: parsedRiskReward,
-    });
 
     // Create trade
     const trade = await Trade.create(
@@ -1149,6 +1152,7 @@ export const createTrade = async (req, res) => {
       { where: { id: req.userId }, transaction }
     );
 
+    // Process gamification
     const gamificationResult = await processTradeForGamification(
       req.userId,
       {
@@ -1164,6 +1168,9 @@ export const createTrade = async (req, res) => {
     // Commit transaction
     await transaction.commit();
 
+    // Set transaction ke null setelah commit untuk menghindari rollback ganda
+    transaction = null;
+
     res.status(201).json({
       success: true,
       message: "Trade created successfully",
@@ -1173,14 +1180,16 @@ export const createTrade = async (req, res) => {
       gamification: {
         newAchievements: gamificationResult.newAchievements,
         newBadges: gamificationResult.newBadges,
-        levelUps:
-          gamificationResult.userLevel.level >
-          gamificationResult.userLevel.previousLevel,
+        levelUps: gamificationResult.levelUps || 0,
         userLevel: gamificationResult.userLevel,
       },
     });
   } catch (error) {
-    await transaction.rollback();
+    // Rollback hanya jika transaction masih aktif
+    if (transaction && !transaction.finished) {
+      await transaction.rollback();
+    }
+
     console.error("Create trade error:", error);
     res.status(500).json({
       success: false,
@@ -1191,14 +1200,13 @@ export const createTrade = async (req, res) => {
 
 // Update trade
 export const updateTrade = async (req, res) => {
-  const transaction = await db.transaction();
+  let transaction;
 
   try {
+    transaction = await db.transaction();
+
     const { id } = req.params;
     const updateData = req.body;
-
-    console.log("Update request for trade:", id);
-    console.log("Update data:", updateData);
 
     // Helper function untuk parse number
     const parseNumber = (val) => {
@@ -1214,7 +1222,7 @@ export const updateTrade = async (req, res) => {
         id: id,
         userId: req.userId,
       },
-      ...createOptions(transaction),
+      transaction,
     });
 
     if (!trade) {
@@ -1224,6 +1232,11 @@ export const updateTrade = async (req, res) => {
         message: "Trade not found",
       });
     }
+
+    // Simpan data lama untuk leaderboard updates
+    const oldDate = trade.date;
+    const oldProfit = parseFloat(trade.profit);
+    const oldResult = trade.result;
 
     // Filter hanya field yang ada di model
     const allowedFields = [
@@ -1250,27 +1263,17 @@ export const updateTrade = async (req, res) => {
     const updatedFields = {};
     let hasChanges = false;
 
-    // Simpan profit lama untuk perhitungan
-    const oldProfit = parseFloat(trade.profit);
-
     // Handle profit khusus
     if (updateData.profit !== undefined) {
       let profitValue = parseNumber(updateData.profit);
       if (profitValue === null) profitValue = 0;
 
       // Sesuaikan tanda profit berdasarkan result
-      if (
-        updateData.result &&
-        updateData.result.toLowerCase().includes("lose") &&
-        profitValue > 0
-      ) {
+      const result = updateData.result || oldResult;
+      if (result && result.toLowerCase().includes("lose") && profitValue > 0) {
         profitValue = -profitValue;
       }
-      if (
-        updateData.result &&
-        updateData.result.toLowerCase().includes("win") &&
-        profitValue < 0
-      ) {
+      if (result && result.toLowerCase().includes("win") && profitValue < 0) {
         profitValue = Math.abs(profitValue);
       }
 
@@ -1278,7 +1281,6 @@ export const updateTrade = async (req, res) => {
       if (profitValue !== oldProfit) {
         updatedFields.profit = profitValue;
         hasChanges = true;
-        console.log("Profit changed:", profitValue);
       }
     }
 
@@ -1312,16 +1314,9 @@ export const updateTrade = async (req, res) => {
         ) {
           updatedFields[field] = newValue;
           hasChanges = true;
-          console.log(`Field ${field} changed:`, {
-            old: normalizedOldValue,
-            new: normalizedNewValue,
-          });
         }
       }
     }
-
-    console.log("Has changes:", hasChanges);
-    console.log("Updated fields:", updatedFields);
 
     // Jika tidak ada perubahan, return tanpa update
     if (!hasChanges) {
@@ -1335,39 +1330,54 @@ export const updateTrade = async (req, res) => {
     }
 
     // Update trade
-    await trade.update(updatedFields, createOptions(transaction));
+    await trade.update(updatedFields, { transaction });
 
-    // Jika profit berubah, recalculate balances dan update gamification
+    // Jika profit berubah, recalculate balances
     if (updatedFields.profit !== undefined) {
       // Hitung selisih profit
       const profitDifference = updatedFields.profit - oldProfit;
 
       // Update user balance
-      const user = await User.findByPk(req.userId, createOptions(transaction));
+      const user = await User.findByPk(req.userId, { transaction });
       const newBalance = parseFloat(user.currentBalance) + profitDifference;
 
       await User.update(
         { currentBalance: newBalance },
-        { where: { id: req.userId }, ...createOptions(transaction) }
+        { where: { id: req.userId }, transaction }
       );
 
       // Recalculate balances untuk semua trades
       await recalculateBalances(req.userId, transaction);
+    }
 
-      // Update monthly leaderboard untuk profit change
-      if (profitDifference !== 0) {
-        await updateMonthlyLeaderboard(req.userId, null, transaction);
-      }
+    // Update period leaderboards untuk tanggal baru (setelah update)
+    const tradeDate = updatedFields.date || trade.date;
+
+    // Update leaderboard untuk semua periode berdasarkan tanggal trade
+    await updatePeriodLeaderboards(
+      req.userId,
+      tradeDate,
+      {
+        profit: updatedFields.profit || trade.profit,
+        result: updatedFields.result || trade.result,
+      },
+      transaction
+    );
+
+    // Jika tanggal berubah, update leaderboard untuk tanggal lama juga
+    if (updatedFields.date && oldDate !== updatedFields.date) {
+      await updatePeriodLeaderboards(req.userId, oldDate, null, transaction);
     }
 
     // Reload trade untuk mendapatkan balanceAfter yang baru
-    await trade.reload(createOptions(transaction));
+    await trade.reload({ transaction });
 
     // Get updated stats
-    const stats = await calculateStats(req.userId, transaction);
+    const stats = await calculateStats(req.userId);
 
     // Commit transaction
     await transaction.commit();
+    transaction = null;
 
     res.json({
       success: true,
@@ -1376,8 +1386,11 @@ export const updateTrade = async (req, res) => {
       stats: stats,
     });
   } catch (error) {
-    // Rollback transaction jika ada error
-    await transaction.rollback();
+    // Rollback hanya jika transaction masih aktif
+    if (transaction && !transaction.finished) {
+      await transaction.rollback();
+    }
+
     console.error("Update trade error:", error);
     res.status(500).json({
       success: false,
@@ -1387,10 +1400,13 @@ export const updateTrade = async (req, res) => {
 };
 
 // Delete trade
+// Delete trade
 export const deleteTrade = async (req, res) => {
-  const transaction = await db.transaction();
+  let transaction;
 
   try {
+    transaction = await db.transaction();
+
     const { id } = req.params;
     const userId = req.userId;
 
@@ -1399,7 +1415,7 @@ export const deleteTrade = async (req, res) => {
         id: id,
         userId: userId,
       },
-      ...createOptions(transaction),
+      transaction,
     });
 
     if (!trade) {
@@ -1412,50 +1428,36 @@ export const deleteTrade = async (req, res) => {
 
     // Simpan data sebelum dihapus
     const tradeDate = trade.date;
-    const tradeMonth = tradeDate
-      ? new Date(tradeDate).toISOString().substring(0, 7)
-      : null;
-
-    // Hitung XP yang harus dikurangi (sama dengan saat trade dibuat)
-    const xpToDeduct = calculateXpFromTrade(trade);
+    const tradeProfit = parseFloat(trade.profit);
+    const tradeResult = trade.result;
 
     // Hapus trade
-    await trade.destroy(createOptions(transaction));
+    await trade.destroy({ transaction });
 
-    // Update gamification stats
-    const gamificationResult = await handleTradesDeletion(
-      userId,
-      1,
-      xpToDeduct,
-      transaction
-    );
-
-    // Jika trade ada di bulan ini, update monthly leaderboard
-    if (tradeMonth) {
-      const currentMonth = new Date().toISOString().substring(0, 7);
-      if (tradeMonth === currentMonth) {
-        await updateMonthlyLeaderboard(userId, null, transaction);
-      }
-    }
+    // Update period leaderboards untuk tanggal trade yang dihapus
+    await updatePeriodLeaderboards(userId, tradeDate, null, transaction);
 
     // Recalculate all balances setelah delete
     await recalculateBalances(userId, transaction);
 
     // Get updated stats
-    const stats = await calculateStats(userId, transaction);
+    const stats = await calculateStats(userId);
 
     // Commit transaction
     await transaction.commit();
+    transaction = null;
 
     res.json({
       success: true,
       message: "Trade deleted successfully",
       stats: stats,
-      gamification: gamificationResult,
     });
   } catch (error) {
-    // Rollback transaction jika ada error
-    await transaction.rollback();
+    // Rollback hanya jika transaction masih aktif
+    if (transaction && !transaction.finished) {
+      await transaction.rollback();
+    }
+
     console.error("Delete trade error:", error);
     res.status(500).json({
       success: false,
@@ -1466,44 +1468,37 @@ export const deleteTrade = async (req, res) => {
 
 // Delete all trades for user
 export const deleteAllTrades = async (req, res) => {
-  const transaction = await db.transaction();
+  let transaction;
 
   try {
+    transaction = await db.transaction();
+
     const userId = req.userId;
 
     // Get all trades untuk menghitung total
     const trades = await Trade.findAll({
       where: { userId },
-      ...createOptions(transaction),
+      transaction,
     });
 
     const totalTrades = trades.length;
 
-    // Hitung total XP yang harus dikurangi
-    let totalXpToDeduct = 0;
-    let totalProfit = 0;
-
+    // Simpan unique dates untuk update leaderboards
+    const uniqueDates = new Set();
     trades.forEach((trade) => {
-      totalXpToDeduct += calculateXpFromTrade(trade);
-      totalProfit += parseFloat(trade.profit) || 0;
+      if (trade.date) {
+        uniqueDates.add(trade.date);
+      }
     });
 
     // Hapus semua trades
     const deletedCount = await Trade.destroy({
       where: { userId },
-      ...createOptions(transaction),
+      transaction,
     });
 
-    // Update gamification stats
-    const gamificationResult = await handleTradesDeletion(
-      userId,
-      totalTrades,
-      totalXpToDeduct,
-      transaction
-    );
-
     // Reset balance ke initial balance
-    const user = await User.findByPk(userId, createOptions(transaction));
+    const user = await User.findByPk(userId, { transaction });
     let newBalance = user.initialBalance;
 
     if (user) {
@@ -1511,15 +1506,20 @@ export const deleteAllTrades = async (req, res) => {
         {
           currentBalance: user.initialBalance,
         },
-        createOptions(transaction)
+        { transaction }
       );
+    }
+
+    // Update period leaderboards untuk semua tanggal yang terpengaruh
+    for (const date of uniqueDates) {
+      await updatePeriodLeaderboards(userId, date, null, transaction);
     }
 
     // Reset atau nonaktifkan target user dan set targetBalance ke 0
     let targetAction = "none";
     const target = await Target.findOne({
       where: { userId },
-      ...createOptions(transaction),
+      transaction,
     });
 
     if (target) {
@@ -1535,12 +1535,9 @@ export const deleteAllTrades = async (req, res) => {
               : "Target dinonaktifkan karena semua trades dihapus",
             updated_at: new Date(),
           },
-          createOptions(transaction)
+          { transaction }
         );
         targetAction = "disabled";
-        console.log(
-          `Target disabled and balance reset to 0 for user: ${userId}`
-        );
       } else {
         // Jika target sudah dinonaktifkan, pastikan targetBalance = 0
         if (parseFloat(target.targetBalance) !== 0) {
@@ -1550,10 +1547,9 @@ export const deleteAllTrades = async (req, res) => {
               targetDate: null,
               updated_at: new Date(),
             },
-            createOptions(transaction)
+            { transaction }
           );
           targetAction = "balance_reset";
-          console.log(`Target balance reset to 0 for user: ${userId}`);
         } else {
           targetAction = "already_disabled";
         }
@@ -1564,6 +1560,7 @@ export const deleteAllTrades = async (req, res) => {
 
     // Commit transaction
     await transaction.commit();
+    transaction = null;
 
     res.status(200).json({
       success: true,
@@ -1571,16 +1568,14 @@ export const deleteAllTrades = async (req, res) => {
       deletedCount: deletedCount,
       newBalance: newBalance,
       targetAction: targetAction,
-      gamification: {
-        experienceLost: totalXpToDeduct,
-        newLevel: gamificationResult.newLevel,
-        newTotalTrades: gamificationResult.newTotalTrades,
-      },
-      note: "All trades deleted. Gamification stats have been adjusted accordingly.",
+      note: "All trades deleted.",
     });
   } catch (error) {
-    // Rollback transaction jika ada error
-    await transaction.rollback();
+    // Rollback hanya jika transaction masih aktif
+    if (transaction && !transaction.finished) {
+      await transaction.rollback();
+    }
+
     console.error("Delete all trades error:", error);
     res.status(500).json({
       success: false,

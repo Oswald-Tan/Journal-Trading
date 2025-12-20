@@ -7,13 +7,15 @@ const initialState = {
   badges: [],
   leaderboard: null,
   leaderboardHistory: null,
+  availablePeriods: [], // Ditambahkan
   isLoading: false,
   isError: false,
   isSuccess: false,
   message: "",
   recentUnlocks: [],
-  isLoadingLeaderboard: false, // Ditambahkan
-  isLoadingBadges: false, // Ditambahkan
+  isLoadingLeaderboard: false,
+  isLoadingBadges: false,
+  isLoadingPeriods: false, // Ditambahkan
 };
 
 // Get user gamification profile
@@ -21,17 +23,14 @@ export const getGamificationProfile = createAsyncThunk(
   "gamification/getProfile",
   async (_, thunkAPI) => {
     try {
-      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-      const res = await axios.get(`${API_URL}/gamification/profile`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      console.log("Profile response:", res.data);
+      const res = await axios.get(`${API_URL}/gamification/profile`);
       return res.data;
     } catch (error) {
       if (error.response) {
-        const message = error.response.data?.message || error.response.data?.msg || error.response.data?.error;
+        const message =
+          error.response.data?.message ||
+          error.response.data?.msg ||
+          error.response.data?.error;
         return thunkAPI.rejectWithValue(message);
       }
       return thunkAPI.rejectWithValue("Network error occurred");
@@ -44,17 +43,14 @@ export const getAllBadges = createAsyncThunk(
   "gamification/getAllBadges",
   async (_, thunkAPI) => {
     try {
-      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-      const res = await axios.get(`${API_URL}/gamification/badges`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      console.log("Badges response:", res.data);
+      const res = await axios.get(`${API_URL}/gamification/badges`);
       return res.data;
     } catch (error) {
       if (error.response) {
-        const message = error.response.data?.message || error.response.data?.msg || error.response.data?.error;
+        const message =
+          error.response.data?.message ||
+          error.response.data?.msg ||
+          error.response.data?.error;
         return thunkAPI.rejectWithValue(message);
       }
       return thunkAPI.rejectWithValue("Network error occurred");
@@ -62,25 +58,28 @@ export const getAllBadges = createAsyncThunk(
   }
 );
 
-// Get leaderboard
+// Get leaderboard dengan parameter baru
 export const getLeaderboard = createAsyncThunk(
   "gamification/getLeaderboard",
-  async ({ type = "level", limit = 20 }, thunkAPI) => {
+  async (
+    { periodType = "monthly", periodValue, limit = 50, page = 1 },
+    thunkAPI
+  ) => {
     try {
-      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-      const res = await axios.get(
-        `${API_URL}/gamification/leaderboard?type=${type}&limit=${limit}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      console.log("Leaderboard response:", res.data);
+      let url = `${API_URL}/gamification/leaderboard?periodType=${periodType}&limit=${limit}&page=${page}`;
+
+      if (periodValue) {
+        url += `&periodValue=${periodValue}`;
+      }
+
+      const res = await axios.get(url);
       return res.data;
     } catch (error) {
       if (error.response) {
-        const message = error.response.data?.message || error.response.data?.msg || error.response.data?.error;
+        const message =
+          error.response.data?.message ||
+          error.response.data?.msg ||
+          error.response.data?.error;
         return thunkAPI.rejectWithValue(message);
       }
       return thunkAPI.rejectWithValue("Network error occurred");
@@ -91,18 +90,40 @@ export const getLeaderboard = createAsyncThunk(
 // Get leaderboard history
 export const getLeaderboardHistory = createAsyncThunk(
   "gamification/getLeaderboardHistory",
-  async (_, thunkAPI) => {
+  async ({ periodType = "monthly", limit = 6 }, thunkAPI) => {
     try {
-      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-      const res = await axios.get(`${API_URL}/gamification/leaderboard/history`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await axios.get(
+        `${API_URL}/gamification/leaderboard/history?periodType=${periodType}&limit=${limit}`
+      );
       return res.data;
     } catch (error) {
       if (error.response) {
-        const message = error.response.data?.message || error.response.data?.msg || error.response.data?.error;
+        const message =
+          error.response.data?.message ||
+          error.response.data?.msg ||
+          error.response.data?.error;
+        return thunkAPI.rejectWithValue(message);
+      }
+      return thunkAPI.rejectWithValue("Network error occurred");
+    }
+  }
+);
+
+// Get available periods - THUNK BARU
+export const getAvailablePeriods = createAsyncThunk(
+  "gamification/getAvailablePeriods",
+  async ({ periodType = "monthly" }, thunkAPI) => {
+    try {
+      const res = await axios.get(
+        `${API_URL}/gamification/leaderboard/periods?periodType=${periodType}`
+      );
+      return res.data;
+    } catch (error) {
+      if (error.response) {
+        const message =
+          error.response.data?.message ||
+          error.response.data?.msg ||
+          error.response.data?.error;
         return thunkAPI.rejectWithValue(message);
       }
       return thunkAPI.rejectWithValue("Network error occurred");
@@ -157,7 +178,7 @@ export const gamificationSlice = createSlice({
         state.message = action.payload || "Failed to load profile";
         state.profile = null;
       })
-      
+
       // Get All Badges
       .addCase(getAllBadges.pending, (state) => {
         state.isLoadingBadges = true;
@@ -175,7 +196,7 @@ export const gamificationSlice = createSlice({
         state.message = action.payload || "Failed to load badges";
         state.badges = [];
       })
-      
+
       // Get Leaderboard
       .addCase(getLeaderboard.pending, (state) => {
         state.isLoadingLeaderboard = true;
@@ -210,15 +231,33 @@ export const gamificationSlice = createSlice({
         state.isError = true;
         state.message = action.payload || "Failed to load leaderboard history";
         state.leaderboardHistory = null;
+      })
+
+      // Get Available Periods - HANDLER BARU
+      .addCase(getAvailablePeriods.pending, (state) => {
+        state.isLoadingPeriods = true;
+        state.isError = false;
+      })
+      .addCase(getAvailablePeriods.fulfilled, (state, action) => {
+        state.isLoadingPeriods = false;
+        state.isSuccess = true;
+        state.availablePeriods = action.payload.data || action.payload;
+        state.message = "";
+      })
+      .addCase(getAvailablePeriods.rejected, (state, action) => {
+        state.isLoadingPeriods = false;
+        state.isError = true;
+        state.message = action.payload || "Failed to load available periods";
+        state.availablePeriods = [];
       });
   },
 });
 
-export const { 
-  reset, 
-  clearError, 
-  addRecentUnlock, 
+export const {
+  reset,
+  clearError,
+  addRecentUnlock,
   clearRecentUnlocks,
-  updateProfileData 
+  updateProfileData,
 } = gamificationSlice.actions;
 export default gamificationSlice.reducer;

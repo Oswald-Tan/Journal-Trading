@@ -118,31 +118,46 @@ const BadgeCollection = () => {
 
   return (
     <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 border border-slate-200">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6">
-        <div>
-          <h3 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Award className="w-7 h-7 text-violet-600" />
-            Badge Collection
-          </h3>
-          <p className="text-slate-600 mt-1 font-light">
-            {achievedBadges.length} of {badges.length} badges unlocked
-          </p>
+      {/* Header - Diubah struktur */}
+      <div className="mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
+          <div>
+            <h3 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+              <Award className="w-7 h-7 text-violet-600" />
+              Badge Collection
+            </h3>
+            <p className="text-slate-600 mt-1 font-light">
+              {achievedBadges.length} of {badges.length} badges unlocked
+            </p>
+          </div>
+
+          {/* Info Progress di samping untuk desktop */}
+          <div className="hidden lg:block text-right">
+            <div className="text-sm text-slate-600 mb-1">
+              {Math.round((achievedBadges.length / badges.length) * 100)}% Complete
+            </div>
+          </div>
         </div>
 
-        {/* Progress Bar */}
-        <div className="mt-4 lg:mt-0">
-          <div className="w-64 bg-slate-200 rounded-full h-3">
+        {/* Progress Bar - Full width di mobile */}
+        <div className="w-full">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-sm font-medium text-slate-700">
+              Progress
+            </span>
+            <span className="text-sm font-medium text-slate-700 lg:hidden">
+              {Math.round((achievedBadges.length / badges.length) * 100)}%
+            </span>
+          </div>
+          <div className="w-full bg-slate-200 rounded-full h-3">
             <Motion.div
               initial={{ width: 0 }}
               animate={{ width: `${(achievedBadges.length / badges.length) * 100}%` }}
               transition={{ duration: 1, ease: "easeOut" }}
-              className="h-3 rounded-full bg-linear-to-r from-violet-600 to-purple-600"
+              className="h-3 rounded-full bg-gradient-to-r from-violet-600 to-purple-600"
             />
           </div>
-          <div className="text-sm text-slate-600 text-center mt-1">
-            {Math.round((achievedBadges.length / badges.length) * 100)}% Complete
-          </div>
+          {/* Info persentase untuk desktop sudah ada di atas */}
         </div>
       </div>
 

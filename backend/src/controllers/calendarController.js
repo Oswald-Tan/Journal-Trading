@@ -93,23 +93,54 @@ export const createCalendarEvent = async (req, res) => {
     const {
       date,
       title,
-      type,
-      description,
-      time,
-      impact,
-      instrument,
-      strategy,
-      sentiment,
-      color,
-      isCompleted,
-      relatedTradeId
+      type = "journal_entry",
+      description = "",
+      time = "",
+      impact = "none",
+      instrument = "",
+      strategy = "",
+      sentiment = "neutral",
+      color = "#8b5cf6",
+      isCompleted = false,
+      relatedTradeId = null
     } = req.body;
 
-    // Validasi
-    if (!date || !title) {
+    // ============ VALIDASI WAJIB ============
+    const requiredFields = {
+      date: "Date",
+      title: "Title",
+      description: "Description",
+    };
+
+    const missingFields = [];
+    const fieldErrors = {};
+
+    // Validasi field tidak boleh kosong
+    for (const [field, label] of Object.entries(requiredFields)) {
+      if (!req.body[field] || req.body[field].toString().trim() === "") {
+        missingFields.push(label);
+        fieldErrors[field] = `${label} is required`;
+      }
+    }
+
+    if (missingFields.length > 0) {
       return res.status(400).json({
         success: false,
-        message: 'Date and title are required'
+        message: `The following fields are required: ${missingFields.join(", ")}`,
+        missingFields,
+        fieldErrors,
+        code: "VALIDATION_ERROR"
+      });
+    }
+
+    // Validasi format date
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (date && !dateRegex.test(date)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date format. Use YYYY-MM-DD",
+        fieldErrors: { date: "Invalid date format. Use YYYY-MM-DD" },
+        code: "VALIDATION_ERROR"
       });
     }
 
@@ -117,11 +148,13 @@ export const createCalendarEvent = async (req, res) => {
     if (time && !/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid time format. Use HH:mm'
+        message: "Invalid time format. Use HH:mm",
+        fieldErrors: { time: "Invalid time format. Use HH:mm" },
+        code: "VALIDATION_ERROR"
       });
     }
 
-    // Cek subscription user
+    // Cek subscription user untuk limit
     const subscription = await Subscription.findOne({
       where: { userId: req.userId }
     });
@@ -140,17 +173,20 @@ export const createCalendarEvent = async (req, res) => {
           message: 'Free plan limited to 10 calendar events. Upgrade to Pro for unlimited events.',
           code: 'EVENT_LIMIT_REACHED',
           limit: 10,
-          currentCount: eventCount
+          currentCount: eventCount,
+          requiresUpgrade: true,
+          currentPlan: "free"
         });
       }
     }
 
+    // Buat event
     const event = await CalendarEvent.create({
       userId: req.userId,
-      date,
-      title,
+      date: date.trim(),
+      title: title.trim(),
       type: type || 'journal_entry',
-      description: description || '',
+      description: description.trim(),
       time: time || null,
       impact: impact || 'none',
       instrument: instrument || null,
@@ -171,17 +207,19 @@ export const createCalendarEvent = async (req, res) => {
   } catch (error) {
     console.error('Create calendar event error:', error);
     
-    if (error.message.includes('Free plan limited')) {
+    if (error.message && error.message.includes('Free plan limited')) {
       return res.status(403).json({
         success: false,
         message: 'Free plan limited to 10 calendar events. Upgrade to Pro for unlimited events.',
-        code: 'EVENT_LIMIT_REACHED'
+        code: 'EVENT_LIMIT_REACHED',
+        requiresUpgrade: true
       });
     }
     
     res.status(500).json({
       success: false,
-      message: 'Server error: ' + error.message
+      message: 'Server error: ' + error.message,
+      code: "SERVER_ERROR"
     });
   }
 };
@@ -206,15 +244,64 @@ export const updateCalendarEvent = async (req, res) => {
       });
     }
 
+    // ============ VALIDASI WAJIB ============
+    const fieldErrors = {};
+
+    // Validasi field yang diupdate
+    if (updateData.date !== undefined) {
+      if (!updateData.date || updateData.date.toString().trim() === "") {
+        fieldErrors.date = "Date is required";
+      } else {
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(updateData.date)) {
+          fieldErrors.date = "Invalid date format. Use YYYY-MM-DD";
+        }
+      }
+    }
+
+    if (updateData.title !== undefined) {
+      if (!updateData.title || updateData.title.toString().trim() === "") {
+        fieldErrors.title = "Title is required";
+      }
+    }
+
+    if (updateData.description !== undefined) {
+      if (!updateData.description || updateData.description.toString().trim() === "") {
+        fieldErrors.description = "Description is required";
+      }
+    }
+
     // Validasi time format jika diupdate
     if (updateData.time && !/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(updateData.time)) {
+      fieldErrors.time = "Invalid time format. Use HH:mm";
+    }
+
+    if (Object.keys(fieldErrors).length > 0) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid time format. Use HH:mm'
+        message: 'Validation failed',
+        fieldErrors,
+        code: "VALIDATION_ERROR"
       });
     }
 
-    await event.update(updateData);
+    // Update data yang valid
+    const updateFields = {};
+    
+    if (updateData.date !== undefined) updateFields.date = updateData.date.trim();
+    if (updateData.title !== undefined) updateFields.title = updateData.title.trim();
+    if (updateData.type !== undefined) updateFields.type = updateData.type;
+    if (updateData.description !== undefined) updateFields.description = updateData.description.trim();
+    if (updateData.time !== undefined) updateFields.time = updateData.time || null;
+    if (updateData.impact !== undefined) updateFields.impact = updateData.impact;
+    if (updateData.instrument !== undefined) updateFields.instrument = updateData.instrument;
+    if (updateData.strategy !== undefined) updateFields.strategy = updateData.strategy;
+    if (updateData.sentiment !== undefined) updateFields.sentiment = updateData.sentiment;
+    if (updateData.color !== undefined) updateFields.color = updateData.color;
+    if (updateData.isCompleted !== undefined) updateFields.isCompleted = updateData.isCompleted;
+    if (updateData.relatedTradeId !== undefined) updateFields.relatedTradeId = updateData.relatedTradeId;
+
+    await event.update(updateFields);
 
     res.json({
       success: true,
@@ -225,7 +312,7 @@ export const updateCalendarEvent = async (req, res) => {
     console.error('Update calendar event error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error: ' + error.message
     });
   }
 };

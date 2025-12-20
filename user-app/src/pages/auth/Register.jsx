@@ -432,7 +432,7 @@ const RegisterPage = ({ onShowTradingJournal }) => {
                   required
                   checked={formData.agreeToTerms}
                   onChange={handleChange}
-                  className={`w-4 h-4 mt-1 rounded focus:ring-violet-500 focus:ring-2 ${
+                  className={`w-4 h-4 mt-1 rounded ${
                     formErrors.agreeToTerms
                       ? 'text-red-500 bg-red-100 border-red-300'
                       : 'text-violet-600 bg-slate-100 border-slate-300'

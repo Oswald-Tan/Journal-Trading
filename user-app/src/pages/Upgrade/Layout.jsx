@@ -174,11 +174,6 @@ const Layout = () => {
                   <Crown className="w-5 h-5" />
                 )}
                 {currentPlan.name}
-                {subscription?.plan === "lifetime" && (
-                  <span className="text-xs bg-white text-amber-600 px-2 py-1 rounded-full ml-2">
-                    ⭐ PREMIUM
-                  </span>
-                )}
               </span>
             </div>
 

@@ -1,885 +1,952 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { motion as Motion } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
-import { useOutletContext } from "react-router-dom";
-import { getLeaderboard, getLeaderboardHistory } from "../../features/gamificationSlice";
 import {
-  Crown,
+  getLeaderboard,
+  getAvailablePeriods,
+} from "../../features/gamificationSlice";
+import {
   Trophy,
-  Star,
-  Zap,
-  Target,
   Users,
+  DollarSign,
+  Target,
   TrendingUp,
   Calendar,
-  History,
+  Filter,
+  Globe,
+  Info,
+  Clock,
+  AlertCircle,
+  Sparkles,
+  Crown,
   Award,
-  ChevronRight,
-  ChevronLeft,
-  ChevronRight as ChevronRightIcon,
+  Star,
+  Zap,
+  X,
 } from "lucide-react";
 
 const Layout = () => {
   const dispatch = useDispatch();
-  const { leaderboard, leaderboardHistory, isLoading } = useSelector(
-    (state) => state.gamification
-  );
-  const balance = useSelector((state) => state.balance);
-  const context = useOutletContext();
+  const {
+    leaderboard,
+    isLoadingLeaderboard,
+    availablePeriods,
+    isLoadingPeriods,
+  } = useSelector((state) => state.gamification);
 
-  const [leaderboardType, setLeaderboardType] = useState("score");
-  const [timeRange, setTimeRange] = useState("current");
-  const [showHistory, setShowHistory] = useState(false);
-  const [scrollPosition, setScrollPosition] = useState(0);
-  const [containerWidth, setContainerWidth] = useState(0);
-  const [contentWidth, setContentWidth] = useState(0);
-  const [isMobile, setIsMobile] = useState(false);
-  const [isTablet, setIsTablet] = useState(false);
+  const [periodType, setPeriodType] = useState("monthly");
+  const [periodValue, setPeriodValue] = useState("");
+  const [showDisclaimer, setShowDisclaimer] = useState(true);
+  const [showFunNotice, setShowFunNotice] = useState(true); // State baru untuk notice
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  // Get user currency from balance state
-  const userCurrency = balance?.currency || "USD";
+  // Konstanta untuk membatasi tampilan
+  const MAX_TOTAL_DISPLAY = 10; // Maksimal 10 trader yang ditampilkan
 
-  // Detect screen size
-  useEffect(() => {
-    const checkScreenSize = () => {
-      const width = window.innerWidth;
-      setIsMobile(width < 768);
-      setIsTablet(width >= 768 && width < 1024);
-    };
+  // Helper untuk mendapatkan data leaderboard yang konsisten - DIUBAH: Gunakan useMemo
+  const leaderboardData = useMemo(() => {
+    if (!leaderboard) return null;
 
-    checkScreenSize();
-    window.addEventListener("resize", checkScreenSize);
+    let data = null;
 
-    return () => window.removeEventListener("resize", checkScreenSize);
-  }, []);
-
-  // Calculate scrollable container width
-  useEffect(() => {
-    const updateContainerWidth = () => {
-      const container = document.getElementById("leaderboard-types-container");
-      if (container) {
-        setContainerWidth(container.clientWidth);
-        setContentWidth(container.scrollWidth);
-      }
-    };
-
-    updateContainerWidth();
-    window.addEventListener("resize", updateContainerWidth);
-
-    return () => window.removeEventListener("resize", updateContainerWidth);
-  }, [leaderboardType, timeRange]);
-
-  useEffect(() => {
-    if (showHistory) {
-      if (!leaderboardHistory) {
-        dispatch(getLeaderboardHistory());
-      }
+    if (leaderboard.success !== undefined) {
+      data = leaderboard.data;
+    } else if (leaderboard.data !== undefined) {
+      data = leaderboard.data;
     } else {
-      dispatch(getLeaderboard({ type: leaderboardType, period: timeRange, limit: 100 }));
+      data = leaderboard;
     }
-  }, [dispatch, leaderboardType, timeRange, showHistory, leaderboardHistory]);
 
-  const leaderboardTypes = [
-    {
-      id: "score",
-      label: "Monthly Score",
-      icon: <Trophy className="w-4 h-4" />,
-      description: "Monthly performance score",
-    },
-    {
-      id: "profit",
-      label: "Monthly Profit",
-      icon: <TrendingUp className="w-4 h-4" />,
-      description: `Total profit this month (${userCurrency})`,
-    },
-    {
-      id: "trades",
-      label: "Monthly Trades",
-      icon: <Target className="w-4 h-4" />,
-      description: "Number of trades this month",
-    },
-    {
-      id: "winrate",
-      label: "Win Rate",
-      icon: <Star className="w-4 h-4" />,
-      description: "Monthly win rate percentage",
-    },
-  ];
-
-  const allTimeTypes = [
-    ...leaderboardTypes,
-    {
-      id: "level",
-      label: "Level",
-      icon: <Crown className="w-4 h-4" />,
-      description: "Based on user level",
-    },
-    {
-      id: "experience",
-      label: "Experience",
-      icon: <Star className="w-4 h-4" />,
-      description: "Total XP earned",
-    },
-    {
-      id: "streak",
-      label: "Daily Streak",
-      icon: <Zap className="w-4 h-4" />,
-      description: "Current trading streak",
-    },
-  ];
-
-  const timeRanges = [
-    { id: "current", label: "Current Month", icon: <Calendar className="w-4 h-4" /> },
-    { id: "all", label: "All Time", icon: <History className="w-4 h-4" /> },
-  ];
-
-  // Scroll handlers for tablet and mobile
-  const handleScrollLeft = () => {
-    const container = document.getElementById("leaderboard-types-container");
-    if (container) {
-      container.scrollBy({ left: -200, behavior: "smooth" });
-      setTimeout(() => setScrollPosition(container.scrollLeft), 300);
+    // Jika ada data, buat salinan baru dan batasi jumlah leader yang ditampilkan
+    if (data?.leaders && Array.isArray(data.leaders)) {
+      // Buat salinan baru tanpa memutasi objek asli
+      return {
+        ...data,
+        leaders: data.leaders.slice(0, MAX_TOTAL_DISPLAY),
+        // Pastikan totalCount tidak berubah meskipun kita batasi tampilan
+        originalTotalCount: data.totalCount || 0,
+        // Hitung berapa yang ditampilkan
+        displayedCount: Math.min(data.leaders.length, MAX_TOTAL_DISPLAY),
+      };
     }
+
+    return data;
+  }, [leaderboard, MAX_TOTAL_DISPLAY]);
+
+  // Debug log untuk melihat struktur data
+  useEffect(() => {
+    console.log("Leaderboard Structure:", {
+      rawLeaderboard: leaderboard,
+      processedData: leaderboardData,
+      hasLeaders: !!leaderboardData?.leaders,
+      leadersCount: leaderboardData?.leaders?.length || 0,
+      totalCount: leaderboardData?.totalCount || 0,
+    });
+  }, [leaderboard, leaderboardData]);
+
+  // Load available periods
+  useEffect(() => {
+    setIsInitialLoad(true);
+    dispatch(getAvailablePeriods({ periodType })).then((action) => {
+      setIsInitialLoad(false);
+      if (action.payload?.data) {
+        const periods = action.payload.data;
+        if (Array.isArray(periods) && periods.length > 0 && !periodValue) {
+          setPeriodValue(periods[0].value || periods[0]);
+        }
+      } else if (
+        Array.isArray(action.payload) &&
+        action.payload.length > 0 &&
+        !periodValue
+      ) {
+        setPeriodValue(action.payload[0].value || action.payload[0]);
+      }
+    });
+  }, [dispatch, periodType]);
+
+  // Load leaderboard ketika periodValue berubah
+  useEffect(() => {
+    if (periodValue) {
+      dispatch(
+        getLeaderboard({
+          periodType,
+          periodValue,
+          limit: 50, // Tetap ambil 50 dari API, tapi kita filter di frontend
+          page: 1,
+        })
+      );
+    }
+  }, [dispatch, periodType, periodValue]);
+
+  const handlePeriodTypeChange = (type) => {
+    setPeriodType(type);
+    setPeriodValue("");
   };
 
-  const handleScrollRight = () => {
-    const container = document.getElementById("leaderboard-types-container");
-    if (container) {
-      container.scrollBy({ left: 200, behavior: "smooth" });
-      setTimeout(() => setScrollPosition(container.scrollLeft), 300);
-    }
-  };
-
+  // Helper untuk mendapatkan warna gradient berdasarkan rank
   const getRankColor = (rank) => {
-    if (rank === 1) return "from-yellow-400 to-yellow-600";
-    if (rank === 2) return "from-gray-400 to-gray-600";
-    if (rank === 3) return "from-orange-400 to-orange-600";
-    if (rank <= 10) return "from-violet-500 to-purple-600";
-    if (rank <= 50) return "from-blue-500 to-cyan-600";
+    if (rank === 1) return "from-amber-400 via-yellow-400 to-orange-500";
+    if (rank === 2) return "from-slate-500 via-gray-500 to-zinc-700";
+    if (rank === 3) return "from-orange-500 via-amber-500 to-rose-600";
     return "from-slate-500 to-slate-700";
   };
 
+  // Helper untuk mendapatkan warna text berdasarkan rank
+  const getRankTextColor = (rank) => {
+    if (rank === 1) return "text-amber-50";
+    if (rank === 2) return "text-gray-100";
+    if (rank === 3) return "text-orange-50";
+    return "text-white";
+  };
+
+  // Helper untuk mendapatkan warna text badge rank
+  const getRankBadgeColor = (rank) => {
+    if (rank === 1) return "bg-yellow-500 text-white";
+    if (rank === 2) return "bg-gray-500 text-white";
+    if (rank === 3) return "bg-orange-500 text-white";
+    return "bg-slate-500 text-white";
+  };
+
+  // Helper untuk mendapatkan ikon berdasarkan rank
   const getRankIcon = (rank) => {
     if (rank === 1) return "🥇";
     if (rank === 2) return "🥈";
     if (rank === 3) return "🥉";
-    return rank;
+    return "";
   };
 
-  const getCurrencySymbol = (currency) => {
-    const currencyUpper = currency?.toUpperCase();
-    switch (currencyUpper) {
-      case "USD":
-        return "$";
-      case "IDR":
-        return "Rp";
-      case "CENT":
-        return "¢";
-      default:
-        return "$";
-    }
-  };
-
-  const formatCurrency = (amount, currency = userCurrency) => {
-    const symbol = getCurrencySymbol(currency);
-    const amountNum = typeof amount === 'string' ? parseFloat(amount) : amount || 0;
-    const currencyUpper = currency?.toUpperCase();
-    
-    switch (currencyUpper) {
-      case "IDR":
-        return `${symbol} ${amountNum.toLocaleString('id-ID', {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0
-        })}`;
-      case "CENT":
-        return `${symbol}${amountNum.toLocaleString('en-US', {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0
-        })}`;
-      case "USD":
-      default:
-        return `${symbol}${amountNum.toLocaleString('en-US', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-        })}`;
-    }
-  };
-
-  const getValueByType = (user, type) => {
-    switch (type) {
-      case "score":
-        return `${(user.score || 0).toLocaleString()} points`;
-      case "profit":
-        return formatCurrency(user.totalProfit || 0);
-      case "trades":
-        return `${user.totalTrades || 0} trades`;
-      case "winrate":
-        { const winRate = typeof user.winRate === 'number' ? user.winRate : parseFloat(user.winRate) || 0;
-        return `${winRate.toFixed(1)}%`; }
-      case "level":
-        return `Level ${user.level || 1}`;
-      case "experience":
-        return `${(user.totalExperience || 0).toLocaleString()} XP`;
-      case "streak":
-        return `${user.dailyStreak || 0} days`;
-      default:
-        return `${user.score || 0} points`;
-    }
-  };
-
-  // Fungsi untuk menghitung required XP (sama dengan di backend)
-  const calculateRequiredXP = (level) => {
-    return Math.floor(100 * Math.pow(level, 1.5));
-  };
-
-  const formatPeriod = (period) => {
-    if (!period) return "";
+  // Format currency
+  const formatCurrency = (amount, currency = "USD") => {
     try {
-      if (period === "current") {
-        const now = new Date();
-        return now.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-      }
-      const [year, month] = period.split("-");
-      const date = new Date(parseInt(year), parseInt(month) - 1);
-      return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+      const formatter = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      return formatter.format(amount || 0);
     } catch (error) {
-      console.error("Error formatting period:", error);
-      return period;
+      console.error("Error formatting currency:", error);
+      return `$${(amount || 0).toFixed(2)}`;
     }
   };
 
-  const getProgressByType = (user, type) => {
-    switch (type) {
-      case "level":
-        { const requiredXP = calculateRequiredXP(user.level || 1);
-        return user.experience ? (user.experience / requiredXP) * 100 : 0; }
-      case "experience":
-        return Math.min(100, ((user.totalExperience || 0) / 10000) * 100);
-      case "streak":
-        return Math.min(100, ((user.dailyStreak || 0) / 30) * 100);
-      case "trades":
-        return Math.min(100, ((user.totalTrades || 0) / 100) * 100);
-      case "profit":
-        return Math.min(100, ((user.profitStreak || 0) / 10) * 100);
-      case "score":
-        return Math.min(100, ((user.score || 0) / 1000) * 100);
-      default:
-        return 50;
+  // Format original currency
+  const formatOriginalCurrency = (amount, currency) => {
+    if (!amount) return "N/A";
+
+    try {
+      if (currency === "IDR") {
+        return `Rp ${amount.toLocaleString("id-ID")}`;
+      } else if (currency === "CENT") {
+        return `¢${amount.toLocaleString("en-US")}`;
+      } else if (currency === "USD") {
+        return `$${amount.toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+        })}`;
+      } else {
+        return `${amount.toLocaleString()} ${currency}`;
+      }
+    } catch (error) {
+      console.error("Error formatting original currency:", error);
+      return `${amount} ${currency}`;
     }
   };
 
-  // Helper untuk mendapatkan hari dalam bulan saat ini
-  const getDaysInMonth = () => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  };
-
-  // Helper untuk mendapatkan progress hari dalam bulan
-  const getMonthProgress = () => {
-    const currentDay = new Date().getDate();
-    const daysInMonth = getDaysInMonth();
-    return (currentDay / daysInMonth) * 100;
-  };
-
-  // Helper untuk mendapatkan safe winRate value
-  const getSafeWinRate = (history) => {
-    if (!history || history.winRate === undefined || history.winRate === null) return 0;
-    const winRateNum = typeof history.winRate === 'number' 
-      ? history.winRate 
-      : parseFloat(history.winRate);
-    return isNaN(winRateNum) ? 0 : winRateNum;
-  };
-
-  // Render History View
-  if (showHistory) {
-    return (
-      <div className="min-h-screen">
-        <div className="space-y-6">
-          {/* Header - FIXED: Responsive layout */}
-          <Motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <h1 className="text-2xl md:text-3xl lg:text-3xl font-bold text-slate-800 flex items-center gap-2">
-                  <History className="w-6 h-6 sm:w-8 sm:h-8 text-violet-600" />
-                  Leaderboard History
-                </h1>
-                <p className="text-sm sm:text-sm md:text-base text-slate-600 mt-1 font-light">
-                  Your past monthly rankings and performance
-                </p>
-              </div>
-              <button
-                onClick={() => setShowHistory(false)}
-                className="w-full sm:w-auto px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 font-medium flex items-center justify-center gap-2 text-sm sm:text-base"
-              >
-                <ChevronRight className="w-4 h-4 rotate-180" />
-                Back to Leaderboard
-              </button>
+  // Render loading skeleton
+  const renderSkeleton = () => (
+    <>
+      {[...Array(7)].map((_, index) => (
+        <div key={index} className="p-4 animate-pulse">
+          <div className="flex items-center gap-4">
+            <div className="w-8 h-8 bg-slate-200 rounded-full"></div>
+            <div className="flex-1">
+              <div className="h-4 bg-slate-200 rounded w-1/3 mb-2"></div>
+              <div className="h-3 bg-slate-200 rounded w-1/4"></div>
             </div>
-          </Motion.div>
+            <div className="w-20 h-6 bg-slate-200 rounded"></div>
+          </div>
+        </div>
+      ))}
+    </>
+  );
 
-          {/* History List */}
-          <Motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="space-y-4"
-          >
-            {isLoading ? (
-              // Loading Skeleton for history
-              [...Array(3)].map((_, index) => (
-                <div key={index} className="bg-white/80 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-slate-200 animate-pulse">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-slate-200"></div>
-                      <div className="space-y-2">
-                        <div className="h-4 bg-slate-200 rounded w-32"></div>
-                        <div className="h-3 bg-slate-200 rounded w-24"></div>
+  // Render empty state
+  const renderEmptyState = () => (
+    <div className="text-center p-8">
+      <Trophy className="w-16 h-16 mx-auto text-slate-400 mb-4" />
+      <h4 className="text-lg font-bold text-slate-700 mb-2">
+        No Leaderboard Data
+      </h4>
+      <p className="text-slate-600 max-w-md mx-auto mb-6">
+        Start trading to appear on the leaderboard! Your trades will
+        automatically be ranked against other traders.
+      </p>
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <div className="bg-violet-50 text-violet-700 px-4 py-2 rounded-lg">
+          <Sparkles className="w-4 h-4 inline mr-2" />
+          <span className="text-sm">Trade more to climb the ranks</span>
+        </div>
+        <div className="text-xs text-slate-500">Data updates in real-time</div>
+      </div>
+    </div>
+  );
+
+  // Render top 3 performers
+  const renderTop3 = () => {
+    if (!leaderboardData?.leaders || leaderboardData.leaders.length === 0) {
+      return null;
+    }
+
+    // Ambil hanya 3 teratas
+    const top3 = leaderboardData.leaders.slice(0, 3);
+
+    return (
+      <Motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white/80 backdrop-blur-md rounded-3xl p-4 sm:p-6 border border-slate-200"
+      >
+        <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-4 sm:mb-6 text-center">
+          Top 3 {periodType.charAt(0).toUpperCase() + periodType.slice(1)}{" "}
+          Performers
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-6">
+          {top3.map((leader, index) => {
+            const rank = index + 1;
+            const gradientClass = getRankColor(rank);
+            const textColorClass = getRankTextColor(rank);
+            const badgeClass = getRankBadgeColor(rank);
+            const rankIcon = getRankIcon(rank);
+
+            return (
+              <Motion.div
+                key={leader.userId || leader.user?.id || index}
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.2 }}
+                className={`relative ${
+                  index === 1
+                    ? "md:order-first"
+                    : index === 0
+                    ? "md:order-2"
+                    : "md:order-3"
+                }`}
+              >
+                <div
+                  className={`bg-linear-to-br ${gradientClass} rounded-2xl p-4 sm:p-6 ${textColorClass} text-center relative shadow-lg`}
+                >
+                  {/* Rank Badge */}
+                  <div className="absolute -top-3 sm:-top-4 left-1/2 transform -translate-x-1/2">
+                    <div
+                      className={`w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg`}
+                    >
+                      <span className="text-lg font-bold">{rankIcon}</span>
+                    </div>
+                  </div>
+
+                  {/* User Info */}
+                  <div className="mt-8 mb-4">
+                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                      {rank === 1 ? (
+                        <Crown className="w-8 h-8 text-yellow-200" />
+                      ) : rank === 2 ? (
+                        <Award className="w-8 h-8 text-gray-200" />
+                      ) : (
+                        <Star className="w-8 h-8 text-orange-200" />
+                      )}
+                    </div>
+                    <h4 className="font-bold text-lg truncate px-2 mb-1">
+                      {leader.user?.name || `Trader ${leader.userId}`}
+                    </h4>
+
+                    {/* XP and Level Info */}
+                    <div className={`${textColorClass}/90 text-sm mb-2`}>
+                      Lv {leader.level || 1} •{" "}
+                      {leader.totalExperience?.toLocaleString() || 0} XP
+                    </div>
+
+                    {/* Stats Row */}
+                    <div className="flex justify-center gap-2 text-xs">
+                      <span className="bg-white/30 px-2 py-1 rounded-full">
+                        Streak: {leader.dailyStreak || 0}d
+                      </span>
+                      <span className="bg-white/30 px-2 py-1 rounded-full">
+                        Trades: {leader.totalTradesUser?.toLocaleString() || 0}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Rank Number */}
+                  <div className="absolute top-3 right-3">
+                    <div
+                      className={`w-8 h-8 ${badgeClass} rounded-full flex items-center justify-center`}
+                    >
+                      <span className="text-xs font-bold">#{rank}</span>
+                    </div>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="space-y-2">
+                    <div className="bg-white/20 p-2 rounded-lg">
+                      <div className="text-xs">USD Profit</div>
+                      <div className="text-xl font-bold">
+                        {formatCurrency(leader.totalProfitUSD || 0)}
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <div className="h-6 bg-slate-200 rounded w-12 ml-auto"></div>
-                      <div className="h-3 bg-slate-200 rounded w-16"></div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-white/20 p-2 rounded-lg">
+                        <div className="text-xs">Win Rate</div>
+                        <div className="font-bold">
+                          {(leader.winRate || 0).toFixed(1)}%
+                        </div>
+                      </div>
+                      <div className="bg-white/20 p-2 rounded-lg">
+                        <div className="text-xs">Score</div>
+                        <div className="font-bold">{leader.score || 0}</div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              ))
-            ) : leaderboardHistory?.data && leaderboardHistory.data.length > 0 ? (
-              leaderboardHistory.data.map((history, index) => (
-                <Motion.div
-                  key={history.period || index}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="bg-white/80 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-slate-200 hover:border-violet-300 transition-all cursor-pointer hover:shadow-lg"
-                  onClick={() => {
-                    dispatch(getLeaderboard({ type: 'score', period: history.period, limit: 100 }));
-                    setShowHistory(false);
-                  }}
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center ${
-                        history.rank <= 3 ? 'bg-yellow-100 text-yellow-600' :
-                        history.rank <= 10 ? 'bg-violet-100 text-violet-600' :
-                        'bg-slate-100 text-slate-600'
-                      }`}>
-                        <span className="text-lg sm:text-xl font-bold">#{history.rank}</span>
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="font-bold text-slate-800 text-base sm:text-lg">
-                          {formatPeriod(history.period)}
-                        </h3>
-                        <p className="text-slate-600 text-xs sm:text-sm">
-                          Score: {history.score || 0} points • {history.totalTrades || 0} trades
-                        </p>
-                        <p className="text-slate-500 text-xs mt-1">
-                          Currency: {userCurrency}
-                        </p>
-                      </div>
+              </Motion.div>
+            );
+          })}
+        </div>
+      </Motion.div>
+    );
+  };
+
+  // Render leaderboard list - Hanya tampilkan rank 4-10 dengan tampilan sederhana
+  const renderLeaderboardList = () => {
+    if (!leaderboardData?.leaders || leaderboardData.leaders.length === 0) {
+      return renderEmptyState();
+    }
+
+    const showTop3Separately = leaderboardData.leaders.length > 3;
+
+    // Ambil dari rank 4 sampai 10 (maksimal 7 di list)
+    const listLeaders = showTop3Separately
+      ? leaderboardData.leaders.slice(3, MAX_TOTAL_DISPLAY) // Ambil index 3 sampai 9
+      : [];
+
+    // Jika tidak ada user yang perlu ditampilkan di list
+    if (listLeaders.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <Users className="w-16 h-16 mx-auto text-slate-400 mb-4" />
+          <h4 className="text-lg font-bold text-slate-700 mb-2">
+            Only Top {Math.min(3, leaderboardData.leaders.length)} Traders
+          </h4>
+          <p className="text-slate-600 max-w-md mx-auto">
+            Only the top {Math.min(3, leaderboardData.leaders.length)} traders
+            are on the leaderboard for this period.
+            {(leaderboardData.originalTotalCount ||
+              leaderboardData.totalCount ||
+              0) > MAX_TOTAL_DISPLAY && (
+              <span className="block mt-2 text-sm text-slate-500">
+                Showing top {MAX_TOTAL_DISPLAY} of{" "}
+                {leaderboardData.originalTotalCount ||
+                  leaderboardData.totalCount ||
+                  0}{" "}
+                total traders
+              </span>
+            )}
+          </p>
+        </div>
+      );
+    }
+
+    const originalTotalCount =
+      leaderboardData.originalTotalCount || leaderboardData.totalCount || 0;
+
+    return (
+      <>
+        {listLeaders.map((leader, index) => {
+          const rank = index + 4; // Karena dimulai dari rank 4
+
+          return (
+            <div
+              key={leader.userId || leader.user?.id || index}
+              className={`p-4 transition-all hover:bg-slate-50 ${
+                leader.isCurrentUser
+                  ? "bg-violet-50 border-l-4 border-violet-500"
+                  : ""
+              }`}
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4 flex-1">
+                  {/* Rank - Sederhana */}
+                  <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center shrink-0">
+                    <span className="font-bold text-slate-700">#{rank}</span>
+                  </div>
+
+                  {/* User Info - Hanya Nama */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-bold text-slate-800 truncate">
+                        {leader.user?.name || `Trader ${leader.userId}`}
+                      </h4>
+                      {leader.isCurrentUser && (
+                        <span className="text-xs bg-violet-100 text-violet-700 px-2 py-1 rounded-full whitespace-nowrap shrink-0">
+                          You
+                        </span>
+                      )}
                     </div>
-                    <div className="text-left sm:text-right">
-                      <div className="text-xl sm:text-2xl font-bold text-violet-600">
-                        #{history.rank}
-                      </div>
-                      <div className="text-slate-500 text-xs sm:text-sm">Rank</div>
+
+                    {/* Level indicator sederhana */}
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs text-slate-500">
+                        Level {leader.level || 1}
+                      </span>
+                      {leader.dailyStreak > 0 && (
+                        <span className="text-xs text-orange-600">
+                          • {leader.dailyStreak}d streak
+                        </span>
+                      )}
                     </div>
                   </div>
-                  
-                  {/* Stats Grid - Responsive */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-4">
-                    <div className="bg-slate-50 p-3 rounded-lg">
-                      <div className="text-slate-500 text-xs sm:text-sm">Profit</div>
-                      <div className="font-bold text-slate-800 text-sm sm:text-base">
-                        {formatCurrency(history.totalProfit || 0)}
-                      </div>
-                    </div>
-                    <div className="bg-slate-50 p-3 rounded-lg">
-                      <div className="text-slate-500 text-xs sm:text-sm">Win Rate</div>
-                      <div className="font-bold text-slate-800 text-sm sm:text-base">
-                        {getSafeWinRate(history).toFixed(1)}%
-                      </div>
-                    </div>
-                    <div className="bg-slate-50 p-3 rounded-lg">
-                      <div className="text-slate-500 text-xs sm:text-sm">Trades</div>
-                      <div className="font-bold text-slate-800 text-sm sm:text-base">
-                        {history.totalTrades || 0}
-                      </div>
-                    </div>
-                    <div className="bg-slate-50 p-3 rounded-lg">
-                      <div className="text-slate-500 text-xs sm:text-sm">Score</div>
-                      <div className="font-bold text-slate-800 text-sm sm:text-base">
-                        {history.score || 0}
-                      </div>
-                    </div>
+                </div>
+
+                {/* Stats - Hanya Profit USD */}
+                <div className="text-right shrink-0">
+                  <div className="text-lg font-bold text-slate-800 mb-1">
+                    {formatCurrency(leader.totalProfitUSD || 0)}
                   </div>
-                </Motion.div>
-              ))
-            ) : (
-              <div className="bg-white/80 backdrop-blur-md rounded-3xl p-4 sm:p-6 border border-slate-200 text-center py-8 sm:py-12">
-                <History className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-slate-400 mb-4" />
-                <h4 className="text-base sm:text-lg font-bold text-slate-700 mb-2">
-                  No History Available
-                </h4>
-                <p className="text-slate-600 text-sm sm:text-base">
-                  Start trading to build your leaderboard history!
-                </p>
+                  <div className="text-xs text-slate-500">
+                    {(leader.winRate || 0).toFixed(1)}% win rate
+                  </div>
+                </div>
+              </div>
+
+              {/* Minimal indicator untuk trades */}
+              <div className="mt-2 text-xs text-slate-500">
+                {leader.totalTrades || 0} trades this period
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Tambahkan indikator jika ada lebih banyak trader di luar top 10 */}
+        {originalTotalCount > MAX_TOTAL_DISPLAY && (
+          <div className="p-6 border-t border-slate-200 bg-slate-50 text-center">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <div className="bg-white px-4 py-2 rounded-full border border-slate-300 shadow-sm">
+                <span className="text-sm text-slate-700 font-medium">
+                  Showing top {MAX_TOTAL_DISPLAY} of {originalTotalCount}{" "}
+                  traders
+                </span>
+              </div>
+              <div className="text-xs text-slate-500 flex items-center gap-1">
+                <Info className="w-3 h-3" />
+                <span>Only top {MAX_TOTAL_DISPLAY} traders are displayed</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  };
+
+  // Render user rank footer
+  const renderUserRank = () => {
+    if (!leaderboardData?.userRank && !leaderboardData?.userEntry) {
+      return null;
+    }
+
+    // Tentukan warna berdasarkan rank user
+    const userRank = leaderboardData.userRank;
+    let userGradient = "";
+    if (userRank === 1) userGradient = "from-yellow-500 to-orange-600";
+    else if (userRank === 2) userGradient = "from-gray-500 to-gray-700";
+    else if (userRank === 3) userGradient = "from-orange-500 to-orange-700";
+    else userGradient = "from-violet-600 to-purple-600";
+
+    // Cek apakah user ada di top 10 atau tidak
+    const isInTop10 = userRank <= MAX_TOTAL_DISPLAY;
+    const originalTotalCount =
+      leaderboardData.originalTotalCount || leaderboardData.totalCount || 0;
+
+    return (
+      <div className={`p-4 sm:p-6 bg-linear-to-r ${userGradient}`}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between text-white gap-4">
+          <div>
+            <h4 className="font-bold text-lg">Your Position</h4>
+            <p className="text-white/90">
+              You are ranked #{leaderboardData.userRank} this {periodType}
+              {!isInTop10 && (
+                <span className="block text-white/80 text-sm mt-1">
+                  (Not in top {MAX_TOTAL_DISPLAY})
+                </span>
+              )}
+            </p>
+            <p className="text-white/80 text-sm mt-1">
+              Your profit in USD:{" "}
+              {formatCurrency(
+                leaderboardData.userEntry?.totalProfitUSD ||
+                  leaderboardData.userEntry?.profitUSD ||
+                  0
+              )}
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-bold">
+              #{leaderboardData.userRank}
+            </div>
+            <div className="text-white/90 text-sm">
+              out of {originalTotalCount}
+            </div>
+            {!isInTop10 && (
+              <div className="text-xs text-white/70 mt-1">
+                Keep trading to reach top {MAX_TOTAL_DISPLAY}!
               </div>
             )}
-          </Motion.div>
+          </div>
         </div>
       </div>
     );
-  }
+  };
+
+  // Render disclaimer
+  const renderDisclaimer = () => {
+    if (!showDisclaimer) return null;
+
+    const exchangeRates = leaderboardData?.disclaimer?.exchangeRates || [];
+
+    return (
+      <Motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-blue-50 border border-blue-200 rounded-2xl p-4"
+      >
+        <div className="flex items-start gap-3">
+          <Info className="w-5 h-5 text-blue-600 mt-0.5" />
+          <div className="flex-1">
+            <div className="flex justify-between items-start">
+              <div>
+                <h4 className="font-bold text-blue-800">
+                  {leaderboardData?.disclaimer?.title ||
+                    "Currency Conversion Notice"}
+                </h4>
+                <p className="text-blue-700 text-sm mt-1">
+                  {leaderboardData?.disclaimer?.message ||
+                    "All profits are converted to USD for fair comparison. Rankings are for community engagement only and not financial advice."}
+                </p>
+                {exchangeRates.length > 0 && (
+                  <div className="text-xs text-blue-600 mt-2">
+                    <strong>Exchange Rates:</strong>
+                    {exchangeRates.map((rate, idx) => (
+                      <span key={idx} className="ml-2">
+                        1 {rate.from} = {rate.rate.toFixed(6)} {rate.to}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => setShowDisclaimer(false)}
+                className="text-blue-600 hover:text-blue-800 text-sm"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </Motion.div>
+    );
+  };
+
+  // Render fun notice
+  const renderFunNotice = () => {
+    if (!showFunNotice) return null;
+
+    return (
+      <Motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-amber-50 border border-amber-200 rounded-2xl p-4"
+      >
+        <div className="flex items-start gap-3">
+          <Sparkles className="w-5 h-5 text-amber-600 mt-0.5" />
+          <div className="flex-1">
+            <div className="flex justify-between items-start">
+              <div>
+                <h4 className="font-bold text-amber-800">
+                  For Fun & Community
+                </h4>
+                <p className="text-amber-700 text-sm mt-1">
+                  Leaderboard rankings are based on actual user performance.
+                  Displayed results are for community and entertainment purposes
+                  only and should not be considered financial advice or a
+                  guarantee of future outcomes.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowFunNotice(false)}
+                className="text-amber-600 hover:text-amber-800 text-sm flex items-center gap-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </Motion.div>
+    );
+  };
+
+  // Render period selector dengan custom dropdown
+  const renderPeriodSelector = () => {
+    const periodOptions = [
+      { id: "daily", label: "Daily", icon: <Calendar className="w-4 h-4" /> },
+      { id: "weekly", label: "Weekly", icon: <Calendar className="w-4 h-4" /> },
+      {
+        id: "monthly",
+        label: "Monthly",
+        icon: <Calendar className="w-4 h-4" />,
+      },
+    ];
+
+    // Cek status untuk menentukan tampilan
+    const hasAvailablePeriods = availablePeriods && availablePeriods.length > 0;
+    const isLoading = isLoadingPeriods || isInitialLoad;
+
+    const handlePeriodSelect = (value) => {
+      setPeriodValue(value);
+      setIsDropdownOpen(false);
+    };
+
+    // Format label untuk display
+    const getDisplayLabel = () => {
+      if (!periodValue) {
+        if (isLoading) return "Loading...";
+        if (!hasAvailablePeriods) return "No periods";
+        return "Select period";
+      }
+
+      const selectedPeriod = availablePeriods.find(
+        (p) => (p.value || p) === periodValue
+      );
+      return selectedPeriod?.label || selectedPeriod || periodValue;
+    };
+
+    return (
+      <div className="bg-white/80 backdrop-blur-md rounded-3xl p-4 sm:p-6 border border-slate-200">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          {/* Period Type Selector */}
+          <div className="w-full lg:w-auto">
+            <div className="flex bg-slate-100 p-1 rounded-xl">
+              {periodOptions.map((type) => (
+                <button
+                  key={type.id}
+                  onClick={() => handlePeriodTypeChange(type.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all w-full lg:w-auto ${
+                    periodType === type.id
+                      ? "bg-white text-violet-700 shadow-sm"
+                      : "text-slate-600 hover:text-slate-800"
+                  }`}
+                >
+                  {type.icon}
+                  <span>{type.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Period Value Selector - CUSTOM DROPDOWN */}
+          <div className="w-full lg:w-auto">
+            <div className="relative">
+              {/* Custom dropdown trigger */}
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                disabled={isLoading || !hasAvailablePeriods}
+                className={`w-full lg:w-48 flex items-center justify-between bg-white border rounded-xl px-4 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all ${
+                  isLoading
+                    ? "border-slate-300 bg-slate-50 cursor-not-allowed text-slate-400"
+                    : !hasAvailablePeriods
+                    ? "border-amber-300 bg-amber-50 cursor-not-allowed text-amber-700"
+                    : "border-slate-300 hover:border-violet-400 cursor-pointer"
+                }`}
+              >
+                <span className="truncate">{getDisplayLabel()}</span>
+                <div className="ml-2">
+                  {isLoading ? (
+                    <Clock className="w-4 h-4 text-slate-400 animate-spin" />
+                  ) : !hasAvailablePeriods ? (
+                    <AlertCircle className="w-4 h-4 text-amber-500" />
+                  ) : (
+                    <Calendar className="w-4 h-4 text-slate-500" />
+                  )}
+                </div>
+              </button>
+
+              {/* Custom dropdown menu */}
+              {isDropdownOpen && hasAvailablePeriods && !isLoading && (
+                <div className="absolute z-10 w-full lg:w-48 mt-1 bg-white border border-slate-300 rounded-xl shadow-lg">
+                  <div className="py-1 max-h-60 overflow-auto">
+                    {availablePeriods.map((period, index) => {
+                      const periodValue = period.value || period;
+                      const periodLabel = period.label || period;
+
+                      return (
+                        <button
+                          key={index}
+                          onClick={() => handlePeriodSelect(periodValue)}
+                          className={`w-full px-4 py-2 text-left hover:bg-slate-50 ${
+                            periodValue === periodValue
+                              ? "bg-violet-50 text-violet-700"
+                              : "text-slate-700"
+                          }`}
+                        >
+                          {periodLabel}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render leaderboard status indicator
+  const renderStatusIndicator = () => {
+    const hasLeaders =
+      leaderboardData?.leaders && leaderboardData.leaders.length > 0;
+    const originalTotalCount =
+      leaderboardData?.originalTotalCount || leaderboardData?.totalCount || 0;
+
+    // Hitung yang ditampilkan (maksimal 10)
+    const displayedCount = Math.min(
+      leaderboardData?.leaders?.length || 0,
+      MAX_TOTAL_DISPLAY
+    );
+
+    if (isLoadingLeaderboard) {
+      return (
+        <div className="flex items-center justify-center gap-2 text-slate-500 py-4">
+          <div className="w-3 h-3 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+          <span>Loading leaderboard data...</span>
+        </div>
+      );
+    }
+
+    if (!hasLeaders && periodValue) {
+      return (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
+          <AlertCircle className="w-8 h-8 text-amber-500 mx-auto mb-2" />
+          <h4 className="font-bold text-amber-700 mb-1">No Data Available</h4>
+          <p className="text-amber-600 text-sm">
+            There are no traders on the leaderboard for the selected period. Be
+            the first to start trading!
+          </p>
+        </div>
+      );
+    }
+
+    if (hasLeaders) {
+      return (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 className="text-xl sm:text-2xl font-bold text-slate-800">
+              {periodType.charAt(0).toUpperCase() + periodType.slice(1)}{" "}
+              Leaderboard
+            </h3>
+            <p className="text-slate-600 text-sm mt-1">
+              Showing top {displayedCount} of {originalTotalCount} traders
+              {originalTotalCount > MAX_TOTAL_DISPLAY && (
+                <span className="text-amber-600 ml-2">
+                  (Top {MAX_TOTAL_DISPLAY} only)
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <Globe className="w-4 h-4" />
+            <span>All profits shown in USD</span>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <div className="min-h-screen">
       <div className="space-y-6">
-        {/* Header - FIXED: Responsive layout */}
-        <Motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        {/* Header */}
+        <Motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl md:text-3xl lg:text-3xl font-bold text-slate-800 flex items-center gap-2">
+              <h1 className="text-2xl md:text-3xl font-bold text-slate-800 flex items-center gap-2">
                 <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-violet-600" />
-                {timeRange === "all" ? "Global Leaderboard" : "Monthly Leaderboard"}
+                Trading Leaderboard
               </h1>
               <p className="text-sm sm:text-sm md:text-base text-slate-600 mt-1 font-light">
-                {timeRange === "all"
-                  ? "All-time rankings based on lifetime achievements"
-                  : `Current month rankings - ${formatPeriod(leaderboard?.period)}`}
+                Compete fairly with normalized USD conversion • Showing top{" "}
+                {MAX_TOTAL_DISPLAY} traders only
               </p>
             </div>
-            
-            <button
-              onClick={() => setShowHistory(true)}
-              className="w-full sm:w-auto px-4 py-2 bg-violet-100 hover:bg-violet-200 text-violet-700 rounded-xl font-medium flex items-center justify-center gap-2 text-sm sm:text-base"
-            >
-              <History className="w-4 h-4" />
-              View History
-            </button>
           </div>
         </Motion.div>
 
-        {/* Controls - UPDATED for better tablet and mobile responsiveness */}
-        <Motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-8"
-        >
-          <div className="bg-white/80 backdrop-blur-md rounded-3xl p-4 sm:p-6 border border-slate-200">
-            {/* Title Section */}
-            <div className="mb-6">
-              <h3 className="text-lg font-bold text-slate-800 mb-2">
-                {timeRange === "all" ? "Global Rankings" : "Monthly Rankings"}
-              </h3>
-              <p className="text-slate-600 text-sm">
-                {
-                  (timeRange === "all" 
-                    ? allTimeTypes.find((t) => t.id === leaderboardType)?.description
-                    : leaderboardTypes.find((t) => t.id === leaderboardType)?.description
-                  )
-                }
-              </p>
-            </div>
+        {/* Fun Notice - Baru ditambahkan */}
+        {renderFunNotice()}
 
-            {/* Tabs Section */}
-            <div className="flex flex-col gap-6">
-              {/* Time Range Selector - Responsive Layout */}
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                <div className="w-full">
-                  <div className="flex bg-slate-100 p-1 rounded-xl">
-                    {timeRanges.map((range) => (
-                      <button
-                        key={range.id}
-                        onClick={() => setTimeRange(range.id)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all w-full lg:w-auto ${
-                          timeRange === range.id
-                            ? "bg-white text-violet-700 shadow-sm"
-                            : "text-slate-600 hover:text-slate-800"
-                        }`}
-                      >
-                        {range.icon}
-                        <span className="whitespace-nowrap">{range.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+        {/* Disclaimer */}
+        {renderDisclaimer()}
 
-                {/* Leaderboard Type Selector with scroll controls for mobile and tablet */}
-                <div className="w-full lg:w-auto">
-                  <div className="relative">
-
-                    <div className="relative">
-                      <div 
-                        id="leaderboard-types-container"
-                        className="flex bg-slate-100 p-1 rounded-xl overflow-x-auto scrollbar-hide scroll-smooth w-full"
-                        style={{ 
-                          scrollbarWidth: 'none',
-                          msOverflowStyle: 'none',
-                          WebkitOverflowScrolling: 'touch',
-                          touchAction: 'pan-x'
-                        }}
-                        onScroll={(e) => setScrollPosition(e.target.scrollLeft)}
-                      >
-                        {timeRange === "all"
-                          ? allTimeTypes.map((type) => (
-                              <button
-                                key={type.id}
-                                onClick={() => setLeaderboardType(type.id)}
-                                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all shrink-0 whitespace-nowrap ${
-                                  leaderboardType === type.id
-                                    ? "bg-white text-violet-700 shadow-sm"
-                                    : "text-slate-600 hover:text-slate-800"
-                                }`}
-                              >
-                                {type.icon}
-                                <span>{type.label}</span>
-                              </button>
-                            ))
-                          : leaderboardTypes.map((type) => (
-                              <button
-                                key={type.id}
-                                onClick={() => setLeaderboardType(type.id)}
-                                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all shrink-0 whitespace-nowrap ${
-                                  leaderboardType === type.id
-                                    ? "bg-white text-violet-700 shadow-sm"
-                                    : "text-slate-600 hover:text-slate-800"
-                                }`}
-                              >
-                                {type.icon}
-                                <span>{type.label}</span>
-                              </button>
-                            ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Monthly Info Banner */}
-            {timeRange === "current" && (
-              <div className="mt-4 p-3 sm:p-4 bg-violet-50 border border-violet-200 rounded-xl">
-                <div className="flex items-start gap-3">
-                  <Award className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 mt-0.5 shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-xs sm:text-sm text-violet-800">
-                      <strong>Monthly leaderboard resets on the 1st of each month.</strong>{" "}
-                      Your all-time level and badges remain permanent. Monthly rankings are based on:
-                      profit (40%), win rate (30%), trades (20%), and consistency (10%).
-                    </p>
-                    <p className="text-xs sm:text-sm text-violet-600 mt-1">
-                      <strong>Note:</strong> All profit amounts are displayed in your selected currency ({userCurrency}).
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </Motion.div>
+        {/* Period Selector */}
+        {renderPeriodSelector()}
 
         {/* Leaderboard Content */}
-        <Motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="space-y-6"
-        >
-          {/* Top 3 Podium */}
-          {leaderboard?.leaders?.slice(0, 3).length > 0 && (
-            <div className="bg-white/80 backdrop-blur-md rounded-3xl p-4 sm:p-6 border border-slate-200">
-              <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-4 sm:mb-6 text-center">
-                Top Performers
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-                {leaderboard.leaders.slice(0, 3).map((leader, index) => (
-                  <Motion.div
-                    key={leader.userId}
-                    initial={{ opacity: 0, y: 50 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.2 }}
-                    className={`relative ${
-                      index === 1
-                        ? "md:-mt-6 md:order-first"
-                        : index === 0
-                        ? "md:order-2"
-                        : "md:order-3"
-                    }`}
-                  >
-                    <div
-                      className={`bg-linear-to-br ${getRankColor(
-                        index + 1
-                      )} rounded-2xl p-4 sm:p-6 text-white text-center relative shadow-lg`}
-                    >
-                      {/* Rank Crown */}
-                      <div className="absolute -top-3 sm:-top-4 left-1/2 transform -translate-x-1/2">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
-                          <span className="text-sm sm:text-base md:text-lg font-bold text-slate-800">
-                            {getRankIcon(index + 1)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* User Avatar */}
-                      <div className="mt-8 sm:mt-10 mb-3 sm:mb-4">
-                        <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto border-4 border-white/30">
-                          <Users className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10" />
-                        </div>
-                      </div>
-
-                      {/* User Info */}
-                      <h4 className="font-bold text-base sm:text-lg md:text-xl mb-2 truncate px-2">
-                        {leader.User?.name || `Trader ${leader.userId}`}
-                      </h4>
-
-                      <div className="text-white/90 text-xs sm:text-sm mb-3 sm:mb-4">
-                        {getValueByType(leader, leaderboardType)}
-                      </div>
-
-                      {/* Additional Stats */}
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                          <div className="font-bold">Level</div>
-                          <div>{leader.level || 1}</div>
-                        </div>
-                        <div>
-                          <div className="font-bold">XP</div>
-                          <div>{(leader.totalExperience || 0).toLocaleString()}</div>
-                        </div>
-                        <div>
-                          <div className="font-bold">Streak</div>
-                          <div>{leader.dailyStreak || 0}d</div>
-                        </div>
-                        <div>
-                          <div className="font-bold">Trades</div>
-                          <div>{leader.totalTrades || 0}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </Motion.div>
-                ))}
-              </div>
-            </div>
-          )}
+        <div className="space-y-6">
+          {/* Top 3 - Hanya ditampilkan jika ada data */}
+          {leaderboardData?.leaders &&
+            leaderboardData.leaders.length > 0 &&
+            renderTop3()}
 
           {/* Full Leaderboard List */}
           <div className="bg-white/80 backdrop-blur-md rounded-3xl border border-slate-200 overflow-hidden">
+            {/* Header dengan status indicator */}
             <div className="p-4 sm:p-6 border-b border-slate-200">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-800">
-                    {timeRange === "all" ? "Global Leaderboard" : "Monthly Leaderboard"}
-                  </h3>
-                  <p className="text-slate-600 text-xs sm:text-sm mt-1">
-                    {leaderboard?.totalUsers || 0} active traders
-                    {timeRange === "current" && leaderboard?.period && 
-                      ` • ${formatPeriod(leaderboard.period)}`}
-                  </p>
-                </div>
-                <div className="text-xs sm:text-sm text-slate-500">
-                  Currency: {userCurrency}
+              {renderStatusIndicator()}
+
+              {/* Tambahkan badge top 10 */}
+              {leaderboardData?.leaders &&
+                leaderboardData.leaders.length > 0 && (
+                  <div className="mt-2 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-violet-100 text-violet-700 text-xs font-bold px-3 py-1 rounded-full">
+                        TOP {MAX_TOTAL_DISPLAY}
+                      </div>
+                      <span className="text-xs text-slate-500">
+                        Only top {MAX_TOTAL_DISPLAY} traders are displayed
+                      </span>
+                    </div>
+                    {(leaderboardData.originalTotalCount ||
+                      leaderboardData.totalCount ||
+                      0) > MAX_TOTAL_DISPLAY && (
+                      <span className="text-xs text-slate-400">
+                        +
+                        {(leaderboardData.originalTotalCount ||
+                          leaderboardData.totalCount ||
+                          0) - MAX_TOTAL_DISPLAY}{" "}
+                        more traders
+                      </span>
+                    )}
+                  </div>
+                )}
+            </div>
+
+            {/* Content */}
+            <div className="divide-y divide-slate-200 min-h-[400px]">
+              {isLoadingLeaderboard
+                ? renderSkeleton()
+                : renderLeaderboardList()}
+            </div>
+
+            {/* User Rank Footer - Hanya ditampilkan jika user ada di leaderboard */}
+            {renderUserRank()}
+          </div>
+        </div>
+
+        {/* Empty state untuk seluruh halaman */}
+        {!isLoadingLeaderboard &&
+          !isLoadingPeriods &&
+          availablePeriods.length === 0 && (
+            <Motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="bg-linear-to-br from-slate-50 to-violet-50 rounded-3xl p-8 text-center border border-slate-200"
+            >
+              <div className="max-w-md mx-auto">
+                <Trophy className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-slate-700 mb-3">
+                  Welcome to the Leaderboard!
+                </h3>
+                <p className="text-slate-600 mb-6">
+                  The leaderboard is currently empty. Start trading and become
+                  the first to appear on the rankings. Your journey to the top
+                  begins with your first trade!
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="bg-white p-4 rounded-lg border border-slate-200">
+                    <Sparkles className="w-6 h-6 text-violet-500 mx-auto mb-2" />
+                    <h4 className="font-bold text-slate-700 text-sm">
+                      Real-time Updates
+                    </h4>
+                    <p className="text-xs text-slate-500">
+                      Rankings update instantly
+                    </p>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg border border-slate-200">
+                    <Globe className="w-6 h-6 text-violet-500 mx-auto mb-2" />
+                    <h4 className="font-bold text-slate-700 text-sm">
+                      Fair Comparison
+                    </h4>
+                    <p className="text-xs text-slate-500">All profits in USD</p>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg border border-slate-200">
+                    <TrendingUp className="w-6 h-6 text-violet-500 mx-auto mb-2" />
+                    <h4 className="font-bold text-slate-700 text-sm">
+                      Top {MAX_TOTAL_DISPLAY} Only
+                    </h4>
+                    <p className="text-xs text-slate-500">
+                      Compete for top {MAX_TOTAL_DISPLAY} spots
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <div className="divide-y divide-slate-200">
-              {isLoading ? (
-                // Loading Skeleton
-                [...Array(10)].map((_, index) => (
-                  <div key={index} className="p-4 animate-pulse">
-                    <div className="flex items-center gap-4">
-                      <div className="w-8 h-8 bg-slate-200 rounded-full"></div>
-                      <div className="flex-1">
-                        <div className="h-4 bg-slate-200 rounded w-1/3 mb-2"></div>
-                        <div className="h-3 bg-slate-200 rounded w-1/4"></div>
-                      </div>
-                      <div className="w-20 h-6 bg-slate-200 rounded"></div>
-                    </div>
-                  </div>
-                ))
-              ) : leaderboard?.leaders?.length > 0 ? (
-                leaderboard.leaders.slice(3).map((leader, index) => (
-                  <Motion.div
-                    key={leader.userId}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: (index + 3) * 0.03 }}
-                    className={`p-4 transition-all hover:bg-slate-50 ${
-                      leader.userId === context?.user?.id
-                        ? "bg-violet-50 border-l-4 border-violet-500"
-                        : ""
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 sm:gap-4">
-                        {/* Rank */}
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-slate-100 rounded-full flex items-center justify-center shrink-0">
-                          <span className="font-bold text-slate-700 text-sm sm:text-base">
-                            {index + 4}
-                          </span>
-                        </div>
-
-                        {/* User Info */}
-                        <div className="flex items-center gap-2 sm:gap-3">
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-slate-200 rounded-full flex items-center justify-center shrink-0">
-                            <Users className="w-3 h-3 sm:w-4 sm:h-4 md:w-6 md:h-6 text-slate-600" />
-                          </div>
-                          <div className="min-w-0">
-                            <h4 className="font-bold text-slate-800 text-sm sm:text-base truncate">
-                              {leader.User?.name || `Trader ${leader.userId}`}
-                            </h4>
-                            <div className="flex items-center gap-1 sm:gap-3 text-xs sm:text-sm text-slate-600 mt-1 overflow-x-auto scrollbar-hide">
-                              {timeRange === "all" ? (
-                                <>
-                                  <span className="flex items-center gap-1 shrink-0">
-                                    <Crown className="w-3 h-3" />
-                                    Level {leader.level || 1}
-                                  </span>
-                                  <span className="flex items-center gap-1 shrink-0">
-                                    <Zap className="w-3 h-3" />
-                                    {leader.dailyStreak || 0}d streak
-                                  </span>
-                                  <span className="flex items-center gap-1 shrink-0">
-                                    <Target className="w-3 h-3" />
-                                    {leader.totalTrades || 0} trades
-                                  </span>
-                                </>
-                              ) : (
-                                <>
-                                  <span className="flex items-center gap-1 shrink-0">
-                                    <Trophy className="w-3 h-3" />
-                                    Score: {leader.score || 0}
-                                  </span>
-                                  <span className="flex items-center gap-1 shrink-0">
-                                    <TrendingUp className="w-3 h-3" />
-                                    Profit: {formatCurrency(leader.totalProfit || 0)}
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Main Stat */}
-                      <div className="text-right ml-2 min-w-0">
-                        <div className="text-sm sm:text-base md:text-lg font-bold text-slate-800 mb-1 whitespace-nowrap truncate">
-                          {getValueByType(leader, leaderboardType)}
-                        </div>
-
-                        {/* Progress Bar */}
-                        <div className="w-20 sm:w-24 md:w-32 bg-slate-200 rounded-full h-2">
-                          <div
-                            className="h-2 rounded-full bg-linear-to-r from-violet-500 to-purple-500"
-                            style={{
-                              width: `${getProgressByType(leader, leaderboardType)}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </Motion.div>
-                ))
-              ) : (
-                <div className="text-center py-8 sm:py-12">
-                  <Trophy className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-slate-400 mb-4" />
-                  <h4 className="text-base sm:text-lg font-bold text-slate-700 mb-2">
-                    No Leaderboard Data
-                  </h4>
-                  <p className="text-slate-600 text-sm sm:text-base">
-                    Start trading to appear on the leaderboard!
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* User Rank Card */}
-            {leaderboard?.userRank && (
-              <Motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                className="p-4 sm:p-6 bg-linear-to-r from-violet-600 to-purple-600 border-t border-violet-500"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between text-white gap-4">
-                  <div className="flex-1">
-                    <h4 className="font-bold text-base sm:text-lg mb-1">Your Position</h4>
-                    <p className="text-violet-100 text-sm sm:text-base">
-                      {timeRange === "all"
-                        ? "You're ranking globally"
-                        : `You're ranking this month (${formatPeriod(leaderboard.period)})`}
-                    </p>
-                    <p className="text-violet-200 text-xs mt-1">
-                      Currency: {userCurrency}
-                    </p>
-                  </div>
-
-                  <div className="text-left sm:text-right">
-                    <div className="text-2xl sm:text-3xl font-bold mb-1">
-                      #{leaderboard.userRank}
-                    </div>
-                    <div className="text-violet-100 text-xs sm:text-sm">
-                      out of {leaderboard.totalUsers || 0} traders
-                    </div>
-                  </div>
-                </div>
-
-                {/* Progress Section */}
-                <div className="mt-4">
-                  <div className="flex justify-between text-violet-100 text-xs sm:text-sm mb-1">
-                    <span>
-                      {timeRange === "all"
-                        ? "Progress to next level"
-                        : "Days remaining this month"}
-                    </span>
-                    <span>
-                      {timeRange === "all"
-                        ? leaderboard.userLevel && leaderboard.userExperience
-                          ? `${Math.round(
-                              (leaderboard.userExperience /
-                                calculateRequiredXP(leaderboard.userLevel + 1)) *
-                                100
-                            )}%`
-                          : "0%"
-                        : `${new Date().getDate()}/${getDaysInMonth()} days`}
-                    </span>
-                  </div>
-                  <div className="w-full bg-violet-700 rounded-full h-2">
-                    <div
-                      className="h-2 rounded-full bg-linear-to-r from-white to-violet-200"
-                      style={{
-                        width: `${
-                          timeRange === "all"
-                            ? leaderboard.userLevel && leaderboard.userExperience
-                              ? Math.min(
-                                  100,
-                                  (leaderboard.userExperience /
-                                    calculateRequiredXP(leaderboard.userLevel + 1)) *
-                                    100
-                                )
-                              : 0
-                            : getMonthProgress()
-                        }%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              </Motion.div>
-            )}
-          </div>
-        </Motion.div>
+            </Motion.div>
+          )}
       </div>
-
-      {/* Add custom CSS for scrollbar hiding */}
-      <style jsx>{`
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
     </div>
   );
 };

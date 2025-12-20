@@ -48,6 +48,7 @@ import {
   ChevronDown as ChevronDownIcon,
   ChevronUp as ChevronUpIcon,
   AlertTriangle,
+  Save,
 } from "lucide-react";
 import {
   getCalendarEvents,
@@ -107,6 +108,512 @@ const impactColors = {
   medium: "#f59e0b",
   low: "#10b981",
   none: "#6b7280",
+};
+
+// Calendar Event Modal Component (mirip FormModal)
+const CalendarEventModal = ({
+  showModal,
+  setShowModal,
+  eventForm,
+  setEventForm,
+  editingEvent,
+  setEditingEvent,
+  handleEventSubmit,
+  isLoading,
+  formErrors,
+  setFormErrors,
+}) => {
+  const [showValidation, setShowValidation] = useState(false);
+
+  // Field yang wajib diisi
+  const requiredFields = ["date", "title", "description"];
+
+  // Validasi form sebelum submit
+  const validateForm = () => {
+    const errors = {};
+
+    // Validasi field tidak boleh kosong
+    requiredFields.forEach((field) => {
+      if (!eventForm[field] || eventForm[field].toString().trim() === "") {
+        errors[field] = `Field ini wajib diisi`;
+      }
+    });
+
+    // Validasi format date
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (eventForm.date && !dateRegex.test(eventForm.date)) {
+      errors.date = "Format tanggal harus YYYY-MM-DD";
+    }
+
+    // Validasi time format jika ada
+    if (
+      eventForm.time &&
+      !/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(eventForm.time)
+    ) {
+      errors.time = "Format waktu harus HH:mm";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleInputChange = (field, value) => {
+    setEventForm({ ...eventForm, [field]: value });
+
+    // Clear validation error for this field
+    if (formErrors[field]) {
+      setFormErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setShowValidation(true);
+
+    if (!validateForm()) {
+      const firstErrorField = Object.keys(formErrors)[0];
+      if (firstErrorField) {
+        const element = document.querySelector(
+          `[data-field="${firstErrorField}"]`
+        );
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }
+      return;
+    }
+
+    handleEventSubmit(e);
+  };
+
+  const hasEmptyRequiredFields = () => {
+    return requiredFields.some(
+      (field) => !eventForm[field] || eventForm[field].toString().trim() === ""
+    );
+  };
+
+  if (!showModal) return null;
+
+  return (
+    <Motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto"
+      onClick={() => {
+        setShowModal(false);
+        setEditingEvent(null);
+        setEventForm({
+          date: new Date().toISOString().split("T")[0],
+          title: "",
+          type: "journal_entry",
+          description: "",
+          time: "",
+          impact: "none",
+          instrument: "",
+          strategy: "",
+          sentiment: "neutral",
+          color: "#8b5cf6",
+          isCompleted: false,
+        });
+        setFormErrors({});
+      }}
+    >
+      <Motion.div
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border-2 border-violet-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+              <Calendar className="w-7 h-7 text-violet-600" />
+              {editingEvent ? "Edit Calendar Event" : "New Calendar Event"}
+            </h2>
+            <Motion.button
+              whileHover={{ scale: 1.1, rotate: 90 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => {
+                setShowModal(false);
+                setEditingEvent(null);
+                setEventForm({
+                  date: new Date().toISOString().split("T")[0],
+                  title: "",
+                  type: "journal_entry",
+                  description: "",
+                  time: "",
+                  impact: "none",
+                  instrument: "",
+                  strategy: "",
+                  sentiment: "neutral",
+                  color: "#8b5cf6",
+                  isCompleted: false,
+                });
+                setFormErrors({});
+              }}
+              type="button"
+              className="text-slate-500 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </Motion.button>
+          </div>
+
+          {/* Info Required Fields */}
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-blue-800">
+                  <span className="text-red-500 font-bold">*</span> Field dengan
+                  tanda bintang wajib diisi
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  Pastikan semua field wajib diisi sebelum menyimpan event.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {/* Date Field */}
+              <div data-field="date">
+                <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-1">
+                  <Calendar className="w-4 h-4 text-violet-600" />
+                  Date
+                  <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={eventForm.date}
+                  onChange={(e) => handleInputChange("date", e.target.value)}
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all font-semibold text-slate-800 ${
+                    formErrors.date
+                      ? "border-red-500 bg-red-50"
+                      : "border-slate-200 focus:border-violet-500"
+                  }`}
+                  required
+                />
+                {formErrors.date && (
+                  <div className="mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3 text-red-500" />
+                    <span className="text-xs text-red-600">
+                      {formErrors.date}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Time Field */}
+              <div data-field="time">
+                <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-1">
+                  <Clock className="w-4 h-4 text-violet-600" />
+                  Time
+                </label>
+                <input
+                  type="time"
+                  value={eventForm.time}
+                  onChange={(e) => handleInputChange("time", e.target.value)}
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all font-semibold text-slate-800 ${
+                    formErrors.time
+                      ? "border-red-500 bg-red-50"
+                      : "border-slate-200 focus:border-violet-500"
+                  }`}
+                  placeholder="HH:mm"
+                />
+                {formErrors.time && (
+                  <div className="mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3 text-red-500" />
+                    <span className="text-xs text-red-600">
+                      {formErrors.time}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Title Field */}
+              <div className="md:col-span-2" data-field="title">
+                <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-1">
+                  <FileText className="w-4 h-4 text-violet-600" />
+                  Title
+                  <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={eventForm.title}
+                  onChange={(e) => handleInputChange("title", e.target.value)}
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all font-semibold text-slate-800 ${
+                    formErrors.title
+                      ? "border-red-500 bg-red-50"
+                      : "border-slate-200 focus:border-violet-500"
+                  }`}
+                  placeholder="Enter event title"
+                  required
+                />
+                {formErrors.title && (
+                  <div className="mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3 text-red-500" />
+                    <span className="text-xs text-red-600">
+                      {formErrors.title}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Event Type */}
+              <div>
+                <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-1">
+                  <Target className="w-4 h-4 text-violet-600" />
+                  Event Type
+                </label>
+                <select
+                  value={eventForm.type}
+                  onChange={(e) => handleInputChange("type", e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 font-semibold text-slate-800"
+                >
+                  {Object.entries(eventTypes).map(([key, config]) => (
+                    <option key={key} value={key}>
+                      {config.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Impact Level */}
+              <div>
+                <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4 text-violet-600" />
+                  Impact Level
+                </label>
+                <select
+                  value={eventForm.impact}
+                  onChange={(e) => handleInputChange("impact", e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 font-semibold text-slate-800"
+                >
+                  <option value="none">None</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+
+              {/* Instrument */}
+              <div>
+                <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-1">
+                  <BarChart3 className="w-4 h-4 text-violet-600" />
+                  Instrument
+                </label>
+                <input
+                  type="text"
+                  value={eventForm.instrument}
+                  onChange={(e) =>
+                    handleInputChange("instrument", e.target.value)
+                  }
+                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 font-semibold text-slate-800"
+                  placeholder="e.g., XAUUSD, EURUSD"
+                />
+              </div>
+
+              {/* Strategy */}
+              <div>
+                <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-1">
+                  <TrendingUp className="w-4 h-4 text-violet-600" />
+                  Strategy
+                </label>
+                <input
+                  type="text"
+                  value={eventForm.strategy}
+                  onChange={(e) =>
+                    handleInputChange("strategy", e.target.value)
+                  }
+                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 font-semibold text-slate-800"
+                  placeholder="e.g., Breakout, Pullback"
+                />
+              </div>
+
+              {/* Sentiment */}
+              <div>
+                <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-1">
+                  <Globe className="w-4 h-4 text-violet-600" />
+                  Market Sentiment
+                </label>
+                <select
+                  value={eventForm.sentiment}
+                  onChange={(e) =>
+                    handleInputChange("sentiment", e.target.value)
+                  }
+                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 font-semibold text-slate-800"
+                >
+                  <option value="neutral">Neutral</option>
+                  <option value="bullish">Bullish</option>
+                  <option value="bearish">Bearish</option>
+                </select>
+              </div>
+
+              {/* Color */}
+              <div>
+                <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-1">
+                  <div
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: eventForm.color }}
+                  />
+                  Color
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    "#8b5cf6",
+                    "#3b82f6",
+                    "#10b981",
+                    "#f59e0b",
+                    "#ef4444",
+                    "#ec4899",
+                  ].map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => handleInputChange("color", color)}
+                      className={`w-8 h-8 rounded-full border-2 ${
+                        eventForm.color === color
+                          ? "border-slate-800"
+                          : "border-slate-300"
+                      }`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Description Field */}
+              <div className="md:col-span-2" data-field="description">
+                <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-1">
+                  <FileText className="w-4 h-4 text-violet-600" />
+                  Description
+                  <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={eventForm.description}
+                  onChange={(e) =>
+                    handleInputChange("description", e.target.value)
+                  }
+                  rows={4}
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all font-semibold text-slate-800 ${
+                    formErrors.description
+                      ? "border-red-500 bg-red-50"
+                      : "border-slate-200 focus:border-violet-500"
+                  }`}
+                  placeholder="Add detailed description about this event..."
+                  required
+                />
+                {formErrors.description && (
+                  <div className="mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3 text-red-500" />
+                    <span className="text-xs text-red-600">
+                      {formErrors.description}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Completion Status */}
+              <div className="flex items-center md:col-span-2">
+                <input
+                  type="checkbox"
+                  id="isCompleted"
+                  checked={eventForm.isCompleted}
+                  onChange={(e) =>
+                    handleInputChange("isCompleted", e.target.checked)
+                  }
+                  className="w-4 h-4 text-violet-600 rounded focus:ring-violet-500"
+                />
+                <label
+                  htmlFor="isCompleted"
+                  className="ml-2 text-sm font-medium text-slate-700"
+                >
+                  Mark as completed
+                </label>
+              </div>
+            </div>
+
+            {/* Validation Warning */}
+            {showValidation && hasEmptyRequiredFields() && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-red-800">
+                      Harap lengkapi semua field yang wajib diisi
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200">
+              <Motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                type="button"
+                onClick={() => {
+                  setShowModal(false);
+                  setEditingEvent(null);
+                  setEventForm({
+                    date: new Date().toISOString().split("T")[0],
+                    title: "",
+                    type: "journal_entry",
+                    description: "",
+                    time: "",
+                    impact: "none",
+                    instrument: "",
+                    strategy: "",
+                    sentiment: "neutral",
+                    color: "#8b5cf6",
+                    isCompleted: false,
+                  });
+                  setFormErrors({});
+                }}
+                disabled={isLoading}
+                className="px-6 py-3 border-2 border-slate-300 rounded-xl text-slate-700 hover:bg-slate-50 transition-colors font-medium flex items-center gap-2 disabled:opacity-50"
+              >
+                <X className="w-4 h-4" />
+                Cancel
+              </Motion.button>
+              <Motion.button
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                type="submit"
+                disabled={isLoading || hasEmptyRequiredFields()}
+                className={`px-6 py-3 rounded-xl hover:shadow-lg transition-all duration-200 font-medium flex items-center gap-2 ${
+                  hasEmptyRequiredFields()
+                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                    : "bg-linear-to-r from-violet-600 to-purple-600 text-white"
+                }`}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    {editingEvent ? "Update Event" : "Save Event"}
+                  </>
+                )}
+              </Motion.button>
+            </div>
+          </form>
+        </div>
+      </Motion.div>
+    </Motion.div>
+  );
 };
 
 // Calendar Controls Component
@@ -614,6 +1121,8 @@ const Layout = () => {
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [totalEventCount, setTotalEventCount] = useState(0);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
+  const [isSavingEvent, setIsSavingEvent] = useState(false);
   const calendarContainerRef = useRef(null);
   const monthGridRef = useRef(null);
 
@@ -690,18 +1199,16 @@ const Layout = () => {
     if (subscription?.plan === "free") {
       return totalEventCount < 10;
     }
-    return true; // Pro/Lifetime users unlimited
+    return true;
   }, [subscription?.plan, totalEventCount]);
 
   // Function untuk handle add event button dengan parameter date opsional
   const handleAddEventClick = (date = null) => {
     if (!canAddEvent) {
-      // Tampilkan modal upgrade
       setShowUpgradeModal(true);
       return;
     }
 
-    // Lanjutkan dengan membuka modal event
     setEventForm({
       date: date || selectedDate || format(new Date(), "yyyy-MM-dd"),
       title: "",
@@ -715,6 +1222,7 @@ const Layout = () => {
       color: "#8b5cf6",
       isCompleted: false,
     });
+    setFormErrors({});
     setEditingEvent(null);
     setShowEventModal(true);
   };
@@ -739,6 +1247,7 @@ const Layout = () => {
       color: "#8b5cf6",
       isCompleted: false,
     });
+    setFormErrors({});
     setEditingEvent(null);
     setShowEventModal(true);
   };
@@ -1335,23 +1844,8 @@ const Layout = () => {
   // Handle event form submission
   const handleEventSubmit = async (e) => {
     e.preventDefault();
-
-    if (!eventForm.title.trim()) {
-      Swal.fire({
-        title: "Title Required",
-        text: "Please enter a title for the event",
-        icon: "warning",
-        confirmButtonColor: "#8b5cf6",
-        background: "#fff",
-        color: "#1f2937",
-        customClass: {
-          popup: "rounded-3xl shadow-2xl",
-          title: "text-xl font-bold text-violet-900",
-          confirmButton: "rounded-xl font-semibold px-6 py-3",
-        },
-      });
-      return;
-    }
+    setIsSavingEvent(true);
+    setFormErrors({});
 
     try {
       if (editingEvent) {
@@ -1389,24 +1883,34 @@ const Layout = () => {
         color: "#8b5cf6",
         isCompleted: false,
       });
+      setFormErrors({});
 
       // Refresh total event count
       await fetchTotalEventCount();
     } catch (error) {
       console.error("Error saving event:", error);
 
+      // Tangani error validasi dari backend
+      if (error.payload?.fieldErrors) {
+        setFormErrors(error.payload.fieldErrors);
+        setLocalMessage("Please fix the validation errors");
+      }
       // Tangani error limit event
-      if (error.message && error.message.includes("Free plan limited")) {
+      else if (error.message && error.message.includes("Free plan limited")) {
         setShowUpgradeModal(true);
         setLocalMessage("Free plan limited to 10 calendar events");
       } else if (error.payload && error.payload.includes("Free plan limited")) {
         setShowUpgradeModal(true);
         setLocalMessage("Free plan limited to 10 calendar events");
       } else {
-        setLocalMessage("Failed to save event");
+        setLocalMessage(
+          "Failed to save event: " + (error.message || "Unknown error")
+        );
       }
 
       setTimeout(() => setLocalMessage(""), 5000);
+    } finally {
+      setIsSavingEvent(false);
     }
   };
 
@@ -1484,7 +1988,7 @@ const Layout = () => {
           className={`p-3 rounded-xl border text-xs sm:text-sm font-medium ${
             localMessage.includes("limited")
               ? "bg-amber-100 text-amber-700 border-amber-300"
-              : localMessage.includes("Failed")
+              : localMessage.includes("Failed") || localMessage.includes("fix")
               ? "bg-rose-100 text-rose-700 border-rose-300"
               : "bg-emerald-100 text-emerald-700 border-emerald-300"
           }`}
@@ -1616,17 +2120,13 @@ const Layout = () => {
       {/* Mobile Layout - Stacked view */}
       {isMobile ? (
         <div className="space-y-4">
-          {/* Mobile Date Summary dengan pengecekan canAddEvent */}
-          <div className="relative">
-            <MobileDateSummary
-              selectedDate={selectedDate}
-              showDateSummary={showDateSummary}
-              setShowDateSummary={setShowDateSummary}
-              canAddEvent={canAddEvent}
-              handleAddEventClick={handleAddEventClick}
-            />
-          </div>
-
+          <MobileDateSummary
+            selectedDate={selectedDate}
+            showDateSummary={showDateSummary}
+            setShowDateSummary={setShowDateSummary}
+            canAddEvent={canAddEvent}
+            handleAddEventClick={handleAddEventClick}
+          />
           <MobileEventsList
             filteredDateEvents={filteredDateEvents}
             isLoading={isLoading}
@@ -1896,382 +2396,19 @@ const Layout = () => {
         )}
       </AnimatePresence>
 
-      {/* Event Modal */}
-      <AnimatePresence>
-        {showEventModal && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <Motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-            >
-              <div className="p-4 sm:p-6 md:p-8">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl sm:text-2xl font-bold text-slate-800">
-                    {editingEvent ? "Edit Event" : "New Calendar Event"}
-                  </h3>
-                  <button
-                    onClick={() => {
-                      setShowEventModal(false);
-                      setEditingEvent(null);
-                      setEventForm({
-                        date: new Date().toISOString().split("T")[0],
-                        title: "",
-                        type: "journal_entry",
-                        description: "",
-                        time: "",
-                        impact: "none",
-                        instrument: "",
-                        strategy: "",
-                        sentiment: "neutral",
-                        color: "#8b5cf6",
-                        isCompleted: false,
-                      });
-                    }}
-                    className="p-2 rounded-full hover:bg-slate-100"
-                  >
-                    <ArrowLeft className="w-5 h-5 text-slate-700" />
-                  </button>
-                </div>
-
-                <form onSubmit={handleEventSubmit}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                    {/* Left Column */}
-                    <div className="space-y-4 sm:space-y-6">
-                      {/* Date */}
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                          Date
-                        </label>
-                        <input
-                          type="date"
-                          value={eventForm.date}
-                          onChange={(e) =>
-                            setEventForm({ ...eventForm, date: e.target.value })
-                          }
-                          className="w-full p-3 border border-slate-300 rounded-xl focus:outline-none focus:border-violet-500"
-                          required
-                        />
-                      </div>
-
-                      {/* Time */}
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                          Time (Optional)
-                        </label>
-                        <input
-                          type="time"
-                          value={eventForm.time}
-                          onChange={(e) =>
-                            setEventForm({ ...eventForm, time: e.target.value })
-                          }
-                          className="w-full p-3 border border-slate-300 rounded-xl focus:outline-none focus:border-violet-500"
-                        />
-                      </div>
-
-                      {/* Type */}
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                          Event Type
-                        </label>
-                        <select
-                          value={eventForm.type}
-                          onChange={(e) =>
-                            setEventForm({ ...eventForm, type: e.target.value })
-                          }
-                          className="w-full p-3 border border-slate-300 rounded-xl focus:outline-none focus:border-violet-500"
-                        >
-                          {Object.entries(eventTypes).map(([key, config]) => (
-                            <option key={key} value={key}>
-                              {config.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Impact */}
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                          Impact Level
-                        </label>
-                        <div className="grid grid-cols-4 gap-2">
-                          {["none", "low", "medium", "high"].map((level) => (
-                            <button
-                              key={level}
-                              type="button"
-                              onClick={() =>
-                                setEventForm({ ...eventForm, impact: level })
-                              }
-                              className={`
-                                py-2 rounded-lg text-xs sm:text-sm font-medium
-                                ${
-                                  eventForm.impact === level
-                                    ? "ring-2 ring-offset-2"
-                                    : "bg-slate-100 hover:bg-slate-200"
-                                }
-                              `}
-                              style={{
-                                backgroundColor:
-                                  eventForm.impact === level
-                                    ? impactColors[level]
-                                    : "",
-                                color:
-                                  eventForm.impact === level
-                                    ? "white"
-                                    : "inherit",
-                                borderColor: impactColors[level],
-                              }}
-                            >
-                              {level.charAt(0).toUpperCase() + level.slice(1)}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Color */}
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                          Color
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                          {[
-                            "#8b5cf6",
-                            "#3b82f6",
-                            "#10b981",
-                            "#f59e0b",
-                            "#ef4444",
-                            "#ec4899",
-                          ].map((color) => (
-                            <button
-                              key={color}
-                              type="button"
-                              onClick={() =>
-                                setEventForm({ ...eventForm, color })
-                              }
-                              className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 ${
-                                eventForm.color === color
-                                  ? "border-slate-800"
-                                  : "border-slate-300"
-                              }`}
-                              style={{ backgroundColor: color }}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Right Column */}
-                    <div className="space-y-4 sm:space-y-6">
-                      {/* Title */}
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                          Title *
-                        </label>
-                        <input
-                          type="text"
-                          value={eventForm.title}
-                          onChange={(e) =>
-                            setEventForm({
-                              ...eventForm,
-                              title: e.target.value,
-                            })
-                          }
-                          className="w-full p-3 border border-slate-300 rounded-xl focus:outline-none focus:border-violet-500"
-                          placeholder="Enter event title"
-                          required
-                        />
-                      </div>
-
-                      {/* Description */}
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                          Description
-                        </label>
-                        <textarea
-                          value={eventForm.description}
-                          onChange={(e) =>
-                            setEventForm({
-                              ...eventForm,
-                              description: e.target.value,
-                            })
-                          }
-                          className="w-full p-3 border border-slate-300 rounded-xl focus:outline-none focus:border-violet-500"
-                          rows="4"
-                          placeholder="Add detailed notes about this event..."
-                        />
-                      </div>
-
-                      {/* Trading Details */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-2">
-                            Instrument
-                          </label>
-                          <input
-                            type="text"
-                            value={eventForm.instrument}
-                            onChange={(e) =>
-                              setEventForm({
-                                ...eventForm,
-                                instrument: e.target.value,
-                              })
-                            }
-                            className="w-full p-3 border border-slate-300 rounded-xl focus:outline-none focus:border-violet-500"
-                            placeholder="e.g., XAUUSD"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-2">
-                            Strategy
-                          </label>
-                          <input
-                            type="text"
-                            value={eventForm.strategy}
-                            onChange={(e) =>
-                              setEventForm({
-                                ...eventForm,
-                                strategy: e.target.value,
-                              })
-                            }
-                            className="w-full p-3 border border-slate-300 rounded-xl focus:outline-none focus:border-violet-500"
-                            placeholder="e.g., Breakout"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Sentiment */}
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                          Market Sentiment
-                        </label>
-                        <div className="grid grid-cols-3 gap-2">
-                          {["bearish", "neutral", "bullish"].map(
-                            (sentiment) => (
-                              <button
-                                key={sentiment}
-                                type="button"
-                                onClick={() =>
-                                  setEventForm({ ...eventForm, sentiment })
-                                }
-                                className={`
-                                py-2 rounded-lg text-xs sm:text-sm font-medium
-                                ${
-                                  eventForm.sentiment === sentiment
-                                    ? "ring-2 ring-offset-2"
-                                    : "bg-slate-100 hover:bg-slate-200"
-                                }
-                              `}
-                              >
-                                {sentiment.charAt(0).toUpperCase() +
-                                  sentiment.slice(1)}
-                              </button>
-                            )
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Completion Status */}
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          id="isCompleted"
-                          checked={eventForm.isCompleted}
-                          onChange={(e) =>
-                            setEventForm({
-                              ...eventForm,
-                              isCompleted: e.target.checked,
-                            })
-                          }
-                          className="w-4 h-4 text-violet-600 rounded focus:ring-violet-500"
-                        />
-                        <label
-                          htmlFor="isCompleted"
-                          className="ml-2 text-sm text-slate-700"
-                        >
-                          Mark as completed
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex flex-col sm:flex-row justify-between mt-6 sm:mt-8 pt-6 border-t border-slate-200 gap-3">
-                    {editingEvent && (
-                      <Motion.button
-                        type="button"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handleDeleteEvent(editingEvent.id)}
-                        className="px-4 sm:px-6 py-3 bg-rose-100 text-rose-700 rounded-xl font-medium hover:bg-rose-200 flex items-center justify-center space-x-2 order-2 sm:order-1"
-                      >
-                        <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                        <span>Delete Event</span>
-                      </Motion.button>
-                    )}
-
-                    <div className="flex space-x-3 order-1 sm:order-2">
-                      <Motion.button
-                        type="button"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => {
-                          setShowEventModal(false);
-                          setEditingEvent(null);
-                          setEventForm({
-                            date: new Date().toISOString().split("T")[0],
-                            title: "",
-                            type: "journal_entry",
-                            description: "",
-                            time: "",
-                            impact: "none",
-                            instrument: "",
-                            strategy: "",
-                            sentiment: "neutral",
-                            color: "#8b5cf6",
-                            isCompleted: false,
-                          });
-                        }}
-                        className="px-4 sm:px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200"
-                      >
-                        Cancel
-                      </Motion.button>
-                      <Motion.button
-                        type="submit"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        disabled={isLoading}
-                        className="px-4 sm:px-6 py-3 bg-linear-to-r from-violet-600 to-purple-600 text-white rounded-xl font-medium hover:from-violet-700 hover:to-purple-700 flex items-center justify-center space-x-2 disabled:opacity-50"
-                      >
-                        {isLoading ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                            <span>Saving...</span>
-                          </>
-                        ) : (
-                          <>
-                            {editingEvent ? (
-                              <>
-                                <Edit className="w-4 h-4 sm:w-5 sm:h-5" />
-                                <span>Update Event</span>
-                              </>
-                            ) : (
-                              <>
-                                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-                                <span>Create Event</span>
-                              </>
-                            )}
-                          </>
-                        )}
-                      </Motion.button>
-                    </div>
-                  </div>
-                </form>
-              </div>
-            </Motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Calendar Event Modal (NEW - dengan validasi) */}
+      <CalendarEventModal
+        showModal={showEventModal}
+        setShowModal={setShowEventModal}
+        eventForm={eventForm}
+        setEventForm={setEventForm}
+        editingEvent={editingEvent}
+        setEditingEvent={setEditingEvent}
+        handleEventSubmit={handleEventSubmit}
+        isLoading={isSavingEvent}
+        formErrors={formErrors}
+        setFormErrors={setFormErrors}
+      />
     </div>
   );
 };

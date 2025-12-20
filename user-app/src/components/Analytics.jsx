@@ -529,16 +529,9 @@ const Analytics = () => {
             <h1 className="text-2xl md:text-3xl lg:text-3xl font-bold text-slate-800 flex items-center gap-2">
               <BarChart3 className="w-8 h-8 text-violet-600" />
               Trading Analytics
-              {subscription?.plan === "free" && (
-                <span className="text-sm bg-slate-100 text-slate-700 px-3 py-1 rounded-full font-bold">
-                  FREE PLAN
-                </span>
-              )}
             </h1>
             <p className="text-sm sm:text-sm md:text-base text-slate-600 mt-1 font-light">
-              {subscription?.plan === "free"
-                ? "Basic analytics available. Upgrade to Pro for advanced features."
-                : "Deep insights into your trading performance"}
+              Deep insights into your trading performance
             </p>
           </div>
 

@@ -23,6 +23,8 @@ import {
   Wallet,
   AlertCircle,
   FileTextIcon,
+  CheckCircle,
+  AlertTriangle
 } from "lucide-react";
 import { formatCurrency } from "../../utils/currencyFormatter";
 
@@ -34,7 +36,7 @@ const FormModal = ({
   closeForm,
   isLoading,
   currentBalance = 0,
-  currency = "IDR",
+  currency = "USD",
   originalData = null,
 }) => {
   const [profitDisplay, setProfitDisplay] = useState("");
@@ -43,6 +45,9 @@ const FormModal = ({
   const [strategyValue, setStrategyValue] = useState("");
   const [validationErrors, setValidationErrors] = useState({});
   const [showValidation, setShowValidation] = useState(false);
+  const [isOtherMarket, setIsOtherMarket] = useState(false);
+  const [customMarket, setCustomMarket] = useState("");
+  const [marketValue, setMarketValue] = useState("");
 
   // SEMUA FIELD WAJIB DIISI (kecuali screenshot)
   const requiredFields = [
@@ -110,6 +115,34 @@ const FormModal = ({
     }
   }, [form.strategy, setForm]);
 
+  // Initialize market state
+  useEffect(() => {
+    if (form.market) {
+      const predefinedMarkets = [
+        "Trending",
+        "Ranging",
+        "Volatile",
+        "Low Vol",
+        "Breakout",
+        "Reversal",
+      ];
+
+      if (predefinedMarkets.includes(form.market)) {
+        setIsOtherMarket(false);
+        setCustomMarket("");
+        setMarketValue(form.market);
+      } else {
+        setIsOtherMarket(true);
+        setCustomMarket(form.market);
+        setMarketValue("Other");
+      }
+    } else {
+      setIsOtherMarket(false);
+      setCustomMarket("");
+      setMarketValue("");
+    }
+  }, [form.market, setForm]);
+
   // Validasi form sebelum submit
   const validateForm = () => {
     const errors = {};
@@ -154,6 +187,11 @@ const FormModal = ({
     // Validasi custom strategy
     if (form.strategy === "Other" && !customStrategy.trim()) {
       errors.strategy = "Custom strategy harus diisi";
+    }
+
+    // Validasi custom market
+    if (form.market === "Other" && !customMarket.trim()) {
+      errors.market = "Custom market condition harus diisi";
     }
 
     // Validasi konsistensi result dan profit
@@ -216,6 +254,17 @@ const FormModal = ({
   };
 
   const formatNumberOnBlur = (key, value) => {
+    // Tentukan field mana yang perlu diformat sebagai angka
+    const numericFields = [
+      "lot", "entry", "exit", "stop", "take", 
+      "pips", "profit", "riskReward"
+    ];
+
+    // Jika bukan field angka, kembalikan nilai asli
+    if (!numericFields.includes(key)) {
+      return value;
+    }
+
     if (value === "") return "";
 
     const cleaned = cleanNumberInput(value);
@@ -296,6 +345,7 @@ const FormModal = ({
     const displayValue = formatNumberForInput(value);
     setProfitDisplay(displayValue);
 
+    // Simpan nilai asli (tanpa format) ke dalam form
     const numericValue = displayValue.replace(/\./g, "");
     const cleaned = cleanNumberInput(numericValue);
 
@@ -385,6 +435,21 @@ const FormModal = ({
         setCustomStrategy("");
         setForm((prev) => ({ ...prev, [key]: value }));
       }
+    } else if (key === "market") {
+      setMarketValue(value);
+
+      if (value === "Other") {
+        setIsOtherMarket(true);
+        if (customMarket) {
+          setForm((prev) => ({ ...prev, [key]: customMarket }));
+        } else {
+          setForm((prev) => ({ ...prev, [key]: "" }));
+        }
+      } else {
+        setIsOtherMarket(false);
+        setCustomMarket("");
+        setForm((prev) => ({ ...prev, [key]: value }));
+      }
     } else if (
       ["lot", "entry", "exit", "stop", "take", "pips", "riskReward"].includes(
         key
@@ -410,7 +475,9 @@ const FormModal = ({
     const currentValue = key === "profit" ? form.profit : form[key];
     if (currentValue === undefined || currentValue === "") return;
 
+    // Hanya format untuk field angka
     const formatted = formatNumberOnBlur(key, currentValue);
+    
     if (formatted !== currentValue) {
       setForm((prev) => ({ ...prev, [key]: formatted }));
 
@@ -425,7 +492,8 @@ const FormModal = ({
 
     // Validasi field setelah blur
     if (requiredFields.includes(key)) {
-      if (!formatted || formatted.toString().trim() === "") {
+      const valueToCheck = formatted || currentValue;
+      if (!valueToCheck || valueToCheck.toString().trim() === "") {
         setValidationErrors((prev) => ({
           ...prev,
           [key]: "Field ini wajib diisi",
@@ -479,7 +547,7 @@ const FormModal = ({
       stop: "Stop Loss",
       take: "Take Profit",
       pips: "Pips",
-      profit: "Profit/Loss",
+      profit: `Profit/Loss (${currency})`, // Ditambahkan currency di sini
       result: "Result",
       strategy: "Strategy",
       market: "Kondisi Market",
@@ -504,7 +572,7 @@ const FormModal = ({
       profit: "15000",
       riskReward: "1.5",
       strategy: "Pilih strategy yang digunakan",
-      market: "Contoh: Trending, Sideways, Volatile",
+      market: "Pilih kondisi market",
       emotionBefore: "Contoh: Percaya diri, Nervous, Tenang",
       emotionAfter: "Contoh: Puas, Kecewa, Netral",
       notes: "Deskripsikan trading Anda secara detail...",
@@ -597,7 +665,12 @@ const FormModal = ({
       ],
       required: true,
     },
-    { key: "market", type: "text", required: true },
+    {
+      key: "market",
+      type: "select",
+      options: ["Trending", "Ranging", "Volatile", "Low Vol", "Breakout", "Reversal", "Other"],
+      required: true,
+    },
     { key: "emotionBefore", type: "text", required: true },
     { key: "emotionAfter", type: "text", required: true },
     { key: "notes", type: "textarea", required: true },
@@ -632,7 +705,13 @@ const FormModal = ({
   const getEmptyFieldLabels = () => {
     return requiredFields
       .filter((field) => !form[field] || form[field].toString().trim() === "")
-      .map((field) => getFieldLabel(field));
+      .map((field) => {
+        // Hapus currency dari label untuk field profit agar lebih rapi
+        if (field === "profit") {
+          return "Profit/Loss";
+        }
+        return getFieldLabel(field).replace(` (${currency})`, "");
+      });
   };
 
   return (
@@ -724,6 +803,8 @@ const FormModal = ({
                           value={
                             field.key === "strategy"
                               ? strategyValue
+                              : field.key === "market"
+                              ? marketValue
                               : form[field.key] || ""
                           }
                           onChange={(e) =>
@@ -739,7 +820,7 @@ const FormModal = ({
                           }`}
                         >
                           <option value="">
-                            Pilih {getFieldLabel(field.key)}
+                            Pilih {getFieldLabel(field.key).replace(` (${currency})`, '')}
                           </option>
                           {field.options.map((opt) => (
                             <option key={opt} value={opt}>
@@ -855,6 +936,57 @@ const FormModal = ({
                       <AlertCircle className="w-3 h-3 text-red-500" />
                       <span className="text-xs text-red-600">
                         {validationErrors.strategy}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Custom Market Input */}
+              {isOtherMarket && (
+                <div className="lg:col-span-3" data-field="market-custom">
+                  <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-1">
+                    <Globe className="w-4 h-4 text-violet-600" />
+                    Custom Market Condition Detail
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={customMarket}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setCustomMarket(value);
+                      setForm((prev) => ({ ...prev, market: value }));
+
+                      // Clear validation error
+                      if (validationErrors.market) {
+                        setValidationErrors((prev) => {
+                          const newErrors = { ...prev };
+                          delete newErrors.market;
+                          return newErrors;
+                        });
+                      }
+                    }}
+                    onBlur={() => {
+                      if (!customMarket.trim()) {
+                        setValidationErrors((prev) => ({
+                          ...prev,
+                          market: "Custom market condition harus diisi",
+                        }));
+                      }
+                    }}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all font-semibold text-slate-800 ${
+                      validationErrors.market
+                        ? "border-red-500 bg-red-50"
+                        : "border-slate-200 focus:border-violet-500"
+                    }`}
+                    placeholder="Jelaskan kondisi market custom Anda secara detail..."
+                  />
+                  {validationErrors.market && (
+                    <div className="mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3 text-red-500" />
+                      <span className="text-xs text-red-600">
+                        {validationErrors.market}
                       </span>
                     </div>
                   )}
@@ -1035,7 +1167,14 @@ const FormModal = ({
                   <li className="flex items-start gap-1">
                     <span className="text-slate-600 mt-0.5">•</span>
                     <span>
-                      Profit: gunakan format angka (contoh: 15000 atau -5000)
+                      Profit ({currency}): gunakan format angka (contoh: 15000 atau -5000)
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-1">
+                    <span className="text-slate-600 mt-0.5">•</span>
+                    <span>
+                      Kondisi Market: Pilih dari opsi yang tersedia atau pilih
+                      "Other" untuk kondisi khusus
                     </span>
                   </li>
                 </ul>

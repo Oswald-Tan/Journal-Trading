@@ -2,6 +2,190 @@ import { DataTypes } from "sequelize";
 import db from "../config/database.js";
 import User from "./user.js";
 
+const ExchangeRate = db.define(
+  "ExchangeRate",
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    fromCurrency: {
+      type: DataTypes.STRING(10), // GANTI dari ENUM ke STRING untuk support lebih banyak currency
+      allowNull: false,
+      validate: {
+        len: [2, 10],
+      },
+    },
+    toCurrency: {
+      type: DataTypes.STRING(10), // GANTI dari ENUM ke STRING
+      allowNull: false,
+      validate: {
+        len: [2, 10],
+      },
+    },
+    rate: {
+      type: DataTypes.DECIMAL(20, 12), // Presisi lebih tinggi
+      allowNull: false,
+    },
+    effectiveFrom: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+    },
+    effectiveTo: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
+    source: {
+      type: DataTypes.ENUM("api", "manual", "system"),
+      defaultValue: "api",
+    },
+    lastUpdated: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+  },
+  {
+    timestamps: true,
+    tableName: "exchange_rates",
+    indexes: [
+      {
+        fields: ["fromCurrency", "toCurrency", "isActive"],
+      },
+      {
+        fields: ["effectiveFrom"],
+      },
+      {
+        fields: ["lastUpdated"],
+      },
+    ],
+  }
+);
+
+// Ubah MonthlyLeaderboard menjadi PeriodLeaderboard
+const PeriodLeaderboard = db.define(
+  "PeriodLeaderboard",
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: User,
+        key: "id",
+      },
+    },
+    periodType: {
+      type: DataTypes.ENUM("daily", "weekly", "monthly"),
+      allowNull: false,
+    },
+    periodValue: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      comment: "Format: daily=YYYY-MM-DD, weekly=YYYY-WW, monthly=YYYY-MM",
+    },
+    rank: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    score: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    totalProfitUSD: {
+      type: DataTypes.DECIMAL(20, 4), // Presisi tinggi untuk konversi
+      defaultValue: 0,
+      comment: "Profit yang sudah dikonversi ke USD",
+    },
+    totalProfitOriginal: {
+      type: DataTypes.DECIMAL(20, 4),
+      defaultValue: 0,
+      comment: "Profit dalam mata uang asli user",
+    },
+    originalCurrency: {
+      type: DataTypes.ENUM("USD", "IDR", "CENT"),
+      defaultValue: "USD",
+    },
+    totalTrades: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    winRate: {
+      type: DataTypes.DECIMAL(5, 2),
+      defaultValue: 0,
+    },
+    dailyActivity: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    consistencyScore: {
+      type: DataTypes.DECIMAL(5, 2),
+      defaultValue: 0,
+      comment: "Skor konsistensi trading",
+    },
+    userLevel: {
+      type: DataTypes.INTEGER,
+      defaultValue: 1,
+    },
+    totalExperience: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    dailyStreak: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    totalTradesUser: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      field: "total_trades_user", // Menggunakan nama berbeda dari totalTrades yang sudah ada
+    },
+    profitStreak: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    maxConsecutiveWins: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    lastExchangeRate: {
+      type: DataTypes.DECIMAL(20, 12),
+      defaultValue: 1,
+      comment: "Rate yang digunakan saat terakhir konversi",
+    },
+    exchangeRateUpdatedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: "Waktu terakhir update exchange rate",
+    },
+  },
+  {
+    timestamps: true,
+    tableName: "period_leaderboards",
+    indexes: [
+      {
+        fields: ["periodType", "periodValue", "rank"],
+      },
+      {
+        fields: ["userId", "periodType", "periodValue"],
+        unique: true,
+      },
+      {
+        fields: ["periodValue"],
+      },
+    ],
+  }
+);
+
 const Badge = db.define(
   "Badge",
   {
@@ -280,7 +464,82 @@ const MonthlyLeaderboard = db.define(
   }
 );
 
+const LeaderboardHistory = db.define(
+  "LeaderboardHistory",
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "users",
+        key: "id",
+      },
+    },
+    periodType: {
+      type: DataTypes.ENUM("daily", "weekly", "monthly"),
+      allowNull: false,
+    },
+    periodDate: {
+      type: DataTypes.DATEONLY,
+      allowNull: false,
+    },
+    rank: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    score: {
+      type: DataTypes.DECIMAL(15, 2),
+      defaultValue: 0,
+    },
+    totalTrades: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    totalProfitUSD: {
+      type: DataTypes.DECIMAL(15, 2),
+      defaultValue: 0,
+    },
+    totalProfitOriginal: {
+      type: DataTypes.DECIMAL(15, 2),
+      defaultValue: 0,
+    },
+    originalCurrency: {
+      type: DataTypes.STRING,
+      defaultValue: "USD",
+    },
+    winRate: {
+      type: DataTypes.DECIMAL(5, 2),
+      defaultValue: 0,
+    },
+    conversionRate: {
+      type: DataTypes.DECIMAL(15, 8),
+      defaultValue: 1,
+    },
+  },
+  {
+    timestamps: true,
+    tableName: "leaderboard_history",
+    indexes: [
+      {
+        fields: ["periodType", "periodDate", "rank"],
+      },
+      {
+        fields: ["userId", "periodType", "periodDate"],
+        unique: true,
+      },
+    ],
+  }
+);
+
 // Relationships
+User.hasMany(PeriodLeaderboard, { foreignKey: "userId", onDelete: "CASCADE" });
+PeriodLeaderboard.belongsTo(User, { foreignKey: "userId" });
+
 User.hasMany(UserBadge, { foreignKey: "userId", onDelete: "CASCADE" });
 UserBadge.belongsTo(User, { foreignKey: "userId" });
 UserBadge.belongsTo(Badge, { foreignKey: "badgeId" });
@@ -293,6 +552,9 @@ Achievement.belongsTo(User, { foreignKey: "userId" });
 
 User.hasMany(MonthlyLeaderboard, { foreignKey: "userId", onDelete: "CASCADE" });
 MonthlyLeaderboard.belongsTo(User, { foreignKey: "userId" });
+
+User.hasMany(LeaderboardHistory, { foreignKey: "userId", onDelete: "CASCADE" });
+LeaderboardHistory.belongsTo(User, { foreignKey: "userId" });
 
 // Initialize default badges
 export const initializeDefaultBadges = async () => {
@@ -469,4 +731,196 @@ export const initializeDefaultBadges = async () => {
   }
 };
 
-export { Badge, UserBadge, UserLevel, Achievement, MonthlyLeaderboard };
+// models/gamification.js - VERSI DIPERBAIKI
+export const initializeExchangeRates = async () => {
+  const defaultRates = [
+    {
+      fromCurrency: "USD",
+      toCurrency: "USD",
+      rate: 1.0,
+      effectiveFrom: new Date(),
+      isActive: true,
+      source: "system"
+    },
+    {
+      fromCurrency: "CENT", 
+      toCurrency: "USD",
+      rate: 0.01,
+      effectiveFrom: new Date(),
+      isActive: true,
+      source: "system",
+      note: "100 CENT = 1 USD"
+    }
+    // TIDAK ADA IDR DI DEFAULT RATES!
+    // IDR rate harus dari API atau manual update
+  ];
+
+  try {
+    console.log("🔄 Initializing SYSTEM exchange rates (USD, CENT only)...");
+    
+    for (const rateData of defaultRates) {
+      // Cek apakah sudah ada rate aktif untuk pair ini
+      const existingActive = await ExchangeRate.findOne({
+        where: {
+          fromCurrency: rateData.fromCurrency,
+          toCurrency: rateData.toCurrency,
+          isActive: true
+        }
+      });
+      
+      // Hanya buat jika belum ada yang aktif
+      if (!existingActive) {
+        await ExchangeRate.create({
+          fromCurrency: rateData.fromCurrency,
+          toCurrency: rateData.toCurrency,
+          rate: rateData.rate,
+          effectiveFrom: new Date(),
+          isActive: true,
+          source: rateData.source || "system"
+        });
+        
+        console.log(`✅ Created SYSTEM rate: 1 ${rateData.fromCurrency} = ${rateData.rate} ${rateData.toCurrency}`);
+      } else {
+        console.log(`⏭️  Skipping ${rateData.fromCurrency}->${rateData.toCurrency}, active rate already exists`);
+      }
+    }
+    
+    console.log("✅ Exchange rates initialization completed");
+    
+    // Cek status rates
+    await this.checkExchangeRateStatus();
+    
+  } catch (error) {
+    console.error("❌ Error initializing exchange rates:", error);
+  }
+};
+
+// Fungsi untuk cek status exchange rates
+export const checkExchangeRateStatus = async () => {
+  try {
+    const rates = await ExchangeRate.findAll({
+      order: [['fromCurrency', 'ASC'], ['toCurrency', 'ASC'], ['effectiveFrom', 'DESC']]
+    });
+    
+    const summary = {};
+    rates.forEach(rate => {
+      const key = `${rate.fromCurrency}_${rate.toCurrency}`;
+      if (!summary[key]) summary[key] = [];
+      summary[key].push({
+        id: rate.id,
+        rate: rate.rate,
+        isActive: rate.isActive,
+        effectiveFrom: rate.effectiveFrom,
+        source: rate.source
+      });
+    });
+    
+    console.log("📊 Exchange Rate Status Summary:");
+    Object.keys(summary).forEach(key => {
+      const activeRates = summary[key].filter(r => r.isActive);
+      console.log(`  ${key}: ${activeRates.length} active, ${summary[key].length} total records`);
+      
+      if (activeRates.length > 1) {
+        console.warn(`  ⚠️  WARNING: Multiple active rates for ${key}`);
+      } else if (activeRates.length === 0) {
+        console.warn(`  ⚠️  WARNING: No active rate for ${key}`);
+      }
+    });
+    
+    return summary;
+  } catch (error) {
+    console.error("Error checking exchange rate status:", error);
+    return null;
+  }
+};
+
+// ==================== UPDATE EXCHANGE RATE FROM API ====================
+const updateExchangeRateFromAPI = async (
+  fromCurrency,
+  toCurrency,
+  rate
+) => {
+  const transaction = await db.transaction();
+
+  try {
+    console.log(
+      `🔄 Updating exchange rate: 1 ${fromCurrency} = ${rate} ${toCurrency}`
+    );
+
+    // 1. Nonaktifkan rate lama untuk pair ini
+    await ExchangeRate.update(
+      {
+        isActive: false,
+        effectiveTo: new Date(),
+        lastUpdated: new Date(),
+      },
+      {
+        where: {
+          fromCurrency: fromCurrency.toUpperCase(),
+          toCurrency: toCurrency.toUpperCase(),
+          isActive: true,
+        },
+        transaction,
+      }
+    );
+
+    // 2. Buat rate baru
+    const newRate = await ExchangeRate.create(
+      {
+        fromCurrency: fromCurrency.toUpperCase(),
+        toCurrency: toCurrency.toUpperCase(),
+        rate: rate,
+        effectiveFrom: new Date(),
+        effectiveTo: null,
+        isActive: true,
+        source: "api",
+        lastUpdated: new Date(),
+      },
+      { transaction }
+    );
+
+    await transaction.commit();
+
+    console.log(
+      `✅ Exchange rate updated: 1 ${newRate.fromCurrency} = ${newRate.rate} ${newRate.toCurrency}`
+    );
+
+    return newRate;
+  } catch (error) {
+    await transaction.rollback();
+    console.error("❌ Error updating exchange rate from API:", error);
+    throw error;
+  }
+};
+
+// ==================== GET LATEST EXCHANGE RATE ====================
+const getLatestExchangeRate = async (fromCurrency, toCurrency) => {
+  try {
+    const rate = await ExchangeRate.findOne({
+      where: {
+        fromCurrency: fromCurrency.toUpperCase(),
+        toCurrency: toCurrency.toUpperCase(),
+        isActive: true,
+      },
+      order: [["effectiveFrom", "DESC"]],
+    });
+
+    return rate;
+  } catch (error) {
+    console.error("Error getting latest exchange rate:", error);
+    return null;
+  }
+};
+
+export {
+  Badge,
+  UserBadge,
+  UserLevel,
+  Achievement,
+  MonthlyLeaderboard,
+  LeaderboardHistory,
+  PeriodLeaderboard,
+  ExchangeRate,
+  updateExchangeRateFromAPI,
+  getLatestExchangeRate,
+};

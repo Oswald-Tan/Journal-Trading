@@ -1642,18 +1642,18 @@ const Layout = () => {
                     </p>
                     <div className="space-y-2">
                       <a
-                        href="mailto:support@tradingjournal.com"
+                        href="mailto:support@pipsdiary.com"
                         className="flex items-center gap-2 text-violet-600 hover:text-violet-700 font-medium"
                       >
                         <Mail className="w-4 h-4" />
-                        support@tradingjournal.com
+                        support@pipsdiary.com
                       </a>
                       <a
-                        href="https://wa.me/6281234567890"
+                        href="https://wa.me/6285173246048"
                         className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium"
                       >
                         <Smartphone className="w-4 h-4" />
-                        +62 812 3456 7890
+                        +62 851 7324 6048
                       </a>
                     </div>
                   </div>
