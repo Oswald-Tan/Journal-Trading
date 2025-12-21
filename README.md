@@ -397,3 +397,48 @@ Setelah itu, jalankan Certbot dengan plugin Nginx untuk mendapatkan dan menginst
 ```
 sudo certbot --nginx -d pipsdiary.com -d www.pipsdiary.com
 ```
+
+## Manual SSL Certificate Renewal
+Jika Anda perlu memperpanjang sertifikat secara manual (misalnya karena sertifikat sudah kadaluarsa atau ingin memastikan), ikuti langkah-langkah berikut:
+
+1 - Cek status sertifikat yang saat ini terinstal:
+```
+sudo certbot certificates
+```
+2 - Jalankan perintah renew untuk memperpanjang semua sertifikat yang mendekati kadaluarsa:
+```
+sudo certbot renew
+```
+3 - Muat ulang Nginx untuk menerapkan sertifikat yang baru:
+```
+sudo systemctl reload nginx
+```
+
+## Database Setup and Backend Deployment
+Berikut adalah langkah-langkah untuk mengimpor database SQL dan menjalankan aplikasi backend untuk proyek Pips Diary.
+1 - Membuat Database
+Masuk ke MySQL dan buat database baru:
+```
+mysql -u root -p
+```
+Kemudian jalankan perintah SQL berikut untuk membuat database:
+```
+CREATE DATABASE db_pipsdiary;
+EXIT;
+```
+2 - Mengatasi Masalah Collation (Opsional)
+Jika file SQL Anda memiliki collation utf8mb4_0900_ai_ci yang tidak didukung oleh versi MySQL Anda, Anda bisa menggantinya dengan utf8mb4_general_ci dengan perintah:
+```
+sed -i 's/utf8mb4_0900_ai_ci/utf8mb4_general_ci/g' /root/abpolimdo/db_pipsdiary.sql
+```
+3 - Mengimpor Database
+Impor file SQL ke dalam database yang telah dibuat. Pastikan file SQL berada di lokasi yang benar:
+```
+mysql -u root -p db_pipsdiary < /root/abpolimdo/db_pipsdiary.sql
+```
+4 - Menjalankan Aplikasi Backend dengan PM2
+```
+cd /root/pipsdiary/backend
+pm2 start src/app.js --name pipsdiary-backend
+```
+Pastikan Anda telah menginstal PM2 sebelumnya (seperti yang dijelaskan di bagian sebelumnya).
