@@ -373,3 +373,27 @@ Let’s Encrypt’s certificates are only valid for ninety days. To set a timer 
 systemctl status certbot.timer
 ```
 
+## Installing Certbot
+1 - Install Snap Core and Refresh:
+```
+sudo snap install core; sudo snap refresh core
+```
+2 - Install Certbot:
+```
+sudo snap install --classic certbot
+```
+3 - Create a symbolic link (optional, for easier access):
+```
+sudo ln -s /snap/bin/certbot /usr/bin/certbot
+```
+
+## Obtaining and Installing the SSL Certificate
+Catatan Penting: Pastikan konfigurasi Nginx untuk domain abpolimdo.com sudah aktif. Jika Anda sudah membuat file konfigurasi di /etc/nginx/sites-available/abpolimdo namun belum mengaktifkannya, jalankan perintah berikut terlebih dahulu:
+```
+sudo ln -s /etc/nginx/sites-available/abpolimdo /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+```
+Setelah itu, jalankan Certbot dengan plugin Nginx untuk mendapatkan dan menginstal sertifikat SSL.
+```
+sudo certbot --nginx -d pipsdiary.com -d www.pipsdiary.com
+```
