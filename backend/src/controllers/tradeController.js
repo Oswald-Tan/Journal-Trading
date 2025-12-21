@@ -4,13 +4,7 @@ import Target from "../models/target.js";
 import Trade from "../models/trade.js";
 import User from "../models/user.js";
 import Subscription from "../models/subscription.js";
-import {
-  Badge,
-  UserBadge,
-  UserLevel,
-  Achievement,
-  PeriodLeaderboard,
-} from "../models/gamification.js";
+import { Badge, UserBadge, UserLevel, Achievement, PeriodLeaderboard } from "../models/gamification.js";
 import { generateTradingReportPDF } from "../utils/pdfGenerator.js";
 import { calculateStats } from "../utils/statsCalculator.js";
 import currencyService from "../services/currencyService.js";

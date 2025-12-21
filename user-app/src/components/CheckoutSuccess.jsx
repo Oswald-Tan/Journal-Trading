@@ -23,24 +23,25 @@ const CheckoutSuccess = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  
+
   const pollingIntervalRef = useRef(null);
   const isInitializedRef = useRef(false);
 
   // Get orderId dari berbagai sumber
   const getOrderId = () => {
     // 1. Dari URL query parameters (dari Midtrans redirect)
-    const orderIdFromQuery = searchParams.get('order_id') || searchParams.get('orderId');
-    
+    const orderIdFromQuery =
+      searchParams.get("order_id") || searchParams.get("orderId");
+
     // 2. Dari state navigation
     const orderIdFromState = location.state?.orderId;
-    
+
     // 3. Dari localStorage
     const savedTransaction = JSON.parse(
       localStorage.getItem("lastTransaction") || "{}"
     );
     const orderIdFromStorage = savedTransaction.orderId;
-    
+
     // Prioritas: URL > State > Storage
     return orderIdFromQuery || orderIdFromState || orderIdFromStorage;
   };
@@ -54,7 +55,7 @@ const CheckoutSuccess = () => {
   const [error, setError] = useState(null);
   const [pollCount, setPollCount] = useState(0);
   const [setUserSubscription] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState("");
 
   // Fetch transaction status
   const fetchTransactionStatus = async (orderIdToCheck = orderId) => {
@@ -65,36 +66,45 @@ const CheckoutSuccess = () => {
     }
 
     try {
-      console.log(`🔍 Checking status for: ${orderIdToCheck}, attempt: ${pollCount + 1}`);
+      console.log(
+        `🔍 Checking status for: ${orderIdToCheck}, attempt: ${pollCount + 1}`
+      );
 
       const res = await axios.get(
-        `${API_URL}/transactions/status/${orderIdToCheck}`);
+        `${API_URL}/transactions/status/${orderIdToCheck}`
+      );
 
       console.log("📊 Transaction status response:", res.data);
 
       if (res.data.success) {
         const transactionData = res.data.data;
         setTransaction(transactionData);
-        
+
         // Simpan payment method
         if (transactionData.payment_method) {
           setPaymentMethod(transactionData.payment_method);
         }
 
         // Jika status PAID, stop polling dan update subscription
-        if (transactionData.status === "PAID" || transactionData.status === "settlement") {
+        if (
+          transactionData.status === "PAID" ||
+          transactionData.status === "settlement"
+        ) {
           console.log("✅ Payment successful, stopping polling");
           stopPolling();
           await refreshUserSubscription();
-        } else if (pollCount >= 60) { // Maksimal 60 polling (3 menit)
+        } else if (pollCount >= 60) {
+          // Maksimal 60 polling (3 menit)
           console.log("⏰ Max polling reached");
           stopPolling();
-          setError("Pembayaran masih diproses. Silakan cek status di dashboard nanti.");
+          setError(
+            "Pembayaran masih diproses. Silakan cek status di dashboard nanti."
+          );
         }
       }
     } catch (error) {
       console.error("❌ Fetch transaction error:", error);
-      
+
       // Jika error 401 (unauthorized), redirect ke login
       if (error.response?.status === 401) {
         setError("Sesi Anda telah berakhir. Silakan login kembali.");
@@ -111,7 +121,7 @@ const CheckoutSuccess = () => {
     try {
       // Coba endpoint subscription
       const res = await axios.get(`${API_URL}/subscription/my-subscription`);
-      
+
       if (res.data.success) {
         setUserSubscription(res.data.data);
         localStorage.setItem("userSubscription", JSON.stringify(res.data.data));
@@ -129,8 +139,9 @@ const CheckoutSuccess = () => {
     }
 
     pollingIntervalRef.current = setInterval(() => {
-      if (pollCount < 60) { // Maksimal 60 kali polling
-        setPollCount(prev => prev + 1);
+      if (pollCount < 60) {
+        // Maksimal 60 kali polling
+        setPollCount((prev) => prev + 1);
         fetchTransactionStatus();
       } else {
         stopPolling();
@@ -161,25 +172,27 @@ const CheckoutSuccess = () => {
 
     // Cek parameter URL dari Midtrans
     const urlParams = new URLSearchParams(window.location.search);
-    const midtransOrderId = urlParams.get('order_id');
-    const transactionStatus = urlParams.get('transaction_status');
-    
+    const midtransOrderId = urlParams.get("order_id");
+    const transactionStatus = urlParams.get("transaction_status");
+
     if (midtransOrderId && transactionStatus) {
-      console.log(`🎯 Midtrans redirect detected: ${midtransOrderId}, status: ${transactionStatus}`);
-      
+      console.log(
+        `🎯 Midtrans redirect detected: ${midtransOrderId}, status: ${transactionStatus}`
+      );
+
       // Simpan data dari Midtrans
       const transactionData = {
         id: midtransOrderId,
-        status: transactionStatus === 'settlement' ? 'PAID' : 'PENDING',
+        status: transactionStatus === "settlement" ? "PAID" : "PENDING",
         transaction_time: new Date().toISOString(),
-        source: 'midtrans_redirect'
+        source: "midtrans_redirect",
       };
-      
-      localStorage.setItem('lastTransaction', JSON.stringify(transactionData));
+
+      localStorage.setItem("lastTransaction", JSON.stringify(transactionData));
       setTransaction(transactionData);
-      
+
       // Jika status settlement, langsung update
-      if (transactionStatus === 'settlement') {
+      if (transactionStatus === "settlement") {
         refreshUserSubscription();
       }
     }
@@ -205,15 +218,15 @@ const CheckoutSuccess = () => {
       startPolling();
     });
   };
-  
+
   // Fungsi untuk melanjutkan pembayaran
   const handleContinuePayment = () => {
-    navigate('/checkout', {
+    navigate("/checkout", {
       state: {
-        plan: transaction?.plan || location.state?.plan || 'pro',
+        plan: transaction?.plan || location.state?.plan || "pro",
         orderId: orderId,
-        continuePayment: true
-      }
+        continuePayment: true,
+      },
     });
   };
 
@@ -221,13 +234,16 @@ const CheckoutSuccess = () => {
   const handleOpenPaymentInNewTab = () => {
     if (snapToken) {
       // Buka Midtrans di tab baru dengan token
-      window.open(`https://app.sandbox.midtrans.com/snap/v2/vtweb/${snapToken}`, '_blank');
+      window.open(
+        `https://app.sandbox.midtrans.com/snap/v2/vtweb/${snapToken}`,
+        "_blank"
+      );
     } else if (transaction?.snap_redirect_url) {
-      window.open(transaction.snap_redirect_url, '_blank');
+      window.open(transaction.snap_redirect_url, "_blank");
     } else {
       Swal.fire({
-        icon: 'warning',
-        title: 'Link Pembayaran Tidak Tersedia',
+        icon: "warning",
+        title: "Link Pembayaran Tidak Tersedia",
         text: 'Silakan gunakan tombol "Lanjutkan Pembayaran"',
       });
     }
@@ -268,15 +284,23 @@ const CheckoutSuccess = () => {
   };
 
   // Status determination
-  const isSuccess = transaction?.status === "PAID" || transaction?.status === "settlement";
-  const isPending = transaction?.status === "PENDING_PAYMENT" || 
-                   transaction?.status === "PENDING" || 
-                   transaction?.status === "pending";
-  const isFailed = ["CANCELED", "EXPIRED", "DENIED", "CANCEL", "EXPIRE", "DENY"]
-    .includes(transaction?.status?.toUpperCase());
+  const isSuccess =
+    transaction?.status === "PAID" || transaction?.status === "settlement";
+  const isPending =
+    transaction?.status === "PENDING_PAYMENT" ||
+    transaction?.status === "PENDING" ||
+    transaction?.status === "pending";
+  const isFailed = [
+    "CANCELED",
+    "EXPIRED",
+    "DENIED",
+    "CANCEL",
+    "EXPIRE",
+    "DENY",
+  ].includes(transaction?.status?.toUpperCase());
 
   // DANA-specific messages
-  const isDanaPayment = paymentMethod?.toLowerCase() === 'dana';
+  const isDanaPayment = paymentMethod?.toLowerCase() === "dana";
 
   // Loading state
   if (loading) {
@@ -288,19 +312,17 @@ const CheckoutSuccess = () => {
             Memuat Status Pembayaran...
           </h3>
           <p className="text-slate-600 mb-4">
-            {isDanaPayment 
+            {isDanaPayment
               ? "Pembayaran DANA sedang diproses. Mohon tunggu..."
               : "Memverifikasi status pembayaran Anda..."}
           </p>
           <div className="w-full bg-slate-200 rounded-full h-2">
-            <div 
+            <div
               className="bg-violet-600 h-2 rounded-full transition-all duration-300"
               style={{ width: `${Math.min((pollCount / 60) * 100, 100)}%` }}
             ></div>
           </div>
-          <p className="text-xs text-slate-500 mt-2">
-            Polling: {pollCount}/60
-          </p>
+          <p className="text-xs text-slate-500 mt-2">Polling: {pollCount}/60</p>
         </div>
       </div>
     );
@@ -339,11 +361,12 @@ const CheckoutSuccess = () => {
     <div className="min-h-screen py-12 px-4 bg-linear-to-b from-slate-50 to-white">
       <div className="max-w-4xl mx-auto">
         {/* Back Button */}
+
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center text-slate-600 hover:text-slate-800 font-medium mb-8"
+          className="w-full sm:w-auto px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 font-medium flex items-center justify-center gap-2 text-sm sm:text-base mb-8"
         >
-          <ArrowLeft className="w-5 h-5 mr-2" />
+          <ArrowLeft className="w-5 h-5" />
           Kembali
         </button>
 
@@ -374,18 +397,19 @@ const CheckoutSuccess = () => {
                 Pembayaran Diproses
               </h1>
               <p className="text-xl text-slate-600 mb-8 max-w-2xl mx-auto">
-                {isDanaPayment 
+                {isDanaPayment
                   ? "Pembayaran DANA sedang diverifikasi. Proses ini bisa memakan waktu beberapa menit."
                   : "Pembayaran Anda sedang diverifikasi oleh sistem."}
               </p>
-              
+
               {/* Pending Payment Info */}
               <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 max-w-2xl mx-auto mb-6">
                 <h3 className="font-bold text-amber-800 mb-3 text-lg">
                   ⚠️ Pembayaran Belum Selesai
                 </h3>
                 <p className="text-amber-700 mb-4">
-                  Anda belum menyelesaikan pembayaran. Silakan pilih salah satu opsi di bawah:
+                  Anda belum menyelesaikan pembayaran. Silakan pilih salah satu
+                  opsi di bawah:
                 </p>
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
@@ -393,8 +417,13 @@ const CheckoutSuccess = () => {
                       <span className="text-violet-600 text-sm">1</span>
                     </div>
                     <div>
-                      <p className="font-medium text-slate-800">Lanjutkan di halaman ini</p>
-                      <p className="text-sm text-slate-600">Klik "Lanjutkan Pembayaran" untuk membuka halaman pembayaran di tab ini</p>
+                      <p className="font-medium text-slate-800">
+                        Lanjutkan di halaman ini
+                      </p>
+                      <p className="text-sm text-slate-600">
+                        Klik "Lanjutkan Pembayaran" untuk membuka halaman
+                        pembayaran di tab ini
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -402,19 +431,25 @@ const CheckoutSuccess = () => {
                       <span className="text-blue-600 text-sm">2</span>
                     </div>
                     <div>
-                      <p className="font-medium text-slate-800">Buka di tab baru</p>
-                      <p className="text-sm text-slate-600">Klik "Buka Pembayaran di Tab Baru" jika ingin membayar di tab terpisah</p>
+                      <p className="font-medium text-slate-800">
+                        Buka di tab baru
+                      </p>
+                      <p className="text-sm text-slate-600">
+                        Klik "Buka Pembayaran di Tab Baru" jika ingin membayar
+                        di tab terpisah
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
-              
+
               {/* DANA-specific message */}
               {isDanaPayment && (
                 <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 max-w-2xl mx-auto mb-4">
                   <p className="text-blue-700">
-                    ⏳ Untuk pembayaran DANA, biasanya membutuhkan waktu 1-5 menit untuk diproses.
-                    Jangan tutup halaman ini. Sistem akan otomatis memeriksa status.
+                    ⏳ Untuk pembayaran DANA, biasanya membutuhkan waktu 1-5
+                    menit untuk diproses. Jangan tutup halaman ini. Sistem akan
+                    otomatis memeriksa status.
                   </p>
                 </div>
               )}
@@ -488,7 +523,11 @@ const CheckoutSuccess = () => {
             <div className="space-y-4">
               <div>
                 <p className="text-sm text-slate-500 mb-1">Total Pembayaran</p>
-                <p className={`text-3xl font-bold ${isSuccess ? "text-emerald-600" : "text-slate-600"}`}>
+                <p
+                  className={`text-3xl font-bold ${
+                    isSuccess ? "text-emerald-600" : "text-slate-600"
+                  }`}
+                >
                   {formatCurrency(transaction?.total || 0)}
                 </p>
               </div>
@@ -496,7 +535,9 @@ const CheckoutSuccess = () => {
               <div>
                 <p className="text-sm text-slate-500 mb-1">Waktu</p>
                 <p className="font-medium text-slate-800">
-                  {formatDate(transaction?.transaction_time || transaction?.created_at)}
+                  {formatDate(
+                    transaction?.transaction_time || transaction?.created_at
+                  )}
                 </p>
               </div>
 
@@ -504,9 +545,11 @@ const CheckoutSuccess = () => {
                 <div>
                   <p className="text-sm text-slate-500 mb-1">Status Polling</p>
                   <div className="w-full bg-slate-200 rounded-full h-2">
-                    <div 
+                    <div
                       className="bg-violet-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${Math.min((pollCount / 60) * 100, 100)}%` }}
+                      style={{
+                        width: `${Math.min((pollCount / 60) * 100, 100)}%`,
+                      }}
                     ></div>
                   </div>
                   <p className="text-xs text-slate-500 mt-1">
@@ -530,7 +573,7 @@ const CheckoutSuccess = () => {
                       <RefreshCw className="w-5 h-5" />
                       Lanjutkan Pembayaran
                     </button>
-                    
+
                     <button
                       onClick={handleOpenPaymentInNewTab}
                       className="py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
@@ -539,7 +582,7 @@ const CheckoutSuccess = () => {
                       Buka di Tab Baru
                     </button>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
                     <button
                       onClick={handleRetryCheck}
@@ -556,7 +599,7 @@ const CheckoutSuccess = () => {
                   </div>
                 </>
               )}
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <button
                   onClick={isFailed ? handleGoToUpgrade : handleGoToDashboard}
@@ -564,14 +607,14 @@ const CheckoutSuccess = () => {
                 >
                   {isFailed ? "Coba Lagi" : "Ke Dashboard"}
                 </button>
-                
+
                 <button
                   onClick={handleGoToTransactions}
                   className="py-3 bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition-colors"
                 >
                   Lihat Riwayat
                 </button>
-                
+
                 <button
                   onClick={handleGoToUpgrade}
                   className="py-3 bg-violet-100 text-violet-700 rounded-xl font-medium hover:bg-violet-200 transition-colors"
@@ -580,16 +623,15 @@ const CheckoutSuccess = () => {
                 </button>
               </div>
             </div>
-            
+
             {/* DANA note */}
             {isPending && isDanaPayment && (
               <div className="mt-4 p-4 bg-blue-50 rounded-xl">
                 <p className="text-blue-700 text-sm">
-                  💡 <strong>Untuk pembayaran DANA:</strong> 
-                  Jika status tetap "Diproses" setelah 10 menit, silakan:
-                  1. Cek aplikasi DANA Anda
-                  2. Tekan tombol "Cek Status Sekarang"
-                  3. Atau hubungi support kami
+                  💡 <strong>Untuk pembayaran DANA:</strong>
+                  Jika status tetap "Diproses" setelah 10 menit, silakan: 1. Cek
+                  aplikasi DANA Anda 2. Tekan tombol "Cek Status Sekarang" 3.
+                  Atau hubungi support kami
                 </p>
               </div>
             )}

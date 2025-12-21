@@ -324,11 +324,7 @@ const LoginPage = () => {
               <div>
                 <label
                   htmlFor="email"
-                  className={`block transition-all duration-200 ${
-                    isFocused.email || formData.email
-                      ? "text-xs text-violet-600 mb-1 font-medium"
-                      : "text-sm text-slate-700 mb-2 font-light"
-                  }`}
+                  className={`block transition-all duration-200 text-sm text-slate-700 mb-2 font-light`}
                 >
                   Email Address
                 </label>
@@ -355,11 +351,7 @@ const LoginPage = () => {
               <div>
                 <label
                   htmlFor="password"
-                  className={`block transition-all duration-200 ${
-                    isFocused.password || formData.password
-                      ? "text-xs text-violet-600 mb-1 font-medium"
-                      : "text-sm text-slate-700 mb-2 font-light"
-                  }`}
+                  className={`block transition-all duration-200 text-sm text-slate-700 mb-2 font-light`}
                 >
                   Password
                 </label>
@@ -397,7 +389,7 @@ const LoginPage = () => {
                     type="checkbox"
                     checked={formData.rememberMe}
                     onChange={handleChange}
-                    className="w-4 h-4 text-violet-600 bg-slate-100 border-slate-300 rounded focus:ring-violet-500 focus:ring-2"
+                    className="w-4 h-4 text-violet-600 bg-slate-100 border-slate-300 rounded"
                   />
                   <label
                     htmlFor="rememberMe"

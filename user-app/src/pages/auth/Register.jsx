@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { motion as Motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
-import { RegisterUser, reset } from "../../features/authSlice";
+import { motion as Motion } from "framer-motion";
+import { Link, useNavigate } from "react-router-dom";
+import { RegisterUser, reset, clearError } from "../../features/authSlice"; // Import clearError
 import {
   User,
   Mail,
@@ -14,16 +14,21 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
-  Shield
-} from 'lucide-react';
+  Shield,
+  Globe,
+} from "lucide-react";
+import { sortedCountries } from "../../utils/countryList";
+import ReactCountryFlag from "react-country-flag";
+import CountrySelect from "../../components/CountrySelect";
 
 const RegisterPage = ({ onShowTradingJournal }) => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    agreeToTerms: false
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    agreeToTerms: false,
+    country: "US",
   });
   const [formErrors, setFormErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
@@ -32,46 +37,91 @@ const RegisterPage = ({ onShowTradingJournal }) => {
     name: false,
     email: false,
     password: false,
-    confirmPassword: false
+    confirmPassword: false,
+    country: false,
   });
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user, isSuccess, isLoading, isError, message } = useSelector((state) => state.auth);
+  const { user, isSuccess, isLoading, isError, message, error } = useSelector(
+    (state) => state.auth
+  );
+
+  // Reset error state ketika komponen mount
+  useEffect(() => {
+    dispatch(clearError());
+    return () => {
+      dispatch(reset());
+    };
+  }, [dispatch]);
 
   // Redirect effect setelah registrasi berhasil
   useEffect(() => {
     if (user || isSuccess) {
       navigate("/");
-      
+
       if (onShowTradingJournal) {
         onShowTradingJournal();
       }
     }
-
-    return () => {
-      dispatch(reset());
-    };
   }, [user, isSuccess, dispatch, navigate, onShowTradingJournal]);
+
+  // Auto-clear error setelah beberapa detik
+  useEffect(() => {
+    if (isError && error) {
+      const timer = setTimeout(() => {
+        dispatch(clearError());
+      }, 8000); // Clear setelah 8 detik
+
+      return () => clearTimeout(timer);
+    }
+  }, [isError, error, dispatch]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+
+    // Update form data
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
 
-    // Clear error ketika user mulai mengetik
+    // Clear backend error ketika user mulai mengedit field yang bermasalah
+    if (isError) {
+      // Cek jika error terkait dengan field yang sedang diubah
+      const emailError = error?.toLowerCase().includes("email");
+      const passwordError = error?.toLowerCase().includes("password");
+
+      if (
+        (emailError && name === "email") ||
+        (passwordError && (name === "password" || name === "confirmPassword"))
+      ) {
+        dispatch(clearError());
+      }
+    }
+
+    // Clear frontend validation error
     if (formErrors[name]) {
-      setFormErrors(prev => ({
+      setFormErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: "",
       }));
+    }
+
+    // Reset submitted state
+    if (hasSubmitted) {
+      setHasSubmitted(false);
     }
   };
 
   const handleFocus = (field) => {
     setIsFocused({ ...isFocused, [field]: true });
+
+    // Clear error ketika user focus ke field
+    if (isError) {
+      dispatch(clearError());
+    }
   };
 
   const handleBlur = (field) => {
@@ -83,35 +133,40 @@ const RegisterPage = ({ onShowTradingJournal }) => {
 
     // Validasi nama
     if (!formData.name.trim()) {
-      errors.name = 'Full name is required';
+      errors.name = "Full name is required";
     } else if (formData.name.trim().length < 2) {
-      errors.name = 'Name must be at least 2 characters';
+      errors.name = "Name must be at least 2 characters";
     }
 
     // Validasi email
     if (!formData.email) {
-      errors.email = 'Email is required';
+      errors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = 'Email is invalid';
+      errors.email = "Email is invalid";
     }
 
     // Validasi password
     if (!formData.password) {
-      errors.password = 'Password is required';
+      errors.password = "Password is required";
     } else if (formData.password.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
+      errors.password = "Password must be at least 6 characters";
     }
 
     // Validasi konfirmasi password
     if (!formData.confirmPassword) {
-      errors.confirmPassword = 'Please confirm your password';
+      errors.confirmPassword = "Please confirm your password";
     } else if (formData.password !== formData.confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
+      errors.confirmPassword = "Passwords do not match";
     }
 
     // Validasi terms
     if (!formData.agreeToTerms) {
-      errors.agreeToTerms = 'You must agree to the terms and conditions';
+      errors.agreeToTerms = "You must agree to the terms and conditions";
+    }
+
+    // Add country validation
+    if (!formData.country) {
+      errors.country = "Please select your country";
     }
 
     setFormErrors(errors);
@@ -120,19 +175,25 @@ const RegisterPage = ({ onShowTradingJournal }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+    setHasSubmitted(true);
+
+    // Clear previous errors
+    dispatch(clearError());
+
     if (validateForm()) {
-      dispatch(RegisterUser({ 
-        name: formData.name,
-        email: formData.email, 
-        password: formData.password,
-      }));
+      dispatch(
+        RegisterUser({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+        })
+      );
     }
   };
 
   const getPasswordStrength = (password) => {
-    if (!password) return { strength: 0, label: '', color: '' };
-    
+    if (!password) return { strength: 0, label: "", color: "" };
+
     let strength = 0;
     if (password.length >= 6) strength += 1;
     if (/[a-z]/.test(password)) strength += 1;
@@ -141,14 +202,14 @@ const RegisterPage = ({ onShowTradingJournal }) => {
     if (/[^A-Za-z0-9]/.test(password)) strength += 1;
 
     const strengthMap = {
-      1: { label: 'Very Weak', color: 'bg-red-500' },
-      2: { label: 'Weak', color: 'bg-orange-500' },
-      3: { label: 'Fair', color: 'bg-yellow-500' },
-      4: { label: 'Good', color: 'bg-blue-500' },
-      5: { label: 'Strong', color: 'bg-green-500' }
+      1: { label: "Very Weak", color: "bg-red-500" },
+      2: { label: "Weak", color: "bg-orange-500" },
+      3: { label: "Fair", color: "bg-yellow-500" },
+      4: { label: "Good", color: "bg-blue-500" },
+      5: { label: "Strong", color: "bg-green-500" },
     };
 
-    return strengthMap[strength] || { strength: 0, label: '', color: '' };
+    return strengthMap[strength] || { strength: 0, label: "", color: "" };
   };
 
   const passwordStrength = getPasswordStrength(formData.password);
@@ -195,7 +256,7 @@ const RegisterPage = ({ onShowTradingJournal }) => {
               >
                 <TrendingUp className="w-6 h-6 text-white" />
               </Motion.div>
-              
+
               <h2 className="text-3xl font-bold bg-linear-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent mb-2">
                 Start Your Journey
               </h2>
@@ -205,14 +266,23 @@ const RegisterPage = ({ onShowTradingJournal }) => {
             </div>
 
             {/* Error Message */}
-            {isError && (
+            {isError && error && (
               <Motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl mb-6 text-sm font-light flex items-center"
+                exit={{ opacity: 0, y: -10 }}
+                className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl mb-6 text-sm font-light flex items-center justify-between"
               >
-                <AlertCircle className="w-4 h-4 mr-2" />
-                {message}
+                <div className="flex items-center">
+                  <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>{error || message}</span>
+                </div>
+                <button
+                  onClick={() => dispatch(clearError())}
+                  className="text-red-500 hover:text-red-700 ml-2"
+                >
+                  ✕
+                </button>
               </Motion.div>
             )}
 
@@ -224,7 +294,7 @@ const RegisterPage = ({ onShowTradingJournal }) => {
                 className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-2xl mb-6 text-sm font-light flex items-center"
               >
                 <CheckCircle className="w-4 h-4 mr-2" />
-                Registration successful! Redirecting...
+                {message || "Registration successful! Redirecting..."}
               </Motion.div>
             )}
 
@@ -232,13 +302,9 @@ const RegisterPage = ({ onShowTradingJournal }) => {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Full Name Field */}
               <div>
-                <label 
-                  htmlFor="name" 
-                  className={`block transition-all duration-200 ${
-                    isFocused.name || formData.name
-                      ? "text-xs text-violet-600 mb-1 font-medium"
-                      : "text-sm text-slate-700 mb-2 font-light"
-                  }`}
+                <label
+                  htmlFor="name"
+                  className={`block transition-all duration-200 text-sm text-slate-700 mb-2 font-light`}
                 >
                   Full Name
                 </label>
@@ -253,9 +319,9 @@ const RegisterPage = ({ onShowTradingJournal }) => {
                     onFocus={() => handleFocus("name")}
                     onBlur={() => handleBlur("name")}
                     className={`w-full px-4 py-3 bg-slate-50 border rounded-2xl focus:outline-none transition-all duration-300 text-slate-900 placeholder-slate-400 font-light ${
-                      formErrors.name 
-                        ? 'border-red-300 focus:border-red-500' 
-                        : 'border-slate-200 focus:border-violet-500'
+                      formErrors.name
+                        ? "border-red-300 focus:border-red-500"
+                        : "border-slate-200 focus:border-violet-500"
                     }`}
                     placeholder="John Trader"
                   />
@@ -264,19 +330,17 @@ const RegisterPage = ({ onShowTradingJournal }) => {
                   </div>
                 </div>
                 {formErrors.name && (
-                  <p className="mt-1 text-xs text-red-600 font-light">{formErrors.name}</p>
+                  <p className="mt-1 text-xs text-red-600 font-light">
+                    {formErrors.name}
+                  </p>
                 )}
               </div>
 
               {/* Email Field */}
               <div>
-                <label 
-                  htmlFor="email" 
-                  className={`block transition-all duration-200 ${
-                    isFocused.email || formData.email
-                      ? "text-xs text-violet-600 mb-1 font-medium"
-                      : "text-sm text-slate-700 mb-2 font-light"
-                  }`}
+                <label
+                  htmlFor="email"
+                  className={`block transition-all duration-200 text-sm text-slate-700 mb-2 font-light`}
                 >
                   Email Address
                 </label>
@@ -291,9 +355,9 @@ const RegisterPage = ({ onShowTradingJournal }) => {
                     onFocus={() => handleFocus("email")}
                     onBlur={() => handleBlur("email")}
                     className={`w-full px-4 py-3 bg-slate-50 border rounded-2xl focus:outline-none transition-all duration-300 text-slate-900 placeholder-slate-400 font-light ${
-                      formErrors.email 
-                        ? 'border-red-300 focus:border-red-500' 
-                        : 'border-slate-200 focus:border-violet-500'
+                      formErrors.email
+                        ? "border-red-300 focus:border-red-500"
+                        : "border-slate-200 focus:border-violet-500"
                     }`}
                     placeholder="trader@example.com"
                   />
@@ -302,19 +366,36 @@ const RegisterPage = ({ onShowTradingJournal }) => {
                   </div>
                 </div>
                 {formErrors.email && (
-                  <p className="mt-1 text-xs text-red-600 font-light">{formErrors.email}</p>
+                  <p className="mt-1 text-xs text-red-600 font-light">
+                    {formErrors.email}
+                  </p>
                 )}
+              </div>
+
+              {/* Country Field - Add this after Email field */}
+              <div>
+                <label
+                  htmlFor="country"
+                  className={`block transition-all duration-200 text-sm text-slate-700 mb-2 font-light`}
+                >
+                  Country / Region
+                </label>
+                <CountrySelect
+                  value={formData.country}
+                  onChange={(value) => {
+                    handleChange({
+                      target: { name: "country", value, type: "select" },
+                    });
+                  }}
+                  error={formErrors.country}
+                />
               </div>
 
               {/* Password Field */}
               <div>
-                <label 
-                  htmlFor="password" 
-                  className={`block transition-all duration-200 ${
-                    isFocused.password || formData.password
-                      ? "text-xs text-violet-600 mb-1 font-medium"
-                      : "text-sm text-slate-700 mb-2 font-light"
-                  }`}
+                <label
+                  htmlFor="password"
+                  className={`block transition-all duration-200 text-sm text-slate-700 mb-2 font-light`}
                 >
                   Password
                 </label>
@@ -329,9 +410,9 @@ const RegisterPage = ({ onShowTradingJournal }) => {
                     onFocus={() => handleFocus("password")}
                     onBlur={() => handleBlur("password")}
                     className={`w-full px-4 py-3 bg-slate-50 border rounded-2xl focus:outline-none transition-all duration-300 text-slate-900 placeholder-slate-400 font-light pr-12 ${
-                      formErrors.password 
-                        ? 'border-red-300 focus:border-red-500' 
-                        : 'border-slate-200 focus:border-violet-500'
+                      formErrors.password
+                        ? "border-red-300 focus:border-red-500"
+                        : "border-slate-200 focus:border-violet-500"
                     }`}
                     placeholder="Create a strong password"
                   />
@@ -341,53 +422,59 @@ const RegisterPage = ({ onShowTradingJournal }) => {
                       onClick={() => setShowPassword(!showPassword)}
                       className="text-slate-400 hover:text-slate-600 transition-colors duration-200"
                     >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      {showPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
                     </button>
                   </div>
                 </div>
-                
+
                 {/* Password Strength Indicator */}
                 {formData.password && (
                   <div className="mt-2">
                     <div className="flex justify-between text-xs mb-1 font-light">
                       <span className="text-slate-600">Password strength:</span>
-                      <span className={`font-medium ${
-                        passwordStrength.label === 'Strong' ? 'text-green-600' :
-                        passwordStrength.label === 'Good' ? 'text-blue-600' :
-                        passwordStrength.label === 'Fair' ? 'text-yellow-600' :
-                        passwordStrength.label === 'Weak' ? 'text-orange-600' :
-                        'text-red-600'
-                      }`}>
+                      <span
+                        className={`font-medium ${
+                          passwordStrength.label === "Strong"
+                            ? "text-green-600"
+                            : passwordStrength.label === "Good"
+                            ? "text-blue-600"
+                            : passwordStrength.label === "Fair"
+                            ? "text-yellow-600"
+                            : passwordStrength.label === "Weak"
+                            ? "text-orange-600"
+                            : "text-red-600"
+                        }`}
+                      >
                         {passwordStrength.label}
                       </span>
                     </div>
                     <div className="w-full bg-slate-200 rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full transition-all duration-300 ${
-                          passwordStrength.color
-                        }`}
-                        style={{ 
-                          width: `${(passwordStrength.strength / 5) * 100}%` 
+                      <div
+                        className={`h-2 rounded-full transition-all duration-300 ${passwordStrength.color}`}
+                        style={{
+                          width: `${(passwordStrength.strength / 5) * 100}%`,
                         }}
                       ></div>
                     </div>
                   </div>
                 )}
-                
+
                 {formErrors.password && (
-                  <p className="mt-1 text-xs text-red-600 font-light">{formErrors.password}</p>
+                  <p className="mt-1 text-xs text-red-600 font-light">
+                    {formErrors.password}
+                  </p>
                 )}
               </div>
 
               {/* Confirm Password Field */}
               <div>
-                <label 
-                  htmlFor="confirmPassword" 
-                  className={`block transition-all duration-200 ${
-                    isFocused.confirmPassword || formData.confirmPassword
-                      ? "text-xs text-violet-600 mb-1 font-medium"
-                      : "text-sm text-slate-700 mb-2 font-light"
-                  }`}
+                <label
+                  htmlFor="confirmPassword"
+                  className={`block transition-all duration-200 text-sm text-slate-700 mb-2 font-light`}
                 >
                   Confirm Password
                 </label>
@@ -402,24 +489,32 @@ const RegisterPage = ({ onShowTradingJournal }) => {
                     onFocus={() => handleFocus("confirmPassword")}
                     onBlur={() => handleBlur("confirmPassword")}
                     className={`w-full px-4 py-3 bg-slate-50 border rounded-2xl focus:outline-none transition-all duration-300 text-slate-900 placeholder-slate-400 font-light pr-12 ${
-                      formErrors.confirmPassword 
-                        ? 'border-red-300 focus:border-red-500' 
-                        : 'border-slate-200 focus:border-violet-500'
+                      formErrors.confirmPassword
+                        ? "border-red-300 focus:border-red-500"
+                        : "border-slate-200 focus:border-violet-500"
                     }`}
                     placeholder="Confirm your password"
                   />
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center">
                     <button
                       type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
                       className="text-slate-400 hover:text-slate-600 transition-colors duration-200"
                     >
-                      {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      {showConfirmPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
                     </button>
                   </div>
                 </div>
                 {formErrors.confirmPassword && (
-                  <p className="mt-1 text-xs text-red-600 font-light">{formErrors.confirmPassword}</p>
+                  <p className="mt-1 text-xs text-red-600 font-light">
+                    {formErrors.confirmPassword}
+                  </p>
                 )}
               </div>
 
@@ -434,23 +529,34 @@ const RegisterPage = ({ onShowTradingJournal }) => {
                   onChange={handleChange}
                   className={`w-4 h-4 mt-1 rounded ${
                     formErrors.agreeToTerms
-                      ? 'text-red-500 bg-red-100 border-red-300'
-                      : 'text-violet-600 bg-slate-100 border-slate-300'
+                      ? "text-red-500 bg-red-100 border-red-300"
+                      : "text-violet-600 bg-slate-100 border-slate-300"
                   }`}
                 />
-                <label htmlFor="agreeToTerms" className="ml-2 block text-sm text-slate-700 font-light">
-                  I agree to the{' '}
-                  <a href="#" className="font-medium bg-linear-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent hover:from-violet-700 hover:to-purple-700 transition-all duration-300">
+                <label
+                  htmlFor="agreeToTerms"
+                  className="ml-2 block text-sm text-slate-700 font-light"
+                >
+                  I agree to the{" "}
+                  <a
+                    href="#"
+                    className="font-medium bg-linear-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent hover:from-violet-700 hover:to-purple-700 transition-all duration-300"
+                  >
                     Terms of Service
-                  </a>{' '}
-                  and{' '}
-                  <a href="#" className="font-medium bg-linear-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent hover:from-violet-700 hover:to-purple-700 transition-all duration-300">
+                  </a>{" "}
+                  and{" "}
+                  <a
+                    href="#"
+                    className="font-medium bg-linear-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent hover:from-violet-700 hover:to-purple-700 transition-all duration-300"
+                  >
                     Privacy Policy
                   </a>
                 </label>
               </div>
               {formErrors.agreeToTerms && (
-                <p className="text-xs text-red-600 -mt-2 font-light">{formErrors.agreeToTerms}</p>
+                <p className="text-xs text-red-600 -mt-2 font-light">
+                  {formErrors.agreeToTerms}
+                </p>
               )}
 
               {/* Security Info */}
@@ -458,9 +564,12 @@ const RegisterPage = ({ onShowTradingJournal }) => {
                 <div className="flex items-start space-x-3">
                   <Shield className="w-5 h-5 text-blue-600 mt-0.5" />
                   <div>
-                    <h4 className="text-sm font-semibold text-blue-900 mb-1">Secure Registration</h4>
+                    <h4 className="text-sm font-semibold text-blue-900 mb-1">
+                      Secure Registration
+                    </h4>
                     <p className="text-xs text-blue-700 font-light">
-                      Your data is encrypted and protected. We never share your trading information with third parties.
+                      Your data is encrypted and protected. We never share your
+                      trading information with third parties.
                     </p>
                   </div>
                 </div>
@@ -470,10 +579,13 @@ const RegisterPage = ({ onShowTradingJournal }) => {
               <Motion.button
                 type="submit"
                 disabled={isLoading}
-                whileHover={{ scale: isLoading ? 1 : 1.02, y: isLoading ? 0 : -2 }}
+                whileHover={{
+                  scale: isLoading ? 1 : 1.02,
+                  y: isLoading ? 0 : -2,
+                }}
                 whileTap={{ scale: 0.98 }}
                 className={`w-full bg-linear-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-medium py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group ${
-                  isLoading ? 'opacity-75 cursor-not-allowed' : ''
+                  isLoading ? "opacity-75 cursor-not-allowed" : ""
                 }`}
               >
                 {isLoading ? (
@@ -497,15 +609,17 @@ const RegisterPage = ({ onShowTradingJournal }) => {
                   <div className="w-full border-t border-slate-200"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-slate-500 font-light">Already have an account?</span>
+                  <span className="px-2 bg-white text-slate-500 font-light">
+                    Already have an account?
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* Login Link */}
             <div className="text-center">
-              <Link 
-                to="/" 
+              <Link
+                to="/"
                 className="inline-flex items-center text-sm font-medium text-violet-600 hover:text-violet-500 transition-colors duration-300"
               >
                 Sign in to your account

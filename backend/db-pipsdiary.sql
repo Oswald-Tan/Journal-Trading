@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Dec 17, 2025 at 07:53 PM
+-- Generation Time: Dec 21, 2025 at 02:53 AM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -44,8 +44,14 @@ CREATE TABLE `achievements` (
 --
 
 INSERT INTO `achievements` (`id`, `userId`, `type`, `title`, `description`, `achievedAt`, `metadata`, `createdAt`, `updatedAt`) VALUES
-(9, 16, 'first_trade', 'First Trade!', 'Completed your first trade in the journal', '2025-12-17 19:35:40', '{}', '2025-12-17 19:35:40', '2025-12-17 19:35:40'),
-(10, 16, 'first_profit', 'First Profit!', 'Made your first profitable trade', '2025-12-17 19:35:40', '{}', '2025-12-17 19:35:40', '2025-12-17 19:35:40');
+(13, 16, 'first_trade', 'First Trade!', 'Completed your first trade in the journal', '2025-12-19 05:34:18', '{}', '2025-12-19 05:34:18', '2025-12-19 05:34:18'),
+(14, 16, 'first_profit', 'First Profit!', 'Made your first profitable trade', '2025-12-19 05:34:18', '{}', '2025-12-19 05:34:18', '2025-12-19 05:34:18'),
+(15, 17, 'first_trade', 'First Trade!', 'Completed your first trade in the journal', '2025-12-19 07:18:01', '{}', '2025-12-19 07:18:01', '2025-12-19 07:18:01'),
+(16, 17, 'first_profit', 'First Profit!', 'Made your first profitable trade', '2025-12-19 07:18:01', '{}', '2025-12-19 07:18:01', '2025-12-19 07:18:01'),
+(17, 18, 'first_trade', 'First Trade!', 'Completed your first trade in the journal', '2025-12-19 07:22:16', '{}', '2025-12-19 07:22:16', '2025-12-19 07:22:16'),
+(18, 18, 'first_profit', 'First Profit!', 'Made your first profitable trade', '2025-12-19 07:22:16', '{}', '2025-12-19 07:22:16', '2025-12-19 07:22:16'),
+(19, 19, 'first_trade', 'First Trade!', 'Completed your first trade in the journal', '2025-12-19 07:25:45', '{}', '2025-12-19 07:25:45', '2025-12-19 07:25:45'),
+(20, 19, 'first_profit', 'First Profit!', 'Made your first profitable trade', '2025-12-19 07:25:45', '{}', '2025-12-19 07:25:45', '2025-12-19 07:25:45');
 
 -- --------------------------------------------------------
 
@@ -116,6 +122,39 @@ CREATE TABLE `calendar_events` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `exchange_rates`
+--
+
+CREATE TABLE `exchange_rates` (
+  `id` int NOT NULL,
+  `fromCurrency` varchar(10) NOT NULL,
+  `toCurrency` varchar(10) NOT NULL,
+  `rate` decimal(20,12) NOT NULL,
+  `effectiveFrom` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `effectiveTo` datetime DEFAULT NULL,
+  `isActive` tinyint(1) NOT NULL DEFAULT '1',
+  `source` enum('api','manual','system') NOT NULL DEFAULT 'api',
+  `lastUpdated` datetime DEFAULT NULL,
+  `createdAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `exchange_rates`
+--
+
+INSERT INTO `exchange_rates` (`id`, `fromCurrency`, `toCurrency`, `rate`, `effectiveFrom`, `effectiveTo`, `isActive`, `source`, `lastUpdated`, `createdAt`, `updatedAt`) VALUES
+(23, 'IDR', 'USD', '0.000059863022', '2025-12-19 17:28:36', '2025-12-20 00:03:13', 0, 'api', '2025-12-20 00:03:13', '2025-12-19 17:28:36', '2025-12-20 00:03:13'),
+(24, 'IDR', 'USD', '0.000059737147', '2025-12-20 00:03:13', NULL, 1, 'api', '2025-12-20 00:03:13', '2025-12-20 00:03:13', '2025-12-20 00:03:13'),
+(25, 'EUR', 'USD', '1.171097199007', '2025-12-20 01:00:06', NULL, 1, 'api', '2025-12-20 01:00:06', '2025-12-20 01:00:06', '2025-12-20 01:00:06'),
+(26, 'GBP', 'USD', '1.337720873550', '2025-12-20 01:00:06', NULL, 1, 'api', '2025-12-20 01:00:06', '2025-12-20 01:00:06', '2025-12-20 01:00:06'),
+(27, 'JPY', 'USD', '0.006339665749', '2025-12-20 01:00:07', NULL, 1, 'api', '2025-12-20 01:00:07', '2025-12-20 01:00:07', '2025-12-20 01:00:07'),
+(28, 'SGD', 'USD', '0.773466869736', '2025-12-20 01:00:07', NULL, 1, 'api', '2025-12-20 01:00:07', '2025-12-20 01:00:07', '2025-12-20 01:00:07'),
+(29, 'AUD', 'USD', '0.661156939903', '2025-12-20 01:00:08', NULL, 1, 'api', '2025-12-20 01:00:08', '2025-12-20 01:00:08', '2025-12-20 01:00:08');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `monthly_leaderboards`
 --
 
@@ -138,7 +177,57 @@ CREATE TABLE `monthly_leaderboards` (
 --
 
 INSERT INTO `monthly_leaderboards` (`id`, `userId`, `period`, `rank`, `score`, `totalTrades`, `totalProfit`, `totalExperience`, `winRate`, `createdAt`, `updatedAt`) VALUES
-(50, 16, '2025-12', 1, 3049, 1, '12000.00', 0, '100.00', '2025-12-17 19:35:40', '2025-12-17 19:35:40');
+(65, 16, '2025-12', 1, 0, 0, '0.00', 0, '0.00', '2025-12-19 02:46:38', '2025-12-19 03:53:41');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `period_leaderboards`
+--
+
+CREATE TABLE `period_leaderboards` (
+  `id` int NOT NULL,
+  `userId` int NOT NULL,
+  `periodType` enum('daily','weekly','monthly') NOT NULL,
+  `periodValue` varchar(20) NOT NULL COMMENT 'daily=YYYY-MM-DD, weekly=YYYY-WW, monthly=YYYY-MM',
+  `rank` int DEFAULT NULL,
+  `score` int NOT NULL DEFAULT '0',
+  `totalProfitUSD` decimal(20,4) NOT NULL DEFAULT '0.0000' COMMENT 'Profit yang sudah dikonversi ke USD',
+  `totalProfitOriginal` decimal(20,4) NOT NULL DEFAULT '0.0000' COMMENT 'Profit dalam mata uang asli user',
+  `originalCurrency` enum('USD','IDR','CENT') NOT NULL DEFAULT 'USD',
+  `totalTrades` int NOT NULL DEFAULT '0',
+  `winRate` decimal(5,2) NOT NULL DEFAULT '0.00',
+  `dailyActivity` int NOT NULL DEFAULT '0',
+  `consistencyScore` decimal(5,2) NOT NULL DEFAULT '0.00' COMMENT 'Skor konsistensi trading',
+  `createdAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `userLevel` int DEFAULT '1',
+  `totalExperience` int DEFAULT '0',
+  `dailyStreak` int DEFAULT '0',
+  `total_trades_user` int DEFAULT '0',
+  `profitStreak` int DEFAULT '0',
+  `maxConsecutiveWins` int DEFAULT '0',
+  `lastExchangeRate` decimal(20,12) NOT NULL DEFAULT '1.000000000000' COMMENT 'Rate yang digunakan saat terakhir konversi',
+  `exchangeRateUpdatedAt` datetime DEFAULT NULL COMMENT 'Waktu terakhir update exchange rate'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `period_leaderboards`
+--
+
+INSERT INTO `period_leaderboards` (`id`, `userId`, `periodType`, `periodValue`, `rank`, `score`, `totalProfitUSD`, `totalProfitOriginal`, `originalCurrency`, `totalTrades`, `winRate`, `dailyActivity`, `consistencyScore`, `createdAt`, `updatedAt`, `userLevel`, `totalExperience`, `dailyStreak`, `total_trades_user`, `profitStreak`, `maxConsecutiveWins`, `lastExchangeRate`, `exchangeRateUpdatedAt`) VALUES
+(13, 16, 'daily', '2025-12-19', 1, 3601, '1.9116', '32000.0000', 'IDR', 3, '100.00', 1, '0.00', '2025-12-19 05:34:18', '2025-12-21 02:30:01', 2, 330, 1, 3, 1, 3, '0.000059737147', '2025-12-21 02:30:01'),
+(14, 16, 'weekly', '2025-W51', 1, 3344, '1.9116', '32000.0000', 'IDR', 3, '100.00', 1, '14.29', '2025-12-19 05:34:18', '2025-12-21 02:30:01', 2, 330, 1, 3, 1, 3, '0.000059737147', '2025-12-21 02:30:01'),
+(15, 16, 'monthly', '2025-12', 1, 3154, '1.9116', '32000.0000', 'IDR', 3, '100.00', 1, '3.33', '2025-12-19 05:34:18', '2025-12-21 02:30:01', 2, 330, 1, 3, 1, 3, '0.000059737147', '2025-12-21 02:30:01'),
+(22, 17, 'daily', '2025-12-19', 3, 3204, '10.0000', '10.0000', 'USD', 1, '100.00', 1, '0.00', '2025-12-19 07:18:01', '2025-12-19 07:22:16', 2, 210, 1, 1, 1, 1, '1.000000000000', NULL),
+(23, 17, 'weekly', '2025-W51', 3, 3214, '10.0000', '10.0000', 'USD', 1, '100.00', 1, '14.29', '2025-12-19 07:18:01', '2025-12-19 07:22:16', 2, 210, 1, 1, 1, 1, '1.000000000000', NULL),
+(24, 17, 'monthly', '2025-12', 3, 3077, '10.0000', '10.0000', 'USD', 1, '100.00', 1, '3.33', '2025-12-19 07:18:01', '2025-12-19 07:22:16', 2, 210, 1, 1, 1, 1, '1.000000000000', NULL),
+(28, 18, 'daily', '2025-12-19', 2, 3204, '10.0000', '10.0000', 'USD', 1, '100.00', 1, '0.00', '2025-12-19 07:22:16', '2025-12-19 07:22:16', 2, 161, 1, 1, 1, 1, '1.000000000000', NULL),
+(29, 18, 'weekly', '2025-W51', 2, 3214, '10.0000', '10.0000', 'USD', 1, '100.00', 1, '14.29', '2025-12-19 07:22:16', '2025-12-19 07:22:16', 2, 161, 1, 1, 1, 1, '1.000000000000', NULL),
+(30, 18, 'monthly', '2025-12', 2, 3077, '10.0000', '10.0000', 'USD', 1, '100.00', 1, '3.33', '2025-12-19 07:22:16', '2025-12-19 07:22:16', 2, 161, 1, 1, 1, 1, '1.000000000000', NULL),
+(31, 19, 'daily', '2025-12-19', 4, 3202, '5.0000', '5.0000', 'USD', 1, '100.00', 1, '0.00', '2025-12-19 07:25:45', '2025-12-19 07:25:45', 2, 160, 1, 1, 1, 1, '1.000000000000', NULL),
+(32, 19, 'weekly', '2025-W51', 4, 3212, '5.0000', '5.0000', 'USD', 1, '100.00', 1, '14.29', '2025-12-19 07:25:45', '2025-12-19 07:25:45', 2, 160, 1, 1, 1, 1, '1.000000000000', NULL),
+(33, 19, 'monthly', '2025-12', 4, 3075, '5.0000', '5.0000', 'USD', 1, '100.00', 1, '3.33', '2025-12-19 07:25:45', '2025-12-19 07:25:45', 2, 160, 1, 1, 1, 1, '1.000000000000', NULL);
 
 -- --------------------------------------------------------
 
@@ -177,13 +266,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`sid`, `expires`, `data`, `createdAt`, `updatedAt`) VALUES
-('0MRTNHuSWVYIxJaTndRhRBsfNMFdRZqY', '2025-12-18 06:30:52', '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-12-18T06:30:52.038Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"}}', '2025-12-17 06:30:52', '2025-12-17 06:30:52'),
-('6nSD6uSfybZLsKAsxaUueM86epslnywg', '2025-12-18 19:35:46', '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-12-18T19:34:23.145Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"userId\":16,\"role\":\"user\"}', '2025-12-17 06:30:52', '2025-12-17 19:35:46'),
-('bbPQTftrOK_kG4_x30PERTt77pnIOFpW', '2025-12-18 06:30:52', '{\"cookie\":{\"originalMaxAge\":86399999,\"expires\":\"2025-12-18T06:30:52.012Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"}}', '2025-12-17 06:30:52', '2025-12-17 06:30:52'),
-('NAOSsaRIZ-9LbT83QGxoSqeMPXyacjR0', '2025-12-18 06:30:52', '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-12-18T06:30:52.029Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"}}', '2025-12-17 06:30:52', '2025-12-17 06:30:52'),
-('QvEFv-95AbnxtstF-DR5-v5KZgajlpkE', '2025-12-18 06:27:47', '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-12-17T06:28:50.651Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"userId\":7,\"role\":\"user\"}', '2025-12-16 06:22:57', '2025-12-17 06:27:47'),
-('Tfd258IwmdNtMqMh7QwPSP8lqPAixNZb', '2025-12-18 07:32:57', '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-12-18T07:32:54.529Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"userId\":7,\"role\":\"user\"}', '2025-12-17 07:32:48', '2025-12-17 07:32:57'),
-('VNWRxqVPrTr3tdc3iCp5z3LtMycb4T3-', '2025-12-18 02:52:01', '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-12-17T05:45:34.863Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"userId\":7,\"role\":\"user\"}', '2025-12-16 05:45:34', '2025-12-17 02:52:01');
+('zi0OMTiNsWNEXnRpHhrRWM78zP3DFv0D', '2025-12-22 02:23:10', '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-12-22T02:23:10.766Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"userId\":16,\"role\":\"user\"}', '2025-12-21 02:23:10', '2025-12-21 02:23:10');
 
 -- --------------------------------------------------------
 
@@ -208,7 +291,10 @@ CREATE TABLE `subscriptions` (
 --
 
 INSERT INTO `subscriptions` (`id`, `userId`, `plan`, `expiresAt`, `isActive`, `paymentMethod`, `transactionId`, `created_at`, `updated_at`) VALUES
-(120, 16, 'free', NULL, 1, NULL, NULL, '2025-12-17 19:28:22', '2025-12-17 19:28:22');
+(120, 16, 'pro', '2026-01-20 16:40:51', 1, 'bank_transfer', 'ORDER-1766025998971-8763', '2025-12-17 19:28:22', '2025-12-20 16:40:51'),
+(124, 17, 'free', NULL, 1, NULL, NULL, '2025-12-19 07:12:34', '2025-12-19 07:12:34'),
+(125, 18, 'free', NULL, 1, NULL, NULL, '2025-12-19 07:20:33', '2025-12-19 07:20:33'),
+(126, 19, 'free', NULL, 1, NULL, NULL, '2025-12-19 07:23:59', '2025-12-19 07:23:59');
 
 -- --------------------------------------------------------
 
@@ -236,7 +322,10 @@ CREATE TABLE `targets` (
 --
 
 INSERT INTO `targets` (`id`, `userId`, `enabled`, `targetBalance`, `targetDate`, `description`, `startDate`, `useDailyTarget`, `dailyTargetPercentage`, `dailyTargetAmount`, `created_at`, `updated_at`) VALUES
-(16, 16, 0, '0.00', NULL, NULL, '2025-12-18', 0, '0.00', '0.00', '2025-12-17 19:28:22', '2025-12-17 19:28:22');
+(16, 16, 0, '0.00', NULL, '', '2025-12-18', 0, '0.00', '0.00', '2025-12-17 19:28:22', '2025-12-18 08:29:46'),
+(17, 17, 0, '0.00', NULL, NULL, '2025-12-19', 0, '0.00', '0.00', '2025-12-19 07:12:34', '2025-12-19 07:12:34'),
+(18, 18, 0, '0.00', NULL, NULL, '2025-12-19', 0, '0.00', '0.00', '2025-12-19 07:20:33', '2025-12-19 07:20:33'),
+(19, 19, 0, '0.00', NULL, NULL, '2025-12-19', 0, '0.00', '0.00', '2025-12-19 07:23:59', '2025-12-19 07:23:59');
 
 -- --------------------------------------------------------
 
@@ -275,7 +364,12 @@ CREATE TABLE `trades` (
 --
 
 INSERT INTO `trades` (`id`, `userId`, `date`, `instrument`, `type`, `lot`, `entry`, `stop`, `take`, `exit`, `pips`, `profit`, `balanceAfter`, `result`, `riskReward`, `strategy`, `market`, `emotionBefore`, `emotionAfter`, `screenshot`, `notes`, `created_at`, `updated_at`) VALUES
-(72, 16, '2025-12-17', 'XAUUSD', 'Buy', '0.01', '4018.00000', '4000.00000', '4050.00000', '4047.00000', 10, '12000.00', '112000.00', 'Win', '1.50', 'SnR', 'Bullish', 'Keren', 'Mantap', '', 'Test', '2025-12-17 19:35:40', '2025-12-17 19:35:40');
+(89, 16, '2025-12-19', 'XAUUSD', 'Buy', '0.01', '4018.00000', '4000.00000', '4050.00000', '4047.00000', 50, '14000.00', '114000.00', 'Win', '1.50', 'Pullback', 'Volatile', 'Tenang', 'Puas', '', 'Keren', '2025-12-19 05:34:18', '2025-12-19 15:20:11'),
+(90, 16, '2025-12-19', 'XAUUSD', 'Buy', '0.01', '4018.00000', '4000.00000', '4050.00000', '4047.00000', 40, '14000.00', '128000.00', 'Win', '1.50', 'Price Action', 'Volatile', 'Tenang', 'Puas', '', 'Keren', '2025-12-19 05:40:34', '2025-12-19 15:20:01'),
+(91, 16, '2025-12-19', 'XAUUSD', 'Buy', '0.01', '4000.00000', '3090.00000', '4020.00000', '4020.00000', 12, '4000.00', '132000.00', 'Win', '1.30', 'Supply & Demand / SMC', 'tsf', 'sdf', 'sdf', '', 'dfsd', '2025-12-19 07:08:06', '2025-12-19 15:19:51'),
+(92, 17, '2025-12-19', 'XAUUSD', 'Buy', '0.01', '4000.00000', '3070.00000', '4060.00000', '4060.00000', 60, '10.00', '110.00', 'Win', '1.50', 'Pullback', 'Trending', 'Tenang', 'Puas', '', 'Mantap', '2025-12-19 07:18:01', '2025-12-19 07:18:25'),
+(93, 18, '2025-12-19', 'XAUUSD', 'Buy', '0.01', '4000.00000', '3050.00000', '4060.00000', '4060.00000', 50, '10.00', '130.00', 'Win', '1.50', 'Breakout', 'sdfd', 'sdf', 'sdfs', '', 'sdf', '2025-12-19 07:22:16', '2025-12-19 07:22:16'),
+(94, 19, '2025-12-19', 'XAUUSD', 'Buy', '0.01', '4000.00000', '3090.00000', '4020.00000', '4020.00000', 20, '5.00', '305.00', 'Win', '1.20', 'Session Trading', 'ghfhgf', 'fghfgh', 'fhf', '', 'fghfg', '2025-12-19 07:25:44', '2025-12-19 07:25:44');
 
 -- --------------------------------------------------------
 
@@ -302,6 +396,16 @@ CREATE TABLE `transactions` (
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+--
+-- Dumping data for table `transactions`
+--
+
+INSERT INTO `transactions` (`id`, `invoice_number`, `total`, `status`, `customer_name`, `customer_email`, `snap_token`, `snap_redirect_url`, `payment_method`, `plan`, `user_id`, `midtrans_transaction_id`, `transaction_time`, `metadata`, `created_at`, `updated_at`) VALUES
+('ORDER-1766025998971-8763', 'INV/PD/2025/12/18/000001', 49000, 'PAID', 'Oswald Tan', 'oswaldpongayow@gmail.com', '6a8bae1b-dacc-419c-85a7-a162f2968407', 'https://app.sandbox.midtrans.com/snap/v4/redirection/6a8bae1b-dacc-419c-85a7-a162f2968407', 'bank_transfer', 'pro', 16, 'b4e8a84c-ad9f-4384-b17a-03822438df35', '2025-12-18 01:47:10', NULL, '2025-12-18 02:46:39', '2025-12-18 02:47:18'),
+('ORDER-1766046613538-7675', 'INV/PD/2025/12/18/000002', 69000, 'PENDING_PAYMENT', 'Oswald Tan', 'oswaldpongayow@gmail.com', 'da89b4cf-55ec-4f14-8261-6c7c244ded79', 'https://app.sandbox.midtrans.com/snap/v4/redirection/da89b4cf-55ec-4f14-8261-6c7c244ded79', NULL, 'pro', 16, NULL, NULL, NULL, '2025-12-18 08:30:14', '2025-12-18 08:30:14'),
+('ORDER-1766046645573-3066', 'INV/PD/2025/12/18/000003', 69000, 'PENDING_PAYMENT', 'Oswald Tan', 'oswaldpongayow@gmail.com', '4ad1dd85-2291-4c81-92dc-edbf0a790a6d', 'https://app.sandbox.midtrans.com/snap/v4/redirection/4ad1dd85-2291-4c81-92dc-edbf0a790a6d', NULL, 'pro', 16, NULL, NULL, NULL, '2025-12-18 08:30:46', '2025-12-18 08:30:46'),
+('ORDER-1766154545180-7283', 'INV/PD/2025/12/19/000001', 799000, 'PAID', 'Oswald Tan', 'oswaldpongayow@gmail.com', '74aec04a-7eb4-4dd9-92c5-dbda2a56ba3e', 'https://app.sandbox.midtrans.com/snap/v4/redirection/74aec04a-7eb4-4dd9-92c5-dbda2a56ba3e', 'bank_transfer', 'lifetime', 16, '0fa14767-21f0-4335-a05c-799be7115343', '2025-12-19 13:29:41', NULL, '2025-12-19 14:29:05', '2025-12-19 14:29:49');
+
 -- --------------------------------------------------------
 
 --
@@ -318,6 +422,7 @@ CREATE TABLE `users` (
   `currentBalance` decimal(15,2) DEFAULT '0.00',
   `currency` enum('USD','IDR','CENT') COLLATE utf8mb4_unicode_ci DEFAULT 'USD',
   `role_id` int DEFAULT NULL,
+  `country` char(3) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `status` enum('active','suspended','inactive','pending') COLLATE utf8mb4_unicode_ci DEFAULT 'pending',
   `last_login` datetime DEFAULT NULL COMMENT 'Timestamp login terakhir',
   `resetOtp` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -332,8 +437,11 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `name`, `email`, `phone_number`, `password`, `initialBalance`, `currentBalance`, `currency`, `role_id`, `status`, `last_login`, `resetOtp`, `resetOtpExpires`, `emailVerificationToken`, `emailVerificationExpires`, `created_at`, `updated_at`) VALUES
-(16, 'Oswald Tan', 'oswaldpongayow@gmail.com', NULL, '$2b$10$6qV7fkogeLLSORiYNn7cJO/SwDTijsGvTBLXfUHagYAIa7rSuboNe', '100000.00', '112000.00', 'IDR', 1, 'active', '2025-12-17 19:34:23', NULL, NULL, 'd08588b7760cdb0cb41a78a6134619feac6817ea01d7f9d2201dbf2945c8fc39', '2025-12-18 19:32:50', '2025-12-17 19:28:22', '2025-12-17 19:35:40');
+INSERT INTO `users` (`id`, `name`, `email`, `phone_number`, `password`, `initialBalance`, `currentBalance`, `currency`, `role_id`, `country`, `status`, `last_login`, `resetOtp`, `resetOtpExpires`, `emailVerificationToken`, `emailVerificationExpires`, `created_at`, `updated_at`) VALUES
+(16, 'Oswald Tan', 'oswaldpongayow@gmail.com', '0821549026917', '$2b$10$6qV7fkogeLLSORiYNn7cJO/SwDTijsGvTBLXfUHagYAIa7rSuboNe', '100000.00', '132000.00', 'IDR', 1, NULL, 'active', '2025-12-21 02:30:25', NULL, NULL, 'd08588b7760cdb0cb41a78a6134619feac6817ea01d7f9d2201dbf2945c8fc39', '2025-12-18 19:32:50', '2025-12-17 19:28:22', '2025-12-21 02:30:25'),
+(17, 'Oswald Work', 'oswaldtanwork@gmail.com', NULL, '$2b$10$EqIaqOv0Evpfti5IGBXXauLHLrs/Y3SZf424it8f7xBfPevw74THO', '100.00', '110.00', 'USD', 1, NULL, 'active', '2025-12-19 07:16:52', NULL, NULL, NULL, NULL, '2025-12-19 07:12:33', '2025-12-19 07:18:25'),
+(18, 'Tanlee 44', 'oswaldtanlee444@gmail.com', NULL, '$2b$10$tUnSp9oes0K0q3GVhv1nQeGT0YLGjTnC2aC51arEsCAZyxFXrK0r6', '120.00', '130.00', 'USD', 1, NULL, 'active', '2025-12-19 07:21:17', NULL, NULL, NULL, NULL, '2025-12-19 07:20:33', '2025-12-19 07:22:16'),
+(19, 'Indah', 'ptdtb.dev@gmail.com', NULL, '$2b$10$Z.wVYic6JzlcEw5ygTIVCuBD.Tv8h/OI5PvqB1ka574Iu3SiMbPV6', '300.00', '305.00', 'USD', 1, NULL, 'active', '2025-12-19 07:25:00', NULL, NULL, NULL, NULL, '2025-12-19 07:23:59', '2025-12-19 07:25:44');
 
 -- --------------------------------------------------------
 
@@ -357,21 +465,66 @@ CREATE TABLE `user_badges` (
 --
 
 INSERT INTO `user_badges` (`id`, `userId`, `badgeId`, `progress`, `achievedAt`, `metadata`, `createdAt`, `updatedAt`) VALUES
-(16, 16, 16, 1, NULL, '{}', '2025-12-17 19:35:40', '2025-12-17 19:35:40'),
-(17, 16, 17, 1, NULL, '{}', '2025-12-17 19:35:40', '2025-12-17 19:35:40'),
-(18, 16, 18, 1, NULL, '{}', '2025-12-17 19:35:40', '2025-12-17 19:35:40'),
-(19, 16, 19, 1, NULL, '{}', '2025-12-17 19:35:40', '2025-12-17 19:35:40'),
-(20, 16, 20, 1, NULL, '{}', '2025-12-17 19:35:40', '2025-12-17 19:35:40'),
-(21, 16, 21, 1, NULL, '{}', '2025-12-17 19:35:40', '2025-12-17 19:35:40'),
-(22, 16, 22, 1, NULL, '{}', '2025-12-17 19:35:40', '2025-12-17 19:35:40'),
-(23, 16, 23, 1, NULL, '{}', '2025-12-17 19:35:40', '2025-12-17 19:35:40'),
-(24, 16, 24, 1, '2025-12-17 19:35:40', '{}', '2025-12-17 19:35:40', '2025-12-17 19:35:40'),
-(25, 16, 25, 1, NULL, '{}', '2025-12-17 19:35:40', '2025-12-17 19:35:40'),
-(26, 16, 26, 1, NULL, '{}', '2025-12-17 19:35:40', '2025-12-17 19:35:40'),
-(27, 16, 27, 1, NULL, '{}', '2025-12-17 19:35:40', '2025-12-17 19:35:40'),
-(28, 16, 28, 1, NULL, '{}', '2025-12-17 19:35:40', '2025-12-17 19:35:40'),
-(29, 16, 29, 0, NULL, '{}', '2025-12-17 19:35:40', '2025-12-17 19:35:40'),
-(30, 16, 30, 0, NULL, '{}', '2025-12-17 19:35:40', '2025-12-17 19:35:40');
+(46, 16, 16, 1, NULL, '{}', '2025-12-19 05:34:18', '2025-12-19 05:34:18'),
+(47, 16, 17, 1, NULL, '{}', '2025-12-19 05:34:18', '2025-12-19 05:34:18'),
+(48, 16, 18, 1, NULL, '{}', '2025-12-19 05:34:18', '2025-12-19 05:34:18'),
+(49, 16, 19, 1, NULL, '{}', '2025-12-19 05:34:18', '2025-12-19 05:34:18'),
+(50, 16, 20, 1, NULL, '{}', '2025-12-19 05:34:18', '2025-12-19 05:34:18'),
+(51, 16, 21, 1, NULL, '{}', '2025-12-19 05:34:18', '2025-12-19 05:34:18'),
+(52, 16, 22, 1, NULL, '{}', '2025-12-19 05:34:18', '2025-12-19 05:34:18'),
+(53, 16, 23, 1, NULL, '{}', '2025-12-19 05:34:18', '2025-12-19 05:34:18'),
+(54, 16, 24, 1, '2025-12-19 05:34:18', '{}', '2025-12-19 05:34:18', '2025-12-19 05:34:18'),
+(55, 16, 25, 3, NULL, '{}', '2025-12-19 05:34:18', '2025-12-19 07:08:06'),
+(56, 16, 26, 3, NULL, '{}', '2025-12-19 05:34:18', '2025-12-19 07:08:06'),
+(57, 16, 27, 3, NULL, '{}', '2025-12-19 05:34:18', '2025-12-19 07:08:06'),
+(58, 16, 28, 3, NULL, '{}', '2025-12-19 05:34:18', '2025-12-19 07:08:06'),
+(59, 16, 29, 0, NULL, '{}', '2025-12-19 05:34:18', '2025-12-19 05:34:18'),
+(60, 16, 30, 0, NULL, '{}', '2025-12-19 05:34:18', '2025-12-19 05:34:18'),
+(61, 17, 16, 1, NULL, '{}', '2025-12-19 07:18:01', '2025-12-19 07:18:01'),
+(62, 17, 17, 1, NULL, '{}', '2025-12-19 07:18:01', '2025-12-19 07:18:01'),
+(63, 17, 18, 1, NULL, '{}', '2025-12-19 07:18:01', '2025-12-19 07:18:01'),
+(64, 17, 19, 1, NULL, '{}', '2025-12-19 07:18:01', '2025-12-19 07:18:01'),
+(65, 17, 20, 1, NULL, '{}', '2025-12-19 07:18:01', '2025-12-19 07:18:01'),
+(66, 17, 21, 1, NULL, '{}', '2025-12-19 07:18:01', '2025-12-19 07:18:01'),
+(67, 17, 22, 1, NULL, '{}', '2025-12-19 07:18:01', '2025-12-19 07:18:01'),
+(68, 17, 23, 1, NULL, '{}', '2025-12-19 07:18:01', '2025-12-19 07:18:01'),
+(69, 17, 24, 1, '2025-12-19 07:18:01', '{}', '2025-12-19 07:18:01', '2025-12-19 07:18:01'),
+(70, 17, 25, 1, NULL, '{}', '2025-12-19 07:18:01', '2025-12-19 07:18:01'),
+(71, 17, 26, 1, NULL, '{}', '2025-12-19 07:18:01', '2025-12-19 07:18:01'),
+(72, 17, 27, 1, NULL, '{}', '2025-12-19 07:18:01', '2025-12-19 07:18:01'),
+(73, 17, 28, 1, NULL, '{}', '2025-12-19 07:18:01', '2025-12-19 07:18:01'),
+(74, 17, 29, 0, NULL, '{}', '2025-12-19 07:18:01', '2025-12-19 07:18:01'),
+(75, 17, 30, 0, NULL, '{}', '2025-12-19 07:18:01', '2025-12-19 07:18:01'),
+(76, 18, 16, 1, NULL, '{}', '2025-12-19 07:22:16', '2025-12-19 07:22:16'),
+(77, 18, 17, 1, NULL, '{}', '2025-12-19 07:22:16', '2025-12-19 07:22:16'),
+(78, 18, 18, 1, NULL, '{}', '2025-12-19 07:22:16', '2025-12-19 07:22:16'),
+(79, 18, 19, 1, NULL, '{}', '2025-12-19 07:22:16', '2025-12-19 07:22:16'),
+(80, 18, 20, 1, NULL, '{}', '2025-12-19 07:22:16', '2025-12-19 07:22:16'),
+(81, 18, 21, 1, NULL, '{}', '2025-12-19 07:22:16', '2025-12-19 07:22:16'),
+(82, 18, 22, 1, NULL, '{}', '2025-12-19 07:22:16', '2025-12-19 07:22:16'),
+(83, 18, 23, 1, NULL, '{}', '2025-12-19 07:22:16', '2025-12-19 07:22:16'),
+(84, 18, 24, 1, '2025-12-19 07:22:16', '{}', '2025-12-19 07:22:16', '2025-12-19 07:22:16'),
+(85, 18, 25, 1, NULL, '{}', '2025-12-19 07:22:16', '2025-12-19 07:22:16'),
+(86, 18, 26, 1, NULL, '{}', '2025-12-19 07:22:16', '2025-12-19 07:22:16'),
+(87, 18, 27, 1, NULL, '{}', '2025-12-19 07:22:16', '2025-12-19 07:22:16'),
+(88, 18, 28, 1, NULL, '{}', '2025-12-19 07:22:16', '2025-12-19 07:22:16'),
+(89, 18, 29, 0, NULL, '{}', '2025-12-19 07:22:16', '2025-12-19 07:22:16'),
+(90, 18, 30, 0, NULL, '{}', '2025-12-19 07:22:16', '2025-12-19 07:22:16'),
+(91, 19, 16, 1, NULL, '{}', '2025-12-19 07:25:45', '2025-12-19 07:25:45'),
+(92, 19, 17, 1, NULL, '{}', '2025-12-19 07:25:45', '2025-12-19 07:25:45'),
+(93, 19, 18, 1, NULL, '{}', '2025-12-19 07:25:45', '2025-12-19 07:25:45'),
+(94, 19, 19, 1, NULL, '{}', '2025-12-19 07:25:45', '2025-12-19 07:25:45'),
+(95, 19, 20, 1, NULL, '{}', '2025-12-19 07:25:45', '2025-12-19 07:25:45'),
+(96, 19, 21, 1, NULL, '{}', '2025-12-19 07:25:45', '2025-12-19 07:25:45'),
+(97, 19, 22, 1, NULL, '{}', '2025-12-19 07:25:45', '2025-12-19 07:25:45'),
+(98, 19, 23, 1, NULL, '{}', '2025-12-19 07:25:45', '2025-12-19 07:25:45'),
+(99, 19, 24, 1, '2025-12-19 07:25:45', '{}', '2025-12-19 07:25:45', '2025-12-19 07:25:45'),
+(100, 19, 25, 1, NULL, '{}', '2025-12-19 07:25:45', '2025-12-19 07:25:45'),
+(101, 19, 26, 1, NULL, '{}', '2025-12-19 07:25:45', '2025-12-19 07:25:45'),
+(102, 19, 27, 1, NULL, '{}', '2025-12-19 07:25:45', '2025-12-19 07:25:45'),
+(103, 19, 28, 1, NULL, '{}', '2025-12-19 07:25:45', '2025-12-19 07:25:45'),
+(104, 19, 29, 0, NULL, '{}', '2025-12-19 07:25:45', '2025-12-19 07:25:45'),
+(105, 19, 30, 0, NULL, '{}', '2025-12-19 07:25:45', '2025-12-19 07:25:45');
 
 -- --------------------------------------------------------
 
@@ -401,7 +554,10 @@ CREATE TABLE `user_levels` (
 --
 
 INSERT INTO `user_levels` (`id`, `userId`, `level`, `experience`, `totalExperience`, `dailyStreak`, `lastActiveDate`, `profitStreak`, `lastProfitDate`, `totalTrades`, `consecutiveWins`, `maxConsecutiveWins`, `createdAt`, `updatedAt`) VALUES
-(6, 16, 2, 110, 210, 1, '2025-12-17', 1, '2025-12-17', 1, 1, 1, '2025-12-17 19:35:40', '2025-12-17 19:35:40');
+(8, 16, 2, 230, 330, 1, '2025-12-19', 1, '2025-12-19', 3, 3, 3, '2025-12-19 05:34:18', '2025-12-19 07:08:06'),
+(9, 17, 2, 110, 210, 1, '2025-12-19', 1, '2025-12-19', 1, 1, 1, '2025-12-19 07:18:01', '2025-12-19 07:18:01'),
+(10, 18, 2, 61, 161, 1, '2025-12-19', 1, '2025-12-19', 1, 1, 1, '2025-12-19 07:22:16', '2025-12-19 07:22:16'),
+(11, 19, 2, 60, 160, 1, '2025-12-19', 1, '2025-12-19', 1, 1, 1, '2025-12-19 07:25:44', '2025-12-19 07:25:45');
 
 --
 -- Indexes for dumped tables
@@ -430,6 +586,15 @@ ALTER TABLE `calendar_events`
   ADD KEY `idx_calendar_user_type` (`userId`,`type`);
 
 --
+-- Indexes for table `exchange_rates`
+--
+ALTER TABLE `exchange_rates`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_currency_active` (`fromCurrency`,`toCurrency`,`isActive`),
+  ADD KEY `idx_effective_from` (`effectiveFrom`),
+  ADD KEY `idx_last_updated` (`lastUpdated`);
+
+--
 -- Indexes for table `monthly_leaderboards`
 --
 ALTER TABLE `monthly_leaderboards`
@@ -438,6 +603,15 @@ ALTER TABLE `monthly_leaderboards`
   ADD UNIQUE KEY `monthly_leaderboards_user_id_period` (`userId`,`period`),
   ADD KEY `idx_period_rank` (`period`,`rank`),
   ADD KEY `monthly_leaderboards_period_rank` (`period`,`rank`);
+
+--
+-- Indexes for table `period_leaderboards`
+--
+ALTER TABLE `period_leaderboards`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_user_period` (`userId`,`periodType`,`periodValue`),
+  ADD KEY `idx_period_rank` (`periodType`,`periodValue`,`rank`),
+  ADD KEY `idx_period_value` (`periodValue`);
 
 --
 -- Indexes for table `roles`
@@ -580,7 +754,7 @@ ALTER TABLE `user_levels`
 -- AUTO_INCREMENT for table `achievements`
 --
 ALTER TABLE `achievements`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT for table `badges`
@@ -595,10 +769,22 @@ ALTER TABLE `calendar_events`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
+-- AUTO_INCREMENT for table `exchange_rates`
+--
+ALTER TABLE `exchange_rates`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
+
+--
 -- AUTO_INCREMENT for table `monthly_leaderboards`
 --
 ALTER TABLE `monthly_leaderboards`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=68;
+
+--
+-- AUTO_INCREMENT for table `period_leaderboards`
+--
+ALTER TABLE `period_leaderboards`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
 
 --
 -- AUTO_INCREMENT for table `roles`
@@ -610,37 +796,37 @@ ALTER TABLE `roles`
 -- AUTO_INCREMENT for table `subscriptions`
 --
 ALTER TABLE `subscriptions`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=121;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=133;
 
 --
 -- AUTO_INCREMENT for table `targets`
 --
 ALTER TABLE `targets`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `trades`
 --
 ALTER TABLE `trades`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=73;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=95;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `user_badges`
 --
 ALTER TABLE `user_badges`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=106;
 
 --
 -- AUTO_INCREMENT for table `user_levels`
 --
 ALTER TABLE `user_levels`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- Constraints for dumped tables
@@ -663,6 +849,12 @@ ALTER TABLE `calendar_events`
 --
 ALTER TABLE `monthly_leaderboards`
   ADD CONSTRAINT `monthly_leaderboards_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `period_leaderboards`
+--
+ALTER TABLE `period_leaderboards`
+  ADD CONSTRAINT `fk_period_leaderboards_user` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `subscriptions`

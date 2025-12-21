@@ -273,6 +273,7 @@ export const authSlice = createSlice({
       state.isLoading = false;
       state.isError = true;
       state.error = action.payload;
+      state.message = action.payload;
       state.user = null;
     });
 

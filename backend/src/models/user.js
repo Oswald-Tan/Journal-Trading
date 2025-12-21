@@ -49,6 +49,15 @@ const User = db.define(
       allowNull: false,
       defaultValue: 4, // user
     },
+    country: {
+      type: DataTypes.STRING(3), // Store ISO Alpha-3 code[citation:1]
+      allowNull: true,
+      defaultValue: null,
+      validate: {
+        is: /^[A-Z]{3}$/, // Validate it's a 3-letter uppercase code
+      },
+      comment: "ISO 3166-1 alpha-3 country code (e.g., USA, GBR, IDN)",
+    },
     status: {
       type: DataTypes.ENUM("active", "suspended", "inactive", "pending"),
       defaultValue: "pending",
@@ -73,7 +82,7 @@ const User = db.define(
     emailVerificationExpires: {
       type: DataTypes.DATE,
       allowNull: true,
-    }
+    },
   },
   {
     timestamps: true,

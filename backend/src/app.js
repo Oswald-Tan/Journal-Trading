@@ -139,6 +139,8 @@ const setupExchangeRateCronJob = () => {
 // store.sync(); // Hapus komentar jika perlu table sessions
 
 // Session middleware
+app.set("trust proxy", 1);
+
 const sessionMiddleware = session({
   secret: process.env.SESS_SECRET || "dev-secret-change-this",
   resave: false,
@@ -152,11 +154,28 @@ const sessionMiddleware = session({
   },
 });
 
+// proudction
+// const sessionMiddleware = session({
+//   name: "pipsdiary.sid", // optional tapi disarankan
+//   secret: process.env.SESS_SECRET,
+//   resave: false,
+//   saveUninitialized: false,
+//   store: store,
+//   cookie: {
+//     secure: true,                 // WAJIB HTTPS
+//     httpOnly: true,
+//     sameSite: "none",              // WAJIB beda subdomain
+//     domain: ".pipsdiary.com",      // berlaku untuk semua subdomain
+//     maxAge: Number(process.env.SESSION_EXPIRY) || 86400000,
+//   },
+// });
+
+app.use(sessionMiddleware);
+
 // Security middleware untuk production
 if (process.env.NODE_ENV === "production") {
   app.use(helmet());
   app.use(compression());
-  app.set("trust proxy", 1);
 }
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || [];
@@ -231,14 +250,14 @@ app.get("/api/v1/hello-world", (req, res) => {
 });
 
 // API Routes
-app.use("/api/v1/auth", sessionMiddleware, Auth);
-app.use("/api/v1/balance", sessionMiddleware, Balance);
-app.use("/api/v1/trades", sessionMiddleware, Trade);
-app.use("/api/v1/target", sessionMiddleware, Target);
-app.use("/api/v1/subscription", sessionMiddleware, Subscription);
-app.use("/api/v1/gamification", sessionMiddleware, Gamification);
-app.use("/api/v1/calendar", sessionMiddleware, CalenderEvent);
-app.use("/api/v1/transactions", sessionMiddleware, Transaction);
+app.use("/api/v1/auth", Auth);
+app.use("/api/v1/balance", Balance);
+app.use("/api/v1/trades", Trade);
+app.use("/api/v1/target", Target);
+app.use("/api/v1/subscription", Subscription);
+app.use("/api/v1/gamification", Gamification);
+app.use("/api/v1/calendar", CalenderEvent);
+app.use("/api/v1/transactions", Transaction);
 
 // ==================== CRON JOBS ====================
 const setupCronJobs = () => {

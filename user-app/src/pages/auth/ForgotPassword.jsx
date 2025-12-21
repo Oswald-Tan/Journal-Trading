@@ -206,7 +206,7 @@ const ForgotPasswordPage = () => {
             {step === 1 && (
               <form onSubmit={handleRequestOtp} className="space-y-6">
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
+                  <label htmlFor="email" className="block text-sm text-slate-700 mb-2 font-light">
                     Email Address
                   </label>
                   <div className="relative">

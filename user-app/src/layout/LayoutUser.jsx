@@ -323,7 +323,7 @@ const LayoutUser = () => {
           {/* Footer */}
           <footer className="p-5 md:text-end text-center border-t border-gray-200 bg-white">
             <p className="text-sm text-gray-600">
-              © {currentYear} PipsDiary - All rights reserved.
+              © {currentYear} Pips Diary - All rights reserved.
             </p>
           </footer>
         </main>

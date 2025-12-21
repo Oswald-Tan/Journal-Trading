@@ -4,15 +4,14 @@ import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { updateProfile, getMe, changePassword } from "../../features/authSlice";
 import Swal from "sweetalert2";
+import ReactCountryFlag from "react-country-flag";
 import {
   ArrowLeft,
   User,
   Lock,
-  Shield,
   Eye,
   EyeOff,
   Save,
-  Loader,
   CheckCircle,
   Lightbulb,
   Mail,
@@ -25,40 +24,41 @@ import {
   Globe,
   Moon,
   Calendar,
-  Clock,
-  LogIn
-} from 'lucide-react';
+  LogIn,
+  ChevronDown,
+} from "lucide-react";
+import { useRef } from "react";
 
 // Helper function untuk memformat tanggal dan waktu
 const formatDateTime = (dateString) => {
-  if (!dateString) return 'Tidak tersedia';
-  
+  if (!dateString) return "Tidak tersedia";
+
   try {
     const date = new Date(dateString);
-    
+
     // Validasi apakah date valid
-    if (isNaN(date.getTime())) return 'Format tidak valid';
-    
+    if (isNaN(date.getTime())) return "Format tidak valid";
+
     // Format tanggal: YYYY-MM-DD
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
     // Format waktu: HH:MM (24 jam format)
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+
     return `${year}-${month}-${day}, ${hours}:${minutes}`;
   } catch (error) {
-    console.error('Error formatting date:', error);
-    return 'Format tidak valid';
+    console.error("Error formatting date:", error);
+    return "Format tidak valid";
   }
 };
 
 // Helper untuk menghitung waktu sejak login terakhir
 const getTimeSinceLastLogin = (dateString) => {
-  if (!dateString) return '';
-  
+  if (!dateString) return "";
+
   try {
     const lastLogin = new Date(dateString);
     const now = new Date();
@@ -66,37 +66,62 @@ const getTimeSinceLastLogin = (dateString) => {
     const diffMins = Math.floor(diffMs / (1000 * 60));
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
-    if (diffMins < 1) return 'Baru saja';
+
+    if (diffMins < 1) return "Baru saja";
     if (diffMins < 60) return `${diffMins} menit yang lalu`;
     if (diffHours < 24) return `${diffHours} jam yang lalu`;
-    if (diffDays === 1) return 'Kemarin';
+    if (diffDays === 1) return "Kemarin";
     if (diffDays < 7) return `${diffDays} hari yang lalu`;
     if (diffDays < 30) return `${Math.floor(diffDays / 7)} minggu yang lalu`;
     if (diffDays < 365) return `${Math.floor(diffDays / 30)} bulan yang lalu`;
     return `${Math.floor(diffDays / 365)} tahun yang lalu`;
   } catch (error) {
-    return '';
+    console.error("Error calculating time since last login:", error);
+    return "";
   }
 };
 
+// Helper function untuk menghitung kekuatan password
+const getPasswordStrength = (password) => {
+  if (!password) return { strength: 0, label: "", color: "" };
+
+  let strength = 0;
+  if (password.length >= 6) strength += 1;
+  if (/[a-z]/.test(password)) strength += 1;
+  if (/[A-Z]/.test(password)) strength += 1;
+  if (/[0-9]/.test(password)) strength += 1;
+  if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+
+  const strengthMap = {
+    1: { label: "Very Weak", color: "bg-red-500" },
+    2: { label: "Weak", color: "bg-orange-500" },
+    3: { label: "Fair", color: "bg-yellow-500" },
+    4: { label: "Good", color: "bg-blue-500" },
+    5: { label: "Strong", color: "bg-green-500" },
+  };
+
+  return strengthMap[strength] || { strength: 0, label: "", color: "" };
+};
+
 // Komponen Input dengan Icon
-const InputWithIcon = ({ 
-  label, 
-  name, 
-  value, 
-  onChange, 
-  placeholder, 
+const InputWithIcon = ({
+  label,
+  name,
+  value,
+  onChange,
+  placeholder,
   type = "text",
   icon: Icon,
-  iconColor = "text-violet-600"
+  iconColor = "text-violet-600",
 }) => (
   <div>
     <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
       {label}
     </label>
     <div className="relative">
-      <div className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${iconColor}`}>
+      <div
+        className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${iconColor}`}
+      >
         <Icon className="w-5 h-5" />
       </div>
       <input
@@ -112,64 +137,109 @@ const InputWithIcon = ({
 );
 
 // Komponen Password Input dengan Toggle
-const PasswordInput = ({ 
-  label, 
-  name, 
-  value, 
-  onChange, 
-  placeholder, 
-  isVisible, 
+const PasswordInput = ({
+  label,
+  name,
+  value,
+  onChange,
+  placeholder,
+  isVisible,
   onToggle,
   icon: Icon,
-  iconColor = "text-violet-600"
-}) => (
-  <div>
-    <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
-      {label}
-    </label>
-    <div className="relative">
-      <div className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${iconColor}`}>
-        <Icon className="w-5 h-5" />
+  iconColor = "text-violet-600",
+  showStrengthIndicator = false,
+}) => {
+  const passwordStrength = getPasswordStrength(value);
+
+  return (
+    <div>
+      <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
+        {label}
+      </label>
+      <div className="relative">
+        <div
+          className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${iconColor}`}
+        >
+          <Icon className="w-5 h-5" />
+        </div>
+        <input
+          type={isVisible ? "text" : "password"}
+          name={name}
+          value={value}
+          onChange={onChange}
+          className="w-full pl-10 pr-4 py-3 border-2 border-violet-200 rounded-xl focus:outline-none focus:border-violet-500 transition-all font-semibold text-violet-900"
+          placeholder={placeholder}
+        />
+        <button
+          type="button"
+          onClick={onToggle}
+          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-violet-600 transition-colors duration-200 focus:outline-none p-1"
+        >
+          {isVisible ? (
+            <EyeOff className="w-5 h-5" />
+          ) : (
+            <Eye className="w-5 h-5" />
+          )}
+        </button>
       </div>
-      <input
-        type={isVisible ? "text" : "password"}
-        name={name}
-        value={value}
-        onChange={onChange}
-        className="w-full pl-10 pr-4 py-3 border-2 border-violet-200 rounded-xl focus:outline-none focus:border-violet-500 transition-all font-semibold text-violet-900"
-        placeholder={placeholder}
-      />
-      <button
-        type="button"
-        onClick={onToggle}
-        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-violet-600 transition-colors duration-200 focus:outline-none p-1"
-      >
-        {isVisible ? (
-          <EyeOff className="w-5 h-5" />
-        ) : (
-          <Eye className="w-5 h-5" />
-        )}
-      </button>
+
+      {/* Password Strength Indicator */}
+      {showStrengthIndicator && value && (
+        <div className="mt-2">
+          <div className="flex justify-between text-xs mb-1 font-light">
+            <span className="text-slate-600">Password strength:</span>
+            <span
+              className={`font-medium ${
+                passwordStrength.label === "Strong"
+                  ? "text-green-600"
+                  : passwordStrength.label === "Good"
+                  ? "text-blue-600"
+                  : passwordStrength.label === "Fair"
+                  ? "text-yellow-600"
+                  : passwordStrength.label === "Weak"
+                  ? "text-orange-600"
+                  : "text-red-600"
+              }`}
+            >
+              {passwordStrength.label}
+            </span>
+          </div>
+          <div className="w-full bg-slate-200 rounded-full h-2">
+            <div
+              className={`h-2 rounded-full transition-all duration-300 ${passwordStrength.color}`}
+              style={{
+                width: `${(passwordStrength.strength / 5) * 100}%`,
+              }}
+            ></div>
+          </div>
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 // Komponen Info Card untuk menampilkan informasi
-const InfoCard = ({ title, value, description, icon: Icon, color = "violet" }) => {
+const InfoCard = ({
+  title,
+  value,
+  description,
+  icon: Icon,
+  color = "violet",
+}) => {
   const colors = {
     violet: "bg-violet-50 border-violet-200 text-violet-800",
     emerald: "bg-emerald-50 border-emerald-200 text-emerald-800",
     blue: "bg-blue-50 border-blue-200 text-blue-800",
-    amber: "bg-amber-50 border-amber-200 text-amber-800"
+    amber: "bg-amber-50 border-amber-200 text-amber-800",
   };
-  
+
   const iconColors = {
     violet: "text-violet-600",
     emerald: "text-emerald-600",
     blue: "text-blue-600",
-    amber: "text-amber-600"
+    amber: "text-amber-600",
   };
-  
+
   return (
     <Motion.div
       whileHover={{ y: -2 }}
@@ -208,9 +278,7 @@ const TabButton = ({ active, onClick, children, icon: Icon }) => (
 
 // Komponen Setting Card
 const SettingCard = ({ title, description, icon: Icon, children }) => (
-  <div
-    className="bg-white/80 backdrop-blur-md p-6 rounded-2xl border-2 border-slate-100 shadow-sm"
-  >
+  <div className="bg-white/80 backdrop-blur-md p-6 rounded-2xl border-2 border-slate-100 shadow-sm">
     <div className="flex items-start gap-4 mb-4">
       <div className="bg-violet-100 p-3 rounded-xl">
         <Icon className="w-6 h-6 text-violet-600" />
@@ -249,9 +317,35 @@ const ProfileSettings = () => {
   const [localMessage, setLocalMessage] = useState("");
   const [messageType, setMessageType] = useState(""); // "success" or "error"
   const [preferences, setPreferences] = useState({
-    theme: "light",
     language: "id",
   });
+
+  // State untuk dropdown bahasa
+  const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
+  const languageDropdownRef = useRef(null);
+
+  // Data bahasa yang tersedia dengan informasi bendera
+  const languages = [
+    { code: "id", name: "Bahasa Indonesia", countryCode: "ID" },
+    { code: "en", name: "English", countryCode: "US" },
+  ];
+
+  // Handle click outside untuk menutup dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        languageDropdownRef.current &&
+        !languageDropdownRef.current.contains(event.target)
+      ) {
+        setIsLanguageDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Load user data
   useEffect(() => {
@@ -288,14 +382,14 @@ const ProfileSettings = () => {
 
   const handlePasswordChange = useCallback((e) => {
     const { name, value } = e.target;
-    setPasswordForm(prev => ({
+    setPasswordForm((prev) => ({
       ...prev,
       [name]: value,
     }));
   }, []);
 
   const togglePasswordVisibility = useCallback((field) => {
-    setPasswordVisibility(prev => ({
+    setPasswordVisibility((prev) => ({
       ...prev,
       [field]: !prev[field],
     }));
@@ -318,7 +412,7 @@ const ProfileSettings = () => {
 
     try {
       const result = await dispatch(updateProfile(profileForm)).unwrap();
-      
+
       if (result.message === "Tidak ada perubahan data") {
         Swal.fire({
           title: "Info!",
@@ -399,10 +493,18 @@ const ProfileSettings = () => {
   };
 
   const handlePreferenceChange = (key, value) => {
-    setPreferences(prev => ({
+    setPreferences((prev) => ({
       ...prev,
-      [key]: value
+      [key]: value,
     }));
+  };
+
+  // Fungsi untuk mendapatkan informasi bahasa berdasarkan kode
+  const getCurrentLanguage = () => {
+    return (
+      languages.find((lang) => lang.code === preferences.language) ||
+      languages[0]
+    );
   };
 
   if (!user) {
@@ -430,11 +532,6 @@ const ProfileSettings = () => {
               <ArrowLeft className="w-5 h-5" />
               Kembali
             </button>
-            
-            <div className="text-right">
-              <div className="text-sm font-semibold text-slate-600">Account Settings</div>
-              <div className="text-xs text-slate-500">Manage your profile and preferences</div>
-            </div>
           </div>
 
           <div className="flex items-center gap-4 mb-6">
@@ -455,22 +552,36 @@ const ProfileSettings = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <InfoCard
               title="Bergabung Sejak"
-              value={user.created_at ? formatDateTime(user.created_at).split(',')[0] : '-'}
+              value={
+                user.created_at
+                  ? formatDateTime(user.created_at).split(",")[0]
+                  : "-"
+              }
               description="Tanggal pendaftaran akun"
               icon={Calendar}
               color="violet"
             />
             <InfoCard
               title="Login Terakhir"
-              value={user.last_login ? formatDateTime(user.last_login) : 'Belum pernah'}
-              description={user.last_login ? getTimeSinceLastLogin(user.last_login) : ''}
+              value={
+                user.last_login
+                  ? formatDateTime(user.last_login)
+                  : "Belum pernah"
+              }
+              description={
+                user.last_login ? getTimeSinceLastLogin(user.last_login) : ""
+              }
               icon={LogIn}
               color="emerald"
             />
             <InfoCard
               title="Status Akun"
               value={user.status === "active" ? "Aktif" : "Non-aktif"}
-              description={user.status === "active" ? "Akun dalam keadaan aktif" : "Akun dinonaktifkan"}
+              description={
+                user.status === "active"
+                  ? "Akun dalam keadaan aktif"
+                  : "Akun dinonaktifkan"
+              }
               icon={ShieldCheck}
               color="blue"
             />
@@ -569,7 +680,7 @@ const ProfileSettings = () => {
                         icon={Mail}
                       />
                     </div>
-                    
+
                     <InputWithIcon
                       label="Nomor Telepon"
                       name="phone_number"
@@ -627,10 +738,12 @@ const ProfileSettings = () => {
                         onChange={handlePasswordChange}
                         placeholder="Masukkan password saat ini"
                         isVisible={passwordVisibility.currentPassword}
-                        onToggle={() => togglePasswordVisibility("currentPassword")}
+                        onToggle={() =>
+                          togglePasswordVisibility("currentPassword")
+                        }
                         icon={Key}
                       />
-                      
+
                       <PasswordInput
                         label="Password Baru"
                         name="newPassword"
@@ -640,8 +753,9 @@ const ProfileSettings = () => {
                         isVisible={passwordVisibility.newPassword}
                         onToggle={() => togglePasswordVisibility("newPassword")}
                         icon={Lock}
+                        showStrengthIndicator={true}
                       />
-                      
+
                       <PasswordInput
                         label="Konfirmasi Password Baru"
                         name="confirmPassword"
@@ -649,7 +763,9 @@ const ProfileSettings = () => {
                         onChange={handlePasswordChange}
                         placeholder="Konfirmasi password baru"
                         isVisible={passwordVisibility.confirmPassword}
-                        onToggle={() => togglePasswordVisibility("confirmPassword")}
+                        onToggle={() =>
+                          togglePasswordVisibility("confirmPassword")
+                        }
                         icon={Lock}
                       />
                     </div>
@@ -661,7 +777,9 @@ const ProfileSettings = () => {
                       </h4>
                       <ul className="text-sm text-violet-700 space-y-1">
                         <li>• Gunakan minimal 8 karakter</li>
-                        <li>• Kombinasikan huruf besar, kecil, angka, dan simbol</li>
+                        <li>
+                          • Kombinasikan huruf besar, kecil, angka, dan simbol
+                        </li>
                         <li>• Hindari informasi personal yang mudah ditebak</li>
                         <li>• Gunakan password yang berbeda dari akun lain</li>
                       </ul>
@@ -707,19 +825,79 @@ const ProfileSettings = () => {
                   icon={Settings}
                 >
                   <div className="space-y-6">
+                    {/* Language Selector dengan Bendera */}
                     <div>
                       <label className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
                         <Globe className="w-4 h-4" />
                         Bahasa
                       </label>
-                      <select
-                        value={preferences.language}
-                        onChange={(e) => handlePreferenceChange("language", e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 transition-all font-semibold text-slate-900"
-                      >
-                        <option value="id">🇮🇩 Bahasa Indonesia</option>
-                        <option value="en">🇺🇸 English</option>
-                      </select>
+                      <div className="relative" ref={languageDropdownRef}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setIsLanguageDropdownOpen(!isLanguageDropdownOpen)
+                          }
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 transition-all font-semibold text-slate-900 flex items-center justify-between bg-white hover:bg-slate-50"
+                        >
+                          <div className="flex items-center gap-3">
+                            <ReactCountryFlag
+                              countryCode={getCurrentLanguage().countryCode}
+                              svg
+                              style={{
+                                width: "1.5em",
+                                height: "1.5em",
+                              }}
+                              title={getCurrentLanguage().name}
+                            />
+                            <span>{getCurrentLanguage().name}</span>
+                          </div>
+                          <ChevronDown
+                            className={`w-4 h-4 transition-transform ${
+                              isLanguageDropdownOpen ? "rotate-180" : ""
+                            }`}
+                          />
+                        </button>
+
+                        {isLanguageDropdownOpen && (
+                          <div className="absolute z-10 mt-1 w-full bg-white border-2 border-slate-200 rounded-xl shadow-lg overflow-hidden">
+                            {languages.map((language) => (
+                              <button
+                                key={language.code}
+                                type="button"
+                                onClick={() => {
+                                  handlePreferenceChange(
+                                    "language",
+                                    language.code
+                                  );
+                                  setIsLanguageDropdownOpen(false);
+                                }}
+                                className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-violet-50 transition-colors ${
+                                  preferences.language === language.code
+                                    ? "bg-violet-50 text-violet-700 font-bold"
+                                    : "text-slate-700"
+                                }`}
+                              >
+                                <ReactCountryFlag
+                                  countryCode={language.countryCode}
+                                  svg
+                                  style={{
+                                    width: "1.5em",
+                                    height: "1.5em",
+                                  }}
+                                  title={language.name}
+                                />
+                                <span>{language.name}</span>
+                                {preferences.language === language.code && (
+                                  <CheckCircle className="w-4 h-4 ml-auto text-violet-600" />
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-2">
+                        Pilih bahasa yang ingin Anda gunakan di aplikasi
+                      </p>
                     </div>
 
                     <div className="pt-4 border-t border-slate-200">
@@ -760,7 +938,9 @@ const ProfileSettings = () => {
             <Motion.button
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => window.open('mailto:support@tradingjournal.com', '_blank')}
+              onClick={() =>
+                window.open("mailto:support@tradingjournal.com", "_blank")
+              }
               className="px-6 py-3 border-2 border-violet-300 text-violet-700 rounded-xl hover:bg-violet-50 transition-colors font-bold flex items-center gap-2"
             >
               Hubungi Support

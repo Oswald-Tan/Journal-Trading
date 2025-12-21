@@ -25,6 +25,12 @@ import {
   Rocket,
   PieChart,
   Plus,
+  ChevronLeft,
+  ChevronRight,
+  TrendingDown,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
 } from "lucide-react";
 import StatCard from "./StatCard";
 import {
@@ -35,6 +41,7 @@ import TargetProgressBanner from "../components/TargetProgressBanner";
 import BalanceModal from "./modals/BalanceModal";
 import { getTrades } from "../features/tradeSlice";
 import EquityChart from "../components/EquityChart";
+import TradingCalendar from "./TradingCalendar";
 
 const Dashboard = (props) => {
   const navigate = useNavigate();
@@ -864,6 +871,15 @@ const Dashboard = (props) => {
             </Motion.button>
           </div>
         </div>
+      </Motion.div>
+
+      <Motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="bg-white/80 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100"
+      >
+        <TradingCalendar entries={actualEntries} currency={currency} />
       </Motion.div>
 
       {/* Motivational Banner */}

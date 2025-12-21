@@ -59,7 +59,7 @@ export default function Footer() {
               <div className="space-y-3">
                 <div className="flex items-center gap-3 text-slate-700">
                   <Phone size={18} className="text-slate-500" />
-                  <span className="font-light">+62 821-5492-6917</span>
+                  <span className="font-light">+62 851 7324 6048</span>
                 </div>
                 <div className="flex items-center gap-3 text-slate-700">
                   <Mail size={18} className="text-slate-500" />
@@ -71,7 +71,7 @@ export default function Footer() {
                     className="text-slate-500 mt-0.5 shrink-0"
                   />
                   <span className="font-light">
-                    Jl. Sukur Likupang, Minahasa Utara, 95372
+                    Manado, Indonesia
                   </span>
                 </div>
               </div>

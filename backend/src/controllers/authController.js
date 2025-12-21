@@ -9,7 +9,12 @@ import { Op } from "sequelize";
 
 export const handleRegister = async (req, res) => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name, country } = req.body;
+
+    // Validate country code if provided
+    if (country && !/^[A-Z]{3}$/.test(country)) {
+      return res.status(400).json({ error: 'Invalid country code format' });
+    }
 
     // Check if user exists
     const existingUser = await User.findOne({ where: { email } });
@@ -36,6 +41,7 @@ export const handleRegister = async (req, res) => {
       email,
       password: hashedPassword,
       name,
+      country: country || null,
       role_id: userRole.id,
       status: 'pending',
       emailVerificationToken,
@@ -96,6 +102,7 @@ export const handleRegister = async (req, res) => {
         id: userWithRole.id,
         email: userWithRole.email,
         name: userWithRole.name,
+        country: userWithRole.country,
         role: userWithRole.userRole.role_name,
         initialBalance: userWithRole.initialBalance,
         status: userWithRole.status
@@ -280,7 +287,8 @@ export const handleLogin = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.userRole.role_name,
-      status: user.status
+      status: user.status,
+      country: user.country
     });
   } catch (error) {
     console.error("Login Error:", error);
@@ -297,7 +305,7 @@ export const Me = async (req, res) => {
 
     // Ambil data user berdasarkan session userId
     const user = await User.findOne({
-      attributes: ["id", "name", "email", "phone_number", "status", "role_id", "last_login", "created_at"],
+      attributes: ["id", "name", "email", "phone_number", "status", "country", "role_id", "last_login", "created_at"],
       include: [
         {
           model: Role,
@@ -320,6 +328,7 @@ export const Me = async (req, res) => {
       role: user.userRole.role_name,
       phone_number: user.phone_number,
       status: user.status,
+      country: user.country,
       last_login: user.last_login,
       created_at: user.created_at
     });
