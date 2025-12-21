@@ -388,9 +388,9 @@ sudo ln -s /snap/bin/certbot /usr/bin/certbot
 ```
 
 ## Obtaining and Installing the SSL Certificate
-Catatan Penting: Pastikan konfigurasi Nginx untuk domain abpolimdo.com sudah aktif. Jika Anda sudah membuat file konfigurasi di /etc/nginx/sites-available/abpolimdo namun belum mengaktifkannya, jalankan perintah berikut terlebih dahulu:
+Catatan Penting: Pastikan konfigurasi Nginx untuk domain pipsdiary.com sudah aktif. Jika Anda sudah membuat file konfigurasi di /etc/nginx/sites-available/pipsdiary namun belum mengaktifkannya, jalankan perintah berikut terlebih dahulu:
 ```
-sudo ln -s /etc/nginx/sites-available/abpolimdo /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/pipsdiary /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 Setelah itu, jalankan Certbot dengan plugin Nginx untuk mendapatkan dan menginstal sertifikat SSL.
@@ -416,6 +416,7 @@ sudo systemctl reload nginx
 
 ## Database Setup and Backend Deployment
 Berikut adalah langkah-langkah untuk mengimpor database SQL dan menjalankan aplikasi backend untuk proyek Pips Diary.
+
 1 - Membuat Database
 Masuk ke MySQL dan buat database baru:
 ```
@@ -429,12 +430,12 @@ EXIT;
 2 - Mengatasi Masalah Collation (Opsional)
 Jika file SQL Anda memiliki collation utf8mb4_0900_ai_ci yang tidak didukung oleh versi MySQL Anda, Anda bisa menggantinya dengan utf8mb4_general_ci dengan perintah:
 ```
-sed -i 's/utf8mb4_0900_ai_ci/utf8mb4_general_ci/g' /root/abpolimdo/db_pipsdiary.sql
+sed -i 's/utf8mb4_0900_ai_ci/utf8mb4_general_ci/g' /root/pipsdiary/db_pipsdiary.sql
 ```
 3 - Mengimpor Database
 Impor file SQL ke dalam database yang telah dibuat. Pastikan file SQL berada di lokasi yang benar:
 ```
-mysql -u root -p db_pipsdiary < /root/abpolimdo/db_pipsdiary.sql
+mysql -u root -p db_pipsdiary < /root/pipsdiary/db_pipsdiary.sql
 ```
 4 - Menjalankan Aplikasi Backend dengan PM2
 ```
