@@ -184,11 +184,15 @@ nano /etc/nginx/sites-available/pipsdiary
 ```
 ```
 location /api {
-        proxy_pass http://45.90.108.107:8800;
+        proxy_pass http://45.90.108.107:8084;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
+        # HEADER BARU YANG WAJIB DITAMBAHKAN:
+        proxy_set_header X-Forwarded-Proto $scheme;  # <-- Penting
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Real-IP $remote_addr;
         proxy_cache_bypass $http_upgrade;
   }
 ```
@@ -256,17 +260,17 @@ Right now, we should move this build file into the main web file
 rm -rf /var/www/pipsdiary/*
 ```
 ```
-mkdir /var/www/pipsdiary/client
+mkdir /var/www/pipsdiary/landing-page
 ```
 
 ```
-cp -r build/* /var/www/pipsdiary/client
+cp -r dist/* /var/www/pipsdiary/landing-page
 ```
 
 Let's make some server configuration
 ```
  location / {
-        root /var/www/pipsdiary/client/;
+        root /var/www/pipsdiary/landing-page/;
         index  index.html index.htm;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -311,6 +315,10 @@ server {
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection 'upgrade';
     proxy_set_header Host $host;
+    # HEADER BARU YANG WAJIB DITAMBAHKAN:
+    proxy_set_header X-Forwarded-Proto $scheme;  # <-- Penting
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Real-IP $remote_addr;
     proxy_cache_bypass $http_upgrade;
     }
 }
