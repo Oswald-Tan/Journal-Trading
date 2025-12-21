@@ -337,6 +337,21 @@ server {
     try_files $uri $uri/ /index.html;
   }
 }
+
+server {
+  listen 80;
+  server_name app.pipsdiary.com;
+  location / {
+    root /var/www/pipsdiary/app;
+    index  index.html index.htm;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_cache_bypass $http_upgrade;
+    try_files $uri $uri/ /index.html;
+  }
+}
 ```
 
 ## SSL Certification
